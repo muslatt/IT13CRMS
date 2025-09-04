@@ -18,7 +18,7 @@ namespace RealEstateCRMWinForms.Views
             dataGridView1.DataSource = _viewModel.Users;
 
             // default section
-            SwitchSection("Properties");
+            SwitchSection("Dashboard");
 
             // default placeholder user (blank avatar)
             SetCurrentUser("Ron Vergel Luzon", "Broker");
@@ -124,8 +124,8 @@ namespace RealEstateCRMWinForms.Views
 
         private void ShowLeadsView()
         {
-            // TODO: Create LeadsView
-            SwitchContentView(null);
+            // Instantiate and show the new LeadsView
+            SwitchContentView(new LeadsView());
         }
 
         private void ShowContactsView()
