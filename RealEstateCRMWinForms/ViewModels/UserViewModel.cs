@@ -1,12 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Internal;
-using RealEstateCRMWinForms.Data;
+﻿using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RealEstateCRMWinForms.ViewModels
 {
@@ -38,7 +32,7 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
-              
+
                 MessageBox.Show($"An error occurred: {ex.Message}");
             }
         }
@@ -46,7 +40,7 @@ namespace RealEstateCRMWinForms.ViewModels
 
 
 
-        
+
 
     }
 }
