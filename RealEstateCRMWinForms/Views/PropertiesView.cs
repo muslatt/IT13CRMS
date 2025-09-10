@@ -35,11 +35,38 @@ namespace RealEstateCRMWinForms.Views
             {
                 var card = new PropertyCard
                 {
-                    Property = property,
                     Margin = new Padding(10)
                 };
+                card.SetProperty(property);
+                
+                // Subscribe to property events
+                card.PropertyUpdated += Card_PropertyUpdated;
+                card.PropertyDeleted += Card_PropertyDeleted;
                 
                 flowLayoutPanel.Controls.Add(card);
+            }
+        }
+
+        private void Card_PropertyUpdated(object? sender, PropertyEventArgs e)
+        {
+            // Refresh the properties list to reflect any changes
+            _viewModel.LoadProperties();
+            LoadProperties();
+        }
+
+        private void Card_PropertyDeleted(object? sender, PropertyEventArgs e)
+        {
+            if (sender is PropertyCard card)
+            {
+                // Remove the card from the UI
+                flowLayoutPanel.Controls.Remove(card);
+                
+                // Dispose of the card to free resources
+                card.Dispose();
+                
+                // Optionally refresh the entire list to ensure consistency
+                _viewModel.LoadProperties();
+                LoadProperties();
             }
         }
     }

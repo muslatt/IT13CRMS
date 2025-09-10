@@ -1,4 +1,5 @@
 using RealEstateCRMWinForms.Models;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -12,9 +13,11 @@ namespace RealEstateCRMWinForms.Views
         private TextBox txtAddress;
         private ComboBox cmbType;
         private ComboBox cmbStatus;
-        private ComboBox cmbSource;
+        private DateTimePicker dtpLastContacted;
         private Button btnSave;
         private Button btnCancel;
+
+        public Lead? CreatedLead { get; private set; }
 
         public AddLeadForm()
         {
@@ -24,208 +27,89 @@ namespace RealEstateCRMWinForms.Views
         private void InitializeComponent()
         {
             Text = "Add New Lead";
-            Size = new Size(500, 450);
+            Size = new Size(450, 400);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
             BackColor = Color.White;
 
-            // Full Name
-            var lblFullName = new Label
-            {
-                Text = "Full Name:",
-                Location = new Point(20, 20),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
+            // Controls Initialization
+            var lblFullName = new Label { Text = "Full Name:", Location = new Point(20, 25), AutoSize = true };
+            txtFullName = new TextBox { Location = new Point(140, 20), Size = new Size(250, 23) };
 
-            txtFullName = new TextBox
-            {
-                Location = new Point(130, 20),
-                Size = new Size(320, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
+            var lblEmail = new Label { Text = "Email:", Location = new Point(20, 55), AutoSize = true };
+            txtEmail = new TextBox { Location = new Point(140, 50), Size = new Size(250, 23) };
 
-            // Email
-            var lblEmail = new Label
-            {
-                Text = "Email:",
-                Location = new Point(20, 55),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
+            var lblPhone = new Label { Text = "Phone:", Location = new Point(20, 85), AutoSize = true };
+            txtPhone = new TextBox { Location = new Point(140, 80), Size = new Size(250, 23) };
 
-            txtEmail = new TextBox
-            {
-                Location = new Point(130, 55),
-                Size = new Size(320, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
+            var lblAddress = new Label { Text = "Address:", Location = new Point(20, 115), AutoSize = true };
+            txtAddress = new TextBox { Location = new Point(140, 110), Size = new Size(250, 23) };
 
-            // Phone
-            var lblPhone = new Label
-            {
-                Text = "Phone:",
-                Location = new Point(20, 90),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            txtPhone = new TextBox
-            {
-                Location = new Point(130, 90),
-                Size = new Size(200, 23),
-                Font = new Font("Segoe UI", 9F),
-                PlaceholderText = "(123) 456-7890"
-            };
-
-            // Address
-            var lblAddress = new Label
-            {
-                Text = "Address:",
-                Location = new Point(20, 125),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            txtAddress = new TextBox
-            {
-                Location = new Point(130, 125),
-                Size = new Size(320, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            // Type
-            var lblType = new Label
-            {
-                Text = "Type:",
-                Location = new Point(20, 160),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            cmbType = new ComboBox
-            {
-                Location = new Point(130, 160),
-                Size = new Size(120, 23),
-                Font = new Font("Segoe UI", 9F),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
+            var lblType = new Label { Text = "Type:", Location = new Point(20, 145), AutoSize = true };
+            cmbType = new ComboBox { Location = new Point(140, 140), Size = new Size(150, 23), DropDownStyle = ComboBoxStyle.DropDownList };
             cmbType.Items.AddRange(new[] { "Renter", "Owner", "Buyer" });
-            cmbType.SelectedIndex = 0; // Default to Renter
+            cmbType.SelectedIndex = 0;
 
-            // Status
-            var lblStatus = new Label
-            {
-                Text = "Status:",
-                Location = new Point(20, 195),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            cmbStatus = new ComboBox
-            {
-                Location = new Point(130, 195),
-                Size = new Size(150, 23),
-                Font = new Font("Segoe UI", 9F),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
+            var lblStatus = new Label { Text = "Status:", Location = new Point(20, 175), AutoSize = true };
+            cmbStatus = new ComboBox { Location = new Point(140, 170), Size = new Size(150, 23), DropDownStyle = ComboBoxStyle.DropDownList };
             cmbStatus.Items.AddRange(new[] { "New Lead", "Contacted", "Qualified", "Unqualified" });
-            cmbStatus.SelectedIndex = 0; // Default to New Lead
+            cmbStatus.SelectedIndex = 0;
 
-            // Source
-            var lblSource = new Label
+            var lblLastContacted = new Label { Text = "Last Contacted:", Location = new Point(20, 205), AutoSize = true };
+            dtpLastContacted = new DateTimePicker
             {
-                Text = "Source:",
-                Location = new Point(20, 230),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            cmbSource = new ComboBox
-            {
-                Location = new Point(130, 230),
+                Location = new Point(140, 200),
                 Size = new Size(150, 23),
-                Font = new Font("Segoe UI", 9F),
-                DropDownStyle = ComboBoxStyle.DropDownList
+                Format = DateTimePickerFormat.Short,
+                ShowCheckBox = true, // Allows user to specify if a date is set
+                Checked = false      // Unchecked by default, meaning null
             };
-            cmbSource.Items.AddRange(new[] { "Website", "Facebook", "Instagram", "Referral", "Walk-in", "Phone Call", "Email", "Other" });
-            cmbSource.SelectedIndex = 0; // Default to Website
 
-            // Buttons
-            btnCancel = new Button
-            {
-                Text = "Cancel",
-                Location = new Point(280, 370),
-                Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F),
-                DialogResult = DialogResult.Cancel,
-                BackColor = Color.FromArgb(108, 117, 125),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat
-            };
-            btnCancel.FlatAppearance.BorderSize = 0;
+            btnSave = new Button { Text = "Save", Location = new Point(290, 320), Size = new Size(100, 30), DialogResult = DialogResult.OK };
+            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 320), Size = new Size(100, 30), DialogResult = DialogResult.Cancel };
 
-            btnSave = new Button
-            {
-                Text = "Save Lead",
-                Location = new Point(370, 370),
-                Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                BackColor = Color.FromArgb(0, 123, 255),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat
-            };
-            btnSave.FlatAppearance.BorderSize = 0;
             btnSave.Click += BtnSave_Click;
 
-            // Add all controls
             Controls.AddRange(new Control[] {
-                lblFullName, txtFullName,
-                lblEmail, txtEmail,
-                lblPhone, txtPhone,
-                lblAddress, txtAddress,
-                lblType, cmbType,
-                lblStatus, cmbStatus,
-                lblSource, cmbSource,
-                btnCancel, btnSave
+                lblFullName, txtFullName, lblEmail, txtEmail, lblPhone, txtPhone, lblAddress, txtAddress,
+                lblType, cmbType, lblStatus, cmbStatus, lblLastContacted, dtpLastContacted,
+                btnSave, btnCancel
             });
 
-            CancelButton = btnCancel;
             AcceptButton = btnSave;
+            CancelButton = btnCancel;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
         {
-            // Validation
             if (string.IsNullOrWhiteSpace(txtFullName.Text))
             {
-                MessageBox.Show("Please enter the lead's full name.", "Validation Error", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Full Name is required.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtFullName.Focus();
+                DialogResult = DialogResult.None; // Keep form open
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(txtEmail.Text))
             {
-                MessageBox.Show("Please enter the lead's email address.", "Validation Error", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Email is required.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtEmail.Focus();
+                DialogResult = DialogResult.None; // Keep form open
                 return;
             }
 
             // Basic email validation
             if (!IsValidEmail(txtEmail.Text))
             {
-                MessageBox.Show("Please enter a valid email address.", "Validation Error", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please enter a valid email address.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtEmail.Focus();
+                DialogResult = DialogResult.None; // Keep form open
                 return;
             }
 
-            // Create new lead
-            var newLead = new Lead
+            CreatedLead = new Lead
             {
                 FullName = txtFullName.Text.Trim(),
                 Email = txtEmail.Text.Trim(),
@@ -233,18 +117,11 @@ namespace RealEstateCRMWinForms.Views
                 Address = txtAddress.Text.Trim(),
                 Type = cmbType.SelectedItem?.ToString() ?? "Renter",
                 Status = cmbStatus.SelectedItem?.ToString() ?? "New Lead",
-                Source = cmbSource.SelectedItem?.ToString() ?? "Website",
+                LastContacted = dtpLastContacted.Checked ? dtpLastContacted.Value : (DateTime?)null,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-
-            // Set the created lead as a property so the calling form can access it
-            CreatedLead = newLead;
-            DialogResult = DialogResult.OK;
-            Close();
         }
-
-        public Lead? CreatedLead { get; private set; }
 
         private bool IsValidEmail(string email)
         {

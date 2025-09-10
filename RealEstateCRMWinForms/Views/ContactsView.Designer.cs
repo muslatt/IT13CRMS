@@ -1,9 +1,9 @@
-﻿// RealEstateCRMWinForms\Views\LeadsView.Designer.cs
+﻿// RealEstateCRMWinForms\Views\ContactsView.Designer.cs
 using System.Windows.Forms;
 
 namespace RealEstateCRMWinForms.Views
 {
-    partial class LeadsView
+    partial class ContactsView
     {
         /// <summary> 
         /// Required designer variable.
@@ -33,16 +33,16 @@ namespace RealEstateCRMWinForms.Views
         {
             this.searchPanel = new System.Windows.Forms.Panel();
             this.rightControlsPanel = new System.Windows.Forms.Panel();
-            this.btnAddLead = new System.Windows.Forms.Button();
+            this.btnAddContact = new System.Windows.Forms.Button();
             this.sortComboBox = new System.Windows.Forms.ComboBox();
             this.filterButton = new System.Windows.Forms.Button();
             this.searchBox = new System.Windows.Forms.TextBox();
             this.contentPanel = new System.Windows.Forms.Panel();
-            this.dataGridViewLeads = new System.Windows.Forms.DataGridView();
+            this.dataGridViewContacts = new System.Windows.Forms.DataGridView();
             this.searchPanel.SuspendLayout();
             this.rightControlsPanel.SuspendLayout();
             this.contentPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewLeads)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewContacts)).BeginInit();
             this.SuspendLayout();
             // 
             // searchPanel
@@ -59,7 +59,7 @@ namespace RealEstateCRMWinForms.Views
             // 
             // rightControlsPanel
             // 
-            this.rightControlsPanel.Controls.Add(this.btnAddLead);
+            this.rightControlsPanel.Controls.Add(this.btnAddContact);
             this.rightControlsPanel.Controls.Add(this.sortComboBox);
             this.rightControlsPanel.Controls.Add(this.filterButton);
             this.rightControlsPanel.Dock = System.Windows.Forms.DockStyle.Right;
@@ -68,20 +68,20 @@ namespace RealEstateCRMWinForms.Views
             this.rightControlsPanel.Size = new System.Drawing.Size(410, 40);
             this.rightControlsPanel.TabIndex = 1;
             // 
-            // btnAddLead
+            // btnAddContact
             // 
-            this.btnAddLead.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(123)))), ((int)(((byte)(255)))));
-            this.btnAddLead.FlatAppearance.BorderSize = 0;
-            this.btnAddLead.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnAddLead.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.btnAddLead.ForeColor = System.Drawing.Color.White;
-            this.btnAddLead.Location = new System.Drawing.Point(290, 5);
-            this.btnAddLead.Name = "btnAddLead";
-            this.btnAddLead.Size = new System.Drawing.Size(110, 30);
-            this.btnAddLead.TabIndex = 2;
-            this.btnAddLead.Text = "+ Add Lead";
-            this.btnAddLead.UseVisualStyleBackColor = false;
-            this.btnAddLead.Click += new System.EventHandler(this.BtnAddLead_Click);
+            this.btnAddContact.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(123)))), ((int)(((byte)(255)))));
+            this.btnAddContact.FlatAppearance.BorderSize = 0;
+            this.btnAddContact.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAddContact.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnAddContact.ForeColor = System.Drawing.Color.White;
+            this.btnAddContact.Location = new System.Drawing.Point(290, 5);
+            this.btnAddContact.Name = "btnAddContact";
+            this.btnAddContact.Size = new System.Drawing.Size(110, 30);
+            this.btnAddContact.TabIndex = 2;
+            this.btnAddContact.Text = "+ Add Contact";
+            this.btnAddContact.UseVisualStyleBackColor = false;
+            this.btnAddContact.Click += new System.EventHandler(this.BtnAddContact_Click);
             // 
             // sortComboBox
             // 
@@ -111,14 +111,14 @@ namespace RealEstateCRMWinForms.Views
             // 
             this.searchBox.Location = new System.Drawing.Point(15, 19);
             this.searchBox.Name = "searchBox";
-            this.searchBox.PlaceholderText = "Search Leads...";
+            this.searchBox.PlaceholderText = "Search Contacts...";
             this.searchBox.Size = new System.Drawing.Size(300, 23);
             this.searchBox.TabIndex = 0;
             this.searchBox.TextChanged += new System.EventHandler(this.SearchBox_TextChanged);
             // 
             // contentPanel
             // 
-            this.contentPanel.Controls.Add(this.dataGridViewLeads);
+            this.contentPanel.Controls.Add(this.dataGridViewContacts);
             this.contentPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.contentPanel.Location = new System.Drawing.Point(0, 60);
             this.contentPanel.Name = "contentPanel";
@@ -126,34 +126,34 @@ namespace RealEstateCRMWinForms.Views
             this.contentPanel.Size = new System.Drawing.Size(940, 540);
             this.contentPanel.TabIndex = 1;
             // 
-            // dataGridViewLeads
+            // dataGridViewContacts
             // 
-            this.dataGridViewLeads.AllowUserToAddRows = false;
-            this.dataGridViewLeads.AllowUserToDeleteRows = false;
-            this.dataGridViewLeads.BackgroundColor = System.Drawing.Color.White;
-            this.dataGridViewLeads.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridViewLeads.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGridViewLeads.Location = new System.Drawing.Point(10, 10);
-            this.dataGridViewLeads.Name = "dataGridViewLeads";
-            this.dataGridViewLeads.ReadOnly = true;
-            this.dataGridViewLeads.RowTemplate.Height = 25;
-            this.dataGridViewLeads.Size = new System.Drawing.Size(920, 520);
-            this.dataGridViewLeads.TabIndex = 0;
+            this.dataGridViewContacts.AllowUserToAddRows = false;
+            this.dataGridViewContacts.AllowUserToDeleteRows = false;
+            this.dataGridViewContacts.BackgroundColor = System.Drawing.Color.White;
+            this.dataGridViewContacts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridViewContacts.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataGridViewContacts.Location = new System.Drawing.Point(10, 10);
+            this.dataGridViewContacts.Name = "dataGridViewContacts";
+            this.dataGridViewContacts.ReadOnly = true;
+            this.dataGridViewContacts.RowTemplate.Height = 25;
+            this.dataGridViewContacts.Size = new System.Drawing.Size(920, 520);
+            this.dataGridViewContacts.TabIndex = 0;
             // 
-            // LeadsView
+            // ContactsView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
             this.Controls.Add(this.contentPanel);
             this.Controls.Add(this.searchPanel);
-            this.Name = "LeadsView";
+            this.Name = "ContactsView";
             this.Size = new System.Drawing.Size(940, 600);
             this.searchPanel.ResumeLayout(false);
             this.searchPanel.PerformLayout();
             this.rightControlsPanel.ResumeLayout(false);
             this.contentPanel.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewLeads)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewContacts)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -165,8 +165,8 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.Panel rightControlsPanel;
         private System.Windows.Forms.Button filterButton;
         private System.Windows.Forms.ComboBox sortComboBox;
-        private System.Windows.Forms.Button btnAddLead;
+        private System.Windows.Forms.Button btnAddContact;
         private System.Windows.Forms.Panel contentPanel;
-        private System.Windows.Forms.DataGridView dataGridViewLeads;
+        private System.Windows.Forms.DataGridView dataGridViewContacts;
     }
 }

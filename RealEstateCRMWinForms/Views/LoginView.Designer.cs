@@ -106,9 +106,9 @@ namespace RealEstateCRMWinForms.Views
             lblEmail.ForeColor = Color.FromArgb(33, 37, 41);
             lblEmail.Location = new Point(50, 156);
             lblEmail.Name = "lblEmail";
-            lblEmail.Size = new Size(109, 21);
+            lblEmail.Size = new Size(48, 21);
             lblEmail.TabIndex = 2;
-            lblEmail.Text = "Email address";
+            lblEmail.Text = "Email";
             // 
             // txtEmail
             // 

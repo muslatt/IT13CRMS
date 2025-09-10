@@ -13,9 +13,19 @@
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                // Properly dispose of the image to avoid file locks
+                if (pictureBox?.Image != null)
+                {
+                    pictureBox.Image.Dispose();
+                    pictureBox.Image = null;
+                }
+                
+                if (components != null)
+                {
+                    components.Dispose();
+                }
             }
             base.Dispose(disposing);
         }
@@ -29,9 +39,10 @@
         private void InitializeComponent()
         {
             pictureBox = new PictureBox();
+            titlePanel = new Panel();
+            lblTitle = new Label();
             statusPanel = new Panel();
             lblStatus = new Label();
-            lblTitle = new Label();
             lblAddress = new Label();
             detailsPanel = new Panel();
             lblBedrooms = new Label();
@@ -39,6 +50,7 @@
             lblSquareMeters = new Label();
             lblPrice = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox).BeginInit();
+            titlePanel.SuspendLayout();
             statusPanel.SuspendLayout();
             detailsPanel.SuspendLayout();
             SuspendLayout();
@@ -46,7 +58,6 @@
             // pictureBox
             // 
             pictureBox.BackColor = Color.LightGray;
-            pictureBox.Controls.Add(statusPanel);
             pictureBox.Location = new Point(8, 8);
             pictureBox.Name = "pictureBox";
             pictureBox.Size = new Size(264, 180);
@@ -54,14 +65,34 @@
             pictureBox.TabIndex = 0;
             pictureBox.TabStop = false;
             // 
+            // titlePanel
+            // 
+            titlePanel.Controls.Add(lblTitle);
+            titlePanel.Controls.Add(statusPanel);
+            titlePanel.Location = new Point(8, 196);
+            titlePanel.Name = "titlePanel";
+            titlePanel.Size = new Size(264, 24);
+            titlePanel.TabIndex = 1;
+            // 
+            // lblTitle
+            // 
+            lblTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblTitle.ForeColor = Color.FromArgb(33, 37, 41);
+            lblTitle.Location = new Point(0, 0);
+            lblTitle.Name = "lblTitle";
+            lblTitle.Size = new Size(180, 24);
+            lblTitle.TabIndex = 0;
+            lblTitle.Text = "Property Title";
+            lblTitle.TextAlign = ContentAlignment.MiddleLeft;
+            // 
             // statusPanel
             // 
             statusPanel.BackColor = Color.FromArgb(0, 123, 255);
             statusPanel.Controls.Add(lblStatus);
-            statusPanel.Location = new Point(16, 16);
+            statusPanel.Location = new Point(204, 0);
             statusPanel.Name = "statusPanel";
             statusPanel.Size = new Size(60, 24);
-            statusPanel.TabIndex = 0;
+            statusPanel.TabIndex = 1;
             // 
             // lblStatus
             // 
@@ -75,21 +106,11 @@
             lblStatus.Text = "Sell";
             lblStatus.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // lblTitle
-            // 
-            lblTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            lblTitle.ForeColor = Color.FromArgb(33, 37, 41);
-            lblTitle.Location = new Point(8, 196);
-            lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(264, 24);
-            lblTitle.TabIndex = 1;
-            lblTitle.Text = "Property Title";
-            // 
             // lblAddress
             // 
             lblAddress.Font = new Font("Segoe UI", 9F);
             lblAddress.ForeColor = Color.FromArgb(108, 117, 125);
-            lblAddress.Location = new Point(8, 220);
+            lblAddress.Location = new Point(8, 228);
             lblAddress.Name = "lblAddress";
             lblAddress.Size = new Size(264, 20);
             lblAddress.TabIndex = 2;
@@ -101,7 +122,7 @@
             detailsPanel.Controls.Add(lblBedrooms);
             detailsPanel.Controls.Add(lblBathrooms);
             detailsPanel.Controls.Add(lblSquareMeters);
-            detailsPanel.Location = new Point(8, 248);
+            detailsPanel.Location = new Point(8, 256);
             detailsPanel.Name = "detailsPanel";
             detailsPanel.Size = new Size(264, 32);
             detailsPanel.TabIndex = 3;
@@ -140,7 +161,7 @@
             // 
             lblPrice.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
             lblPrice.ForeColor = Color.FromArgb(33, 37, 41);
-            lblPrice.Location = new Point(8, 288);
+            lblPrice.Location = new Point(8, 296);
             lblPrice.Name = "lblPrice";
             lblPrice.Size = new Size(264, 24);
             lblPrice.TabIndex = 4;
@@ -155,12 +176,13 @@
             Controls.Add(lblPrice);
             Controls.Add(detailsPanel);
             Controls.Add(lblAddress);
-            Controls.Add(lblTitle);
+            Controls.Add(titlePanel);
             Controls.Add(pictureBox);
             Name = "PropertyCard";
             Padding = new Padding(8);
             Size = new Size(280, 360);
             ((System.ComponentModel.ISupportInitialize)pictureBox).EndInit();
+            titlePanel.ResumeLayout(false);
             statusPanel.ResumeLayout(false);
             detailsPanel.ResumeLayout(false);
             ResumeLayout(false);
@@ -169,9 +191,10 @@
         #endregion
 
         private PictureBox pictureBox;
+        private Panel titlePanel;
+        private Label lblTitle;
         private Panel statusPanel;
         private Label lblStatus;
-        private Label lblTitle;
         private Label lblAddress;
         private Panel detailsPanel;
         private Label lblBedrooms;

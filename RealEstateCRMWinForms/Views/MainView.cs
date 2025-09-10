@@ -51,6 +51,8 @@ namespace RealEstateCRMWinForms.Views
 
         private void btnDeals_Click(object sender, EventArgs e)
         {
+            // This is the line that needs to be corrected.
+            // It ensures the Kanban board is loaded.
             SwitchSection("Deals");
         }
 
@@ -80,7 +82,7 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private void SwitchSection(string section)
+        public void SwitchSection(string section)
         {
             lblSectionTitle.Text = section;
 
@@ -118,8 +120,8 @@ namespace RealEstateCRMWinForms.Views
 
         private void ShowDashboardView()
         {
-            // For now, keep the existing grid
-            SwitchContentView(null);
+            // Show the new DashboardView instead of the default grid
+            SwitchContentView(new DashboardView());
         }
 
         private void ShowLeadsView()
@@ -130,14 +132,14 @@ namespace RealEstateCRMWinForms.Views
 
         private void ShowContactsView()
         {
-            // TODO: Create ContactsView
-            SwitchContentView(null);
+            // Instantiate and show the new ContactsView
+            SwitchContentView(new ContactsView());
         }
 
         private void ShowDealsView()
         {
-            // TODO: Create DealsView
-            SwitchContentView(null);
+            // Create and show the DealsView Kanban board
+            SwitchContentView(new DealsView());
         }
 
         private void SwitchContentView(UserControl? newView)

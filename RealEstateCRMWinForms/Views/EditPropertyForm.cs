@@ -7,9 +7,10 @@ using System.IO;
 
 namespace RealEstateCRMWinForms.Views
 {
-    public partial class AddPropertyForm : Form
+    public partial class EditPropertyForm : Form
     {
         private PropertyViewModel _viewModel;
+        private Property _property;
         
         private TextBox txtTitle;
         private TextBox txtAddress;
@@ -24,15 +25,17 @@ namespace RealEstateCRMWinForms.Views
         private Button btnCancel;
         private string _selectedImagePath;
 
-        public AddPropertyForm()
+        public EditPropertyForm(Property property)
         {
             _viewModel = new PropertyViewModel();
+            _property = property;
             InitializeComponent();
+            PopulateFields();
         }
 
         private void InitializeComponent()
         {
-            Text = "Add New Property";
+            Text = "Edit Property";
             Size = new Size(600, 500);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -161,7 +164,6 @@ namespace RealEstateCRMWinForms.Views
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cmbStatus.Items.AddRange(new[] { "Sell", "Rent" });
-            cmbStatus.SelectedIndex = 0;
 
             // Image selection
             var lblImage = new Label
@@ -183,7 +185,7 @@ namespace RealEstateCRMWinForms.Views
 
             btnSelectImage = new Button
             {
-                Text = "Select Image",
+                Text = "Change Image",
                 Location = new Point(350, 260),
                 Size = new Size(100, 30),
                 Font = new Font("Segoe UI", 9F),
@@ -206,7 +208,7 @@ namespace RealEstateCRMWinForms.Views
 
             btnSave = new Button
             {
-                Text = "Save",
+                Text = "Save Changes",
                 Location = new Point(490, 420),
                 Size = new Size(80, 35),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -232,9 +234,46 @@ namespace RealEstateCRMWinForms.Views
 
             CancelButton = btnCancel;
             AcceptButton = btnSave;
+        }
 
-            // Set default image
-            SetDefaultPreviewImage();
+        private void PopulateFields()
+        {
+            txtTitle.Text = _property.Title;
+            txtAddress.Text = _property.Address;
+            numPrice.Value = _property.Price;
+            numBedrooms.Value = _property.Bedrooms;
+            numBathrooms.Value = _property.Bathrooms;
+            numSquareMeters.Value = _property.SquareMeters;
+            cmbStatus.SelectedItem = _property.Status;
+
+            // Load existing image
+            LoadCurrentImage();
+        }
+
+        private void LoadCurrentImage()
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(_property.ImagePath))
+                {
+                    string imagePath = Path.Combine(Application.StartupPath, "PropertyImages", _property.ImagePath);
+                    if (File.Exists(imagePath))
+                    {
+                        using (var img = Image.FromFile(imagePath))
+                        {
+                            pictureBoxPreview.Image = new Bitmap(img);
+                        }
+                        return;
+                    }
+                }
+                
+                SetDefaultPreviewImage();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading current image: {ex.Message}");
+                SetDefaultPreviewImage();
+            }
         }
 
         private void SetDefaultPreviewImage()
@@ -246,7 +285,7 @@ namespace RealEstateCRMWinForms.Views
                 using (var brush = new SolidBrush(Color.Gray))
                 using (var font = new Font("Segoe UI", 10, FontStyle.Bold))
                 {
-                    string text = "No Image Selected";
+                    string text = "No Image";
                     var textSize = g.MeasureString(text, font);
                     var x = (defaultBitmap.Width - textSize.Width) / 2;
                     var y = (defaultBitmap.Height - textSize.Height) / 2;
@@ -282,7 +321,7 @@ namespace RealEstateCRMWinForms.Views
                         MessageBox.Show($"Error loading image: {ex.Message}", "Error", 
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                         _selectedImagePath = null;
-                        SetDefaultPreviewImage();
+                        LoadCurrentImage();
                     }
                 }
             }
@@ -315,38 +354,37 @@ namespace RealEstateCRMWinForms.Views
                 return;
             }
 
-            // Create new property
-            var newProperty = new Property
-            {
-                Title = txtTitle.Text.Trim(),
-                Address = txtAddress.Text.Trim(),
-                Price = numPrice.Value,
-                Bedrooms = (int)numBedrooms.Value,
-                Bathrooms = (int)numBathrooms.Value,
-                SquareMeters = (int)numSquareMeters.Value,
-                Status = cmbStatus.SelectedItem?.ToString() ?? "Sell",
-                CreatedAt = DateTime.Now,
-                IsActive = true
-            };
+            // Update property object
+            _property.Title = txtTitle.Text.Trim();
+            _property.Address = txtAddress.Text.Trim();
+            _property.Price = numPrice.Value;
+            _property.Bedrooms = (int)numBedrooms.Value;
+            _property.Bathrooms = (int)numBathrooms.Value;
+            _property.SquareMeters = (int)numSquareMeters.Value;
+            _property.Status = cmbStatus.SelectedItem?.ToString() ?? "Sell";
 
-            // Save to database first to get the ID
-            if (_viewModel.AddProperty(newProperty))
+            // Save new image if selected
+            if (!string.IsNullOrEmpty(_selectedImagePath))
             {
-                // Save image if selected
-                if (!string.IsNullOrEmpty(_selectedImagePath))
+                string savedImageName = PropertyCard.SavePropertyImage(_selectedImagePath, _property.Id);
+                if (!string.IsNullOrEmpty(savedImageName))
                 {
-                    string savedImageName = PropertyCard.SavePropertyImage(_selectedImagePath, newProperty.Id);
-                    if (!string.IsNullOrEmpty(savedImageName))
-                    {
-                        newProperty.ImagePath = savedImageName;
-                        _viewModel.UpdateProperty(newProperty); // Update with image path
-                    }
+                    _property.ImagePath = savedImageName;
                 }
+            }
 
-                MessageBox.Show("Property added successfully!", "Success", 
+            // Update in database
+            if (_viewModel.UpdateProperty(_property))
+            {
+                MessageBox.Show("Property updated successfully!", "Success", 
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 DialogResult = DialogResult.OK;
                 Close();
+            }
+            else
+            {
+                MessageBox.Show("Failed to update property. Please try again.", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
