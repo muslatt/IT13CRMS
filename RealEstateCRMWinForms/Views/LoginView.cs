@@ -36,8 +36,32 @@ namespace RealEstateCRMWinForms.Views
             }
             else
             {
-                MessageBox.Show("Invalid email or password.", "Login Failed",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Check if user exists but email is not verified
+                var unverifiedUser = _authService.CheckUnverifiedUser(txtEmail.Text.Trim());
+                if (unverifiedUser)
+                {
+                    var result = MessageBox.Show("Your email address has not been verified yet. Would you like to resend the verification code?", 
+                        "Email Not Verified", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    
+                    if (result == DialogResult.Yes)
+                    {
+                        if (_authService.ResendVerificationCode(txtEmail.Text.Trim()))
+                        {
+                            MessageBox.Show("Verification code sent! Please check your email.", "Code Sent",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Failed to send verification code. Please try again.", "Send Failed",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Invalid email or password.", "Login Failed",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
 
             btnLogin.Enabled = true;

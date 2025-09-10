@@ -35,7 +35,16 @@ namespace RealEstateCRMWinForms.Views
             var registerView = new RegisterView(_authService);
             registerView.RegisterSuccess += OnRegisterSuccess;
             registerView.BackToLoginRequested += OnBackToLoginRequested;
+            registerView.EmailVerificationRequired += OnEmailVerificationRequired;
             SwitchView(registerView);
+        }
+
+        private void ShowEmailVerificationView(string email)
+        {
+            var verificationView = new EmailVerificationView(_authService, email);
+            verificationView.VerificationSuccess += OnVerificationSuccess;
+            verificationView.BackToLoginRequested += OnBackToLoginRequested;
+            SwitchView(verificationView);
         }
 
         private void ShowMainView(User? user)
@@ -81,6 +90,18 @@ namespace RealEstateCRMWinForms.Views
         private void OnRegisterSuccess(object? sender, EventArgs e)
         {
             MessageBox.Show("Registration successful. Please sign in.", "Success",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ShowLoginView();
+        }
+
+        private void OnEmailVerificationRequired(object? sender, string email)
+        {
+            ShowEmailVerificationView(email);
+        }
+
+        private void OnVerificationSuccess(object? sender, EventArgs e)
+        {
+            MessageBox.Show("Email verified successfully! You can now sign in.", "Success",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             ShowLoginView();
         }

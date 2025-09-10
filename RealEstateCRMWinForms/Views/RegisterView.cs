@@ -9,6 +9,7 @@ namespace RealEstateCRMWinForms.Views
         private readonly AuthenticationService _authService;
         public event EventHandler? RegisterSuccess;
         public event EventHandler? BackToLoginRequested;
+        public event EventHandler<string>? EmailVerificationRequired;
 
         public RegisterView(AuthenticationService authService)
         {
@@ -46,9 +47,9 @@ namespace RealEstateCRMWinForms.Views
 
             if (success)
             {
-                MessageBox.Show("Account created successfully! You can now sign in.", "Success",
+                MessageBox.Show("Account created successfully! Please check your email for a verification code.", "Success",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
-                RegisterSuccess?.Invoke(this, EventArgs.Empty);
+                EmailVerificationRequired?.Invoke(this, txtRegEmail.Text.Trim());
             }
             else
             {
