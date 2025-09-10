@@ -265,7 +265,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 var btnDeleteBoard = new Button
                 {
-                    Text = "×",
+                    Text = "ï¿½",
                     Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                     BackColor = Color.FromArgb(220, 53, 69),
                     ForeColor = Color.White,
@@ -492,7 +492,7 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private void BtnAddDeal_Click(object? sender, EventArgs e)
+        private async void BtnAddDeal_Click(object? sender, EventArgs e)
         {
             try
             {
@@ -502,19 +502,38 @@ namespace RealEstateCRMWinForms.Views
                 var addDealForm = new AddDealForm(boardNames, defaultBoard?.Name);
                 if (addDealForm.ShowDialog() == DialogResult.OK && addDealForm.CreatedDeal != null)
                 {
-                    if (_dealViewModel.AddDeal(addDealForm.CreatedDeal))
+                    // Disable the button to prevent multiple clicks
+                    if (sender is Button btn)
                     {
-                        LoadDeals();
-                        
-                        MessageBox.Show($"Deal '{addDealForm.CreatedDeal.Title}' has been successfully created!", 
-                            "Deal Added", 
-                            MessageBoxButtons.OK, 
-                            MessageBoxIcon.Information);
+                        btn.Enabled = false;
+                        btn.Text = "Creating...";
                     }
-                    else
+
+                    try
                     {
-                        MessageBox.Show("Failed to add deal. Please check the console for error details.", "Error", 
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        if (await _dealViewModel.AddDealAsync(addDealForm.CreatedDeal))
+                        {
+                            LoadDeals();
+                            
+                            MessageBox.Show($"Deal '{addDealForm.CreatedDeal.Title}' has been successfully created and the contact has been notified!", 
+                                "Deal Added", 
+                                MessageBoxButtons.OK, 
+                                MessageBoxIcon.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Failed to add deal. Please check the console for error details.", "Error", 
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    finally
+                    {
+                        // Re-enable the button
+                        if (sender is Button btnSender)
+                        {
+                            btnSender.Enabled = true;
+                            btnSender.Text = "+ Add Deal";
+                        }
                     }
                 }
             }
@@ -522,6 +541,13 @@ namespace RealEstateCRMWinForms.Views
             {
                 MessageBox.Show($"Error adding deal: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                
+                // Re-enable the button in case of error
+                if (sender is Button btnSender)
+                {
+                    btnSender.Enabled = true;
+                    btnSender.Text = "+ Add Deal";
+                }
             }
         }
 
@@ -553,7 +579,7 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private void StatusPanel_DragDrop(object? sender, DragEventArgs e)
+        private async void StatusPanel_DragDrop(object? sender, DragEventArgs e)
         {
             var targetPanel = sender as FlowLayoutPanel;
             var card = e.Data.GetData(typeof(DealCard)) as DealCard;
@@ -565,25 +591,41 @@ namespace RealEstateCRMWinForms.Views
                     return;
                 }
 
-                string newStatus = targetPanel.Tag.ToString();
+                string newStatus = targetPanel.Tag?.ToString() ?? "New";
                 var dealToUpdate = card.GetDeal();
                 string oldStatus = dealToUpdate.Status;
                 
-                dealToUpdate.Status = newStatus;
-                dealToUpdate.UpdatedAt = DateTime.UtcNow;
-                
                 Console.WriteLine($"Moving deal '{dealToUpdate.Title}' from '{oldStatus}' to '{newStatus}'");
                 
-                if (_dealViewModel.UpdateDeal(dealToUpdate))
+                // Temporarily disable drag and drop to prevent multiple operations
+                foreach (var panel in _statusPanels.Values)
                 {
-                    targetPanel.Controls.Add(card);
-                    UpdateColumnCounts();
-                    card.SetDeal(dealToUpdate);
-                    Console.WriteLine($"Successfully moved deal to '{newStatus}' board");
+                    panel.AllowDrop = false;
                 }
-                else
+
+                try
                 {
-                    Console.WriteLine($"Failed to update deal status in database");
+                    if (await _dealViewModel.MoveDealToStatusAsync(dealToUpdate, newStatus))
+                    {
+                        targetPanel.Controls.Add(card);
+                        UpdateColumnCounts();
+                        card.SetDeal(dealToUpdate);
+                        Console.WriteLine($"Successfully moved deal to '{newStatus}' board and sent notification");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failed to update deal status in database");
+                        MessageBox.Show("Failed to move deal. Please try again.", "Error", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                finally
+                {
+                    // Re-enable drag and drop
+                    foreach (var panel in _statusPanels.Values)
+                    {
+                        panel.AllowDrop = true;
+                    }
                 }
             }
         }

@@ -376,24 +376,39 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private void DataGridViewLeads_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+        private async void DataGridViewLeads_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
 
             if (dataGridViewLeads.Columns[e.ColumnIndex].Name == "CreateContact" && dataGridViewLeads.Rows[e.RowIndex].DataBoundItem is Lead lead)
             {
-                var result = MessageBox.Show($"This will move '{lead.FullName}' to Contacts and remove them from Leads. Continue?", "Move to Contacts",
+                var result = MessageBox.Show($"This will move '{lead.FullName}' to Contacts and remove them from Leads.\n\nThey will receive a welcome email notification. Continue?", "Move to Contacts",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (result == DialogResult.Yes)
                 {
-                    // This should ideally be a single transaction in the ViewModel
-                    // For now, we just delete the lead.
-                    if (_viewModel.DeleteLead(lead))
+                    // Disable the button to prevent multiple clicks
+                    if (sender is DataGridView dgv)
                     {
-                        RefreshLeadsView();
-                        MessageBox.Show($"'{lead.FullName}' has been moved to contacts.", "Success", 
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        dgv.Enabled = false;
+                    }
+
+                    try
+                    {
+                        if (await _viewModel.MoveLeadToContactAsync(lead))
+                        {
+                            RefreshLeadsView();
+                            MessageBox.Show($"'{lead.FullName}' has been successfully moved to contacts and notified via email.", "Success", 
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                    }
+                    finally
+                    {
+                        // Re-enable the grid
+                        if (sender is DataGridView gridView)
+                        {
+                            gridView.Enabled = true;
+                        }
                     }
                 }
             }

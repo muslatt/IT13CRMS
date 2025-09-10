@@ -103,7 +103,7 @@ namespace RealEstateCRMWinForms.ViewModels
             OnPropertyChanged(nameof(Contacts));
         }
 
-        public bool AddDeal(Deal deal)
+        public async Task<bool> AddDealAsync(Deal deal)
         {
             try
             {
@@ -112,6 +112,8 @@ namespace RealEstateCRMWinForms.ViewModels
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
                     // Ensure foreign key relationships are properly handled
+                    Contact? contactForNotification = null;
+                    
                     if (deal.PropertyId.HasValue)
                     {
                         var existingProperty = dbContext.Properties.Find(deal.PropertyId.Value);
@@ -132,6 +134,7 @@ namespace RealEstateCRMWinForms.ViewModels
                         if (existingContact != null)
                         {
                             deal.Contact = existingContact;
+                            contactForNotification = existingContact;
                         }
                         else
                         {
@@ -162,7 +165,24 @@ namespace RealEstateCRMWinForms.ViewModels
                     
                     // Add to local collection with the generated ID
                     deal.Id = dealToAdd.Id;
+                    deal.Contact = contactForNotification; // Set for notification
                     Deals.Add(deal);
+
+                    // Send email notification
+                    if (contactForNotification != null)
+                    {
+                        try
+                        {
+                            var emailService = new RealEstateCRMWinForms.Services.EmailNotificationService();
+                            await emailService.SendNewDealNotificationAsync(deal);
+                        }
+                        catch (Exception emailEx)
+                        {
+                            Console.WriteLine($"Failed to send new deal email notification: {emailEx.Message}");
+                            // Don't fail the entire operation if email fails
+                        }
+                    }
+                    
                     return true;
                 }
             }
@@ -178,16 +198,29 @@ namespace RealEstateCRMWinForms.ViewModels
             }
         }
 
-        public bool UpdateDeal(Deal deal)
+        public bool AddDeal(Deal deal)
+        {
+            // Synchronous wrapper for backward compatibility
+            return AddDealAsync(deal).GetAwaiter().GetResult();
+        }
+
+        public async Task<bool> UpdateDealAsync(Deal deal, string? oldStatus = null)
         {
             try
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
-                    // Find the existing deal in the database
-                    var existingDeal = dbContext.Deals.Find(deal.Id);
+                    // Find the existing deal in the database with contact info
+                    var existingDeal = dbContext.Deals
+                        .Include(d => d.Contact)
+                        .Include(d => d.Property)
+                        .FirstOrDefault(d => d.Id == deal.Id);
+                        
                     if (existingDeal != null)
                     {
+                        // Store old status for notification
+                        string previousStatus = oldStatus ?? existingDeal.Status;
+                        
                         // Update the properties
                         existingDeal.Title = deal.Title;
                         existingDeal.Description = deal.Description;
@@ -202,6 +235,24 @@ namespace RealEstateCRMWinForms.ViewModels
                         dbContext.SaveChanges();
                         
                         Console.WriteLine($"Successfully updated deal ID: {deal.Id}, Status: {deal.Status}");
+
+                        // Send email notification if status changed and contact exists
+                        if (previousStatus != deal.Status && existingDeal.Contact != null)
+                        {
+                            try
+                            {
+                                var emailService = new RealEstateCRMWinForms.Services.EmailNotificationService();
+                                deal.Contact = existingDeal.Contact; // Ensure contact is set for notification
+                                deal.Property = existingDeal.Property; // Ensure property is set for notification
+                                await emailService.SendDealStatusUpdateNotificationAsync(deal, previousStatus, deal.Status);
+                            }
+                            catch (Exception emailEx)
+                            {
+                                Console.WriteLine($"Failed to send deal status update email notification: {emailEx.Message}");
+                                // Don't fail the entire operation if email fails
+                            }
+                        }
+                        
                         return true;
                     }
                     else
@@ -217,6 +268,12 @@ namespace RealEstateCRMWinForms.ViewModels
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return false;
             }
+        }
+
+        public bool UpdateDeal(Deal deal)
+        {
+            // Synchronous wrapper for backward compatibility
+            return UpdateDealAsync(deal).GetAwaiter().GetResult();
         }
 
         public bool DeleteDeal(Deal deal)
@@ -262,14 +319,15 @@ namespace RealEstateCRMWinForms.ViewModels
         }
 
         // Method to move deal to different status/board
-        public bool MoveDealToStatus(Deal deal, string newStatus)
+        public async Task<bool> MoveDealToStatusAsync(Deal deal, string newStatus)
         {
             try
             {
+                string oldStatus = deal.Status;
                 deal.Status = newStatus;
                 deal.UpdatedAt = DateTime.UtcNow;
                 
-                bool result = UpdateDeal(deal);
+                bool result = await UpdateDealAsync(deal, oldStatus);
                 if (result)
                 {
                     Console.WriteLine($"Successfully moved deal '{deal.Title}' to status '{newStatus}'");
@@ -281,6 +339,12 @@ namespace RealEstateCRMWinForms.ViewModels
                 Console.WriteLine($"Error moving deal to status: {ex.Message}");
                 return false;
             }
+        }
+
+        public bool MoveDealToStatus(Deal deal, string newStatus)
+        {
+            // Synchronous wrapper for backward compatibility
+            return MoveDealToStatusAsync(deal, newStatus).GetAwaiter().GetResult();
         }
 
         // Utility method to clean up any sample/test data

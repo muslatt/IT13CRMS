@@ -116,6 +116,60 @@ namespace RealEstateCRMWinForms.ViewModels
             }
         }
 
+        public async Task<bool> MoveLeadToContactAsync(Lead lead)
+        {
+            try
+            {
+                using (var dbContext = DbContextHelper.CreateDbContext())
+                {
+                    // Create a new contact from the lead
+                    var contact = new Contact
+                    {
+                        FullName = lead.FullName,
+                        Email = lead.Email,
+                        Phone = lead.Phone,
+                        Type = lead.Type,
+                        AvatarPath = lead.AvatarPath,
+                        CreatedAt = DateTime.Now,
+                        IsActive = true
+                    };
+
+                    // Add the contact to the database
+                    dbContext.Contacts.Add(contact);
+                    
+                    // Mark the lead as inactive (soft delete)
+                    lead.IsActive = false;
+                    dbContext.Leads.Update(lead);
+                    
+                    // Save changes
+                    dbContext.SaveChanges();
+                    
+                    // Remove from local collection
+                    Leads.Remove(lead);
+
+                    // Send notification email
+                    try
+                    {
+                        var emailService = new RealEstateCRMWinForms.Services.EmailNotificationService();
+                        await emailService.SendLeadToContactNotificationAsync(contact);
+                    }
+                    catch (Exception emailEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Failed to send email notification: {emailEx.Message}");
+                        // Don't fail the entire operation if email fails
+                    }
+                    
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error moving lead to contact: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
         private void LoadSampleData()
         {
             // Sample data for initial display
