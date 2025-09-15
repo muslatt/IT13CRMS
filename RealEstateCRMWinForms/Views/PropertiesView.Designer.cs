@@ -79,9 +79,9 @@
             rightControlsPanel.Controls.Add(btnFilter);
             rightControlsPanel.Controls.Add(sortComboBox);
             rightControlsPanel.Controls.Add(btnAddProperty);
-            rightControlsPanel.Location = new Point(580, 12);
-            rightControlsPanel.Name = "rightControlsPanel";
-            rightControlsPanel.Size = new Size(340, 35);
+            rightControlsPanel.Location = new Point(520, 12);
+            // Slightly larger panel to accommodate wider Add button
+            rightControlsPanel.Size = new Size(420, 40);
             rightControlsPanel.TabIndex = 1;
             // 
             // btnFilter
@@ -90,11 +90,12 @@
             btnFilter.FlatAppearance.BorderColor = Color.FromArgb(206, 212, 218);
             btnFilter.FlatAppearance.BorderSize = 1;
             btnFilter.FlatStyle = FlatStyle.Flat;
-            btnFilter.Font = new Font("Segoe UI", 9F);
+            btnFilter.Font = new Font("Segoe UI", 12F);
             btnFilter.ForeColor = Color.FromArgb(108, 117, 125);
             btnFilter.Location = new Point(0, 0);
             btnFilter.Name = "btnFilter";
-            btnFilter.Size = new Size(80, 35);
+            // Make button wider so its content isn't clipped
+            btnFilter.Size = new Size(100, 35);
             btnFilter.TabIndex = 0;
             btnFilter.Text = "📋 Filter";
             btnFilter.UseVisualStyleBackColor = false;
@@ -102,12 +103,13 @@
             // sortComboBox
             // 
             sortComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            sortComboBox.Font = new Font("Segoe UI", 9F);
+            sortComboBox.Font = new Font("Segoe UI", 12F);
             sortComboBox.FormattingEnabled = true;
             sortComboBox.Items.AddRange(new object[] { "Newest to Oldest", "Price: Low to High", "Price: High to Low" });
-            sortComboBox.Location = new Point(90, 0);
+            // Shift to the right of the filter button and give more height for 12pt font
+            sortComboBox.Location = new Point(110, 0);
             sortComboBox.Name = "sortComboBox";
-            sortComboBox.Size = new Size(140, 23);
+            sortComboBox.Size = new Size(160, 35);
             sortComboBox.TabIndex = 1;
             // 
             // btnAddProperty
@@ -115,11 +117,12 @@
             btnAddProperty.BackColor = Color.FromArgb(0, 123, 255);
             btnAddProperty.FlatAppearance.BorderSize = 0;
             btnAddProperty.FlatStyle = FlatStyle.Flat;
-            btnAddProperty.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnAddProperty.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             btnAddProperty.ForeColor = Color.White;
-            btnAddProperty.Location = new Point(240, 0);
+            // Position to the right of the combo box and enlarge so full text is visible
+            btnAddProperty.Location = new Point(280, 0);
             btnAddProperty.Name = "btnAddProperty";
-            btnAddProperty.Size = new Size(100, 35);
+            btnAddProperty.Size = new Size(130, 35);
             btnAddProperty.TabIndex = 2;
             btnAddProperty.Text = "+ Add Property";
             btnAddProperty.UseVisualStyleBackColor = false;

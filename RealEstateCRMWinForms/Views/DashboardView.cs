@@ -10,6 +10,7 @@ namespace RealEstateCRMWinForms.Views
         private readonly PropertyViewModel _propertyViewModel;
         private readonly LeadViewModel _leadViewModel;
         private readonly ContactViewModel _contactViewModel;
+        private readonly DealViewModel _dealViewModel;
 
         public DashboardView()
         {
@@ -17,7 +18,8 @@ namespace RealEstateCRMWinForms.Views
             _propertyViewModel = new PropertyViewModel();
             _leadViewModel = new LeadViewModel();
             _contactViewModel = new ContactViewModel();
-            
+            _dealViewModel = new DealViewModel();
+
             LoadDashboardData();
         }
 
@@ -29,25 +31,24 @@ namespace RealEstateCRMWinForms.Views
                 var properties = _propertyViewModel.Properties;
                 var leads = _leadViewModel.Leads;
                 var contacts = _contactViewModel.Contacts;
+                var deals = _dealViewModel.Deals;
 
                 // Update Properties Card
                 lblPropertiesValue.Text = properties.Count.ToString();
                 var activeProperties = properties.Count(p => p.IsActive);
                 lblPropertiesDesc.Text = $"{activeProperties} Active Listings";
 
-                // Update Deals Card (count properties that are in deal stages)
-                var dealsCount = properties.Count(p => p.Status == "Offer Made" || 
-                                                      p.Status == "Negotiation" || 
-                                                      p.Status == "Contract Draft");
-                lblDealsValue.Text = dealsCount.ToString();
+                // Update Deals Card (use actual Deal data)
+                lblDealsValue.Text = deals.Count.ToString();
                 
-                var closedDeals = properties.Count(p => p.Status == "Closed");
-                var inProgressDeals = dealsCount - closedDeals;
+                // Count deals by status - assuming "Closed" is one status and others are in progress
+                var closedDeals = deals.Count(d => d.Status == "Closed" || d.Status == "Contract Signed");
+                var inProgressDeals = deals.Count(d => d.Status != "Closed" && d.Status != "Contract Signed" && d.IsActive);
                 lblDealsDesc.Text = $"{closedDeals} Closed | {inProgressDeals} In Progress";
 
                 // Update Contacts Card
                 lblContactsValue.Text = contacts.Count.ToString();
-                
+
                 // For demonstration, assuming all contacts are agents for now
                 // You can modify this logic based on your Contact model structure
                 var agents = contacts.Count;
@@ -63,7 +64,7 @@ namespace RealEstateCRMWinForms.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading dashboard data: {ex.Message}", "Error", 
+                MessageBox.Show($"Error loading dashboard data: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -95,7 +96,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 // Find the MainView form that contains this UserControl
                 var mainForm = this.FindForm();
-                
+
                 // Check if the form is MainView by checking its type name
                 if (mainForm != null && mainForm.GetType().Name == "MainView")
                 {
@@ -125,12 +126,12 @@ namespace RealEstateCRMWinForms.Views
                 }
 
                 // If we can't find MainView, just show a message
-                MessageBox.Show($"Navigating to {sectionName} section...", "Navigation", 
+                MessageBox.Show($"Navigating to {sectionName} section...", "Navigation",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Navigation error: {ex.Message}", "Error", 
+                MessageBox.Show($"Navigation error: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -139,6 +140,11 @@ namespace RealEstateCRMWinForms.Views
         public void RefreshDashboard()
         {
             LoadDashboardData();
+        }
+
+        private void lblContactsIcon_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

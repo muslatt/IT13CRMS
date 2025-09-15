@@ -32,7 +32,7 @@ namespace RealEstateCRMWinForms.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error initializing form: {ex.Message}", "Error", 
+                MessageBox.Show($"Error initializing form: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -40,27 +40,30 @@ namespace RealEstateCRMWinForms.Views
         private void InitializeComponent()
         {
             Text = "Add New Deal";
-            Size = new Size(450, 200);
+            Size = new Size(450, 220);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
             BackColor = Color.White;
 
+            // Use 12pt font for the form and controls
+            Font = new Font("Segoe UI", 12F);
+
             // Property
             var lblProperty = new Label
             {
                 Text = "Property:",
                 Location = new Point(20, 30),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 10F)
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             cmbProperty = new ComboBox
             {
                 Location = new Point(130, 30),
-                Size = new Size(280, 23),
-                Font = new Font("Segoe UI", 10F),
+                Size = new Size(280, 28),
+                Font = new Font("Segoe UI", 12F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
 
@@ -69,15 +72,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Contact:",
                 Location = new Point(20, 70),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 10F)
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             cmbContact = new ComboBox
             {
                 Location = new Point(130, 70),
-                Size = new Size(280, 23),
-                Font = new Font("Segoe UI", 10F),
+                Size = new Size(280, 28),
+                Font = new Font("Segoe UI", 12F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
 
@@ -85,9 +88,8 @@ namespace RealEstateCRMWinForms.Views
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(250, 120),
-                Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F),
+                Size = new Size(110, 35),
+                Font = new Font("Segoe UI", 12F),
                 DialogResult = DialogResult.Cancel,
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
@@ -98,9 +100,8 @@ namespace RealEstateCRMWinForms.Views
             btnSave = new Button
             {
                 Text = "Create Deal",
-                Location = new Point(340, 120),
-                Size = new Size(90, 35),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Size = new Size(120, 35),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
@@ -115,6 +116,21 @@ namespace RealEstateCRMWinForms.Views
                 btnCancel, btnSave
             });
 
+            // Align buttons below the Contact dropdown
+            int dropdownRight = cmbProperty.Location.X + cmbProperty.Width;
+            int spacing = 10; // horizontal spacing between buttons
+            int gapAboveButtons = 40; // vertical gap from Contact dropdown
+            int buttonsY = cmbContact.Location.Y + cmbContact.Height + gapAboveButtons;
+
+            // Place Save button so its right edge aligns with dropdown right edge
+            btnSave.Location = new Point(dropdownRight - btnSave.Width, buttonsY);
+            // Place Cancel to the left of Save
+            btnCancel.Location = new Point(btnSave.Location.X - btnCancel.Width - spacing, buttonsY);
+
+            // Optional: anchor buttons to bottom-right (remove if you want fixed under dropdown only)
+            btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
             CancelButton = btnCancel;
             AcceptButton = btnSave;
         }
@@ -126,7 +142,7 @@ namespace RealEstateCRMWinForms.Views
                 // Load properties
                 cmbProperty.Items.Clear();
                 cmbProperty.Items.Add("(No Property)");
-                
+
                 if (_viewModel.Properties != null)
                 {
                     foreach (var property in _viewModel.Properties)
@@ -139,7 +155,7 @@ namespace RealEstateCRMWinForms.Views
                 // Load contacts
                 cmbContact.Items.Clear();
                 cmbContact.Items.Add("(No Contact)");
-                
+
                 if (_viewModel.Contacts != null)
                 {
                     foreach (var contact in _viewModel.Contacts)
@@ -151,7 +167,7 @@ namespace RealEstateCRMWinForms.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading data: {ex.Message}", "Error", 
+                MessageBox.Show($"Error loading data: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -177,7 +193,7 @@ namespace RealEstateCRMWinForms.Views
                 // Validation - at least one must be selected
                 if (selectedProperty == null && selectedContact == null)
                 {
-                    MessageBox.Show("Please select at least a Property or Contact to create a deal.", 
+                    MessageBox.Show("Please select at least a Property or Contact to create a deal.",
                         "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -226,7 +242,7 @@ namespace RealEstateCRMWinForms.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error creating deal: {ex.Message}", "Error", 
+                MessageBox.Show($"Error creating deal: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

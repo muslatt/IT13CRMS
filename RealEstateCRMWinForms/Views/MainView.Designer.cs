@@ -1,5 +1,4 @@
-﻿
-namespace RealEstateCRMWinForms.Views
+﻿namespace RealEstateCRMWinForms.Views
 {
     partial class MainView
     {
@@ -18,6 +17,7 @@ namespace RealEstateCRMWinForms.Views
         {
             components = new System.ComponentModel.Container();
             panelSidebar = new Panel();
+            pbLogo = new PictureBox();
             btnHelp = new Button();
             btnSettings = new Button();
             navSeparator = new Panel();
@@ -27,20 +27,21 @@ namespace RealEstateCRMWinForms.Views
             btnLeads = new Button();
             btnDashboard = new Button();
             panelContent = new Panel();
-            contentLeftBorder = new Panel();
             dataGridView1 = new DataGridView();
             btnLoadUsers = new Button();
-            headerPanel = new Panel();
-            headerBottomBorder = new Panel();
             lblSectionTitle = new Label();
+            headerPanel = new Panel();
             panelUser = new Panel();
             btnUserMenu = new Button();
             lblUserRole = new Label();
             lblUserName = new Label();
             pbAvatar = new PictureBox();
+            headerBottomBorder = new Panel();
+            contentLeftBorder = new Panel();
             contextMenuStripUser = new ContextMenuStrip(components);
             logoutToolStripMenuItem = new ToolStripMenuItem();
             panelSidebar.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pbLogo).BeginInit();
             panelContent.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             headerPanel.SuspendLayout();
@@ -52,6 +53,7 @@ namespace RealEstateCRMWinForms.Views
             // panelSidebar
             // 
             panelSidebar.BackColor = Color.White;
+            panelSidebar.Controls.Add(pbLogo);
             panelSidebar.Controls.Add(btnHelp);
             panelSidebar.Controls.Add(btnSettings);
             panelSidebar.Controls.Add(navSeparator);
@@ -66,6 +68,16 @@ namespace RealEstateCRMWinForms.Views
             panelSidebar.Padding = new Padding(12);
             panelSidebar.Size = new Size(220, 800);
             panelSidebar.TabIndex = 0;
+            panelSidebar.Paint += panelSidebar_Paint_2;
+            // 
+            // pbLogo
+            // 
+            pbLogo.Location = new Point(12, 12);
+            pbLogo.Name = "pbLogo";
+            pbLogo.Size = new Size(196, 80);
+            pbLogo.SizeMode = PictureBoxSizeMode.Zoom;
+            pbLogo.TabIndex = 8;
+            pbLogo.TabStop = false;
             // 
             // btnHelp
             // 
@@ -94,7 +106,8 @@ namespace RealEstateCRMWinForms.Views
             // navSeparator
             // 
             navSeparator.BackColor = Color.Black;
-            navSeparator.Location = new Point(12, 192);
+            navSeparator.Font = new Font("Segoe UI", 12F);
+            navSeparator.Location = new Point(12, 280);
             navSeparator.Name = "navSeparator";
             navSeparator.Size = new Size(196, 1);
             navSeparator.TabIndex = 5;
@@ -103,7 +116,8 @@ namespace RealEstateCRMWinForms.Views
             // 
             btnProperties.FlatAppearance.BorderSize = 0;
             btnProperties.FlatStyle = FlatStyle.Flat;
-            btnProperties.Location = new Point(12, 156);
+            btnProperties.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnProperties.Location = new Point(12, 136);
             btnProperties.Name = "btnProperties";
             btnProperties.Size = new Size(196, 30);
             btnProperties.TabIndex = 4;
@@ -116,7 +130,8 @@ namespace RealEstateCRMWinForms.Views
             // 
             btnDeals.FlatAppearance.BorderSize = 0;
             btnDeals.FlatStyle = FlatStyle.Flat;
-            btnDeals.Location = new Point(12, 120);
+            btnDeals.Font = new Font("Segoe UI", 12F);
+            btnDeals.Location = new Point(12, 244);
             btnDeals.Name = "btnDeals";
             btnDeals.Size = new Size(196, 30);
             btnDeals.TabIndex = 3;
@@ -129,7 +144,8 @@ namespace RealEstateCRMWinForms.Views
             // 
             btnContacts.FlatAppearance.BorderSize = 0;
             btnContacts.FlatStyle = FlatStyle.Flat;
-            btnContacts.Location = new Point(12, 84);
+            btnContacts.Font = new Font("Segoe UI", 12F);
+            btnContacts.Location = new Point(12, 172);
             btnContacts.Name = "btnContacts";
             btnContacts.Size = new Size(196, 30);
             btnContacts.TabIndex = 2;
@@ -142,7 +158,8 @@ namespace RealEstateCRMWinForms.Views
             // 
             btnLeads.FlatAppearance.BorderSize = 0;
             btnLeads.FlatStyle = FlatStyle.Flat;
-            btnLeads.Location = new Point(12, 48);
+            btnLeads.Font = new Font("Segoe UI", 12F);
+            btnLeads.Location = new Point(12, 208);
             btnLeads.Name = "btnLeads";
             btnLeads.Size = new Size(196, 30);
             btnLeads.TabIndex = 1;
@@ -155,8 +172,8 @@ namespace RealEstateCRMWinForms.Views
             // 
             btnDashboard.FlatAppearance.BorderSize = 0;
             btnDashboard.FlatStyle = FlatStyle.Flat;
-            btnDashboard.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            btnDashboard.Location = new Point(12, 12);
+            btnDashboard.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            btnDashboard.Location = new Point(12, 100);
             btnDashboard.Name = "btnDashboard";
             btnDashboard.Size = new Size(196, 30);
             btnDashboard.TabIndex = 0;
@@ -168,7 +185,6 @@ namespace RealEstateCRMWinForms.Views
             // panelContent
             // 
             panelContent.BackColor = Color.FromArgb(248, 249, 250);
-            // place a thin rule at the left edge of the content area so it's flush with the sidebar
             panelContent.Controls.Add(dataGridView1);
             panelContent.Controls.Add(btnLoadUsers);
             panelContent.Controls.Add(lblSectionTitle);
@@ -177,19 +193,8 @@ namespace RealEstateCRMWinForms.Views
             panelContent.Dock = DockStyle.Fill;
             panelContent.Location = new Point(220, 0);
             panelContent.Name = "panelContent";
-            // no outer padding so header sits flush to the sidebar seam
-            panelContent.Padding = new Padding(0);
             panelContent.Size = new Size(980, 800);
             panelContent.TabIndex = 1;
-            // 
-            // contentLeftBorder
-            // 
-            contentLeftBorder.BackColor = Color.Black;
-            contentLeftBorder.Dock = DockStyle.Left;
-            contentLeftBorder.Location = new Point(0, 0);
-            contentLeftBorder.Name = "contentLeftBorder";
-            contentLeftBorder.Size = new Size(1, 800);
-            contentLeftBorder.TabIndex = 9;
             // 
             // dataGridView1
             // 
@@ -214,40 +219,29 @@ namespace RealEstateCRMWinForms.Views
             btnLoadUsers.UseVisualStyleBackColor = false;
             btnLoadUsers.Click += button1_Click;
             // 
+            // lblSectionTitle
+            // 
+            lblSectionTitle.AutoSize = true;
+            lblSectionTitle.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            lblSectionTitle.ForeColor = Color.FromArgb(33, 37, 41);
+            lblSectionTitle.Location = new Point(20, 68);
+            lblSectionTitle.Name = "lblSectionTitle";
+            lblSectionTitle.Size = new Size(133, 32);
+            lblSectionTitle.TabIndex = 0;
+            lblSectionTitle.Text = "Properties";
+            // 
             // headerPanel
             // 
             headerPanel.BackColor = Color.White;
             headerPanel.Controls.Add(panelUser);
             headerPanel.Controls.Add(headerBottomBorder);
             headerPanel.Dock = DockStyle.Top;
-            headerPanel.Location = new Point(0, 0);
+            headerPanel.Location = new Point(1, 0);
             headerPanel.Name = "headerPanel";
-            // keep horizontal padding for internal header content
             headerPanel.Padding = new Padding(0, 0, 20, 0);
-            headerPanel.Size = new Size(980, 58);
+            headerPanel.Size = new Size(979, 58);
             headerPanel.TabIndex = 0;
             headerPanel.Paint += headerPanel_Paint;
-            // 
-            // headerBottomBorder
-            // 
-            headerBottomBorder.BackColor = Color.Black;
-            headerBottomBorder.Dock = DockStyle.Bottom;
-            headerBottomBorder.Location = new Point(0, 57);
-            headerBottomBorder.Name = "headerBottomBorder";
-            headerBottomBorder.Size = new Size(980, 1);
-            headerBottomBorder.TabIndex = 3;
-            // 
-            // lblSectionTitle
-            // 
-            lblSectionTitle.AutoSize = true;
-            lblSectionTitle.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
-            lblSectionTitle.ForeColor = Color.FromArgb(33, 37, 41);
-            // page title under the top bar (above grid)
-            lblSectionTitle.Location = new Point(20, 68);
-            lblSectionTitle.Name = "lblSectionTitle";
-            lblSectionTitle.Size = new Size(198, 32);
-            lblSectionTitle.TabIndex = 0;
-            lblSectionTitle.Text = "Properties";
             // 
             // panelUser
             // 
@@ -257,7 +251,7 @@ namespace RealEstateCRMWinForms.Views
             panelUser.Controls.Add(lblUserRole);
             panelUser.Controls.Add(lblUserName);
             panelUser.Controls.Add(pbAvatar);
-            panelUser.Location = new Point(720, 6);
+            panelUser.Location = new Point(719, 6);
             panelUser.Name = "panelUser";
             panelUser.Size = new Size(224, 48);
             panelUser.TabIndex = 2;
@@ -309,6 +303,24 @@ namespace RealEstateCRMWinForms.Views
             pbAvatar.TabStop = false;
             pbAvatar.Click += pbAvatar_Click;
             // 
+            // headerBottomBorder
+            // 
+            headerBottomBorder.BackColor = Color.Black;
+            headerBottomBorder.Dock = DockStyle.Bottom;
+            headerBottomBorder.Location = new Point(0, 57);
+            headerBottomBorder.Name = "headerBottomBorder";
+            headerBottomBorder.Size = new Size(959, 1);
+            headerBottomBorder.TabIndex = 3;
+            // 
+            // contentLeftBorder
+            // 
+            contentLeftBorder.BackColor = Color.Black;
+            contentLeftBorder.Dock = DockStyle.Left;
+            contentLeftBorder.Location = new Point(0, 0);
+            contentLeftBorder.Name = "contentLeftBorder";
+            contentLeftBorder.Size = new Size(1, 800);
+            contentLeftBorder.TabIndex = 9;
+            // 
             // contextMenuStripUser
             // 
             contextMenuStripUser.Items.AddRange(new ToolStripItem[] { logoutToolStripMenuItem });
@@ -332,11 +344,11 @@ namespace RealEstateCRMWinForms.Views
             Name = "MainView";
             Size = new Size(1200, 800);
             panelSidebar.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)pbLogo).EndInit();
             panelContent.ResumeLayout(false);
             panelContent.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
             headerPanel.ResumeLayout(false);
-            headerPanel.PerformLayout();
             panelUser.ResumeLayout(false);
             panelUser.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pbAvatar).EndInit();
@@ -346,6 +358,7 @@ namespace RealEstateCRMWinForms.Views
         }
 
         private System.Windows.Forms.Panel panelSidebar;
+        private System.Windows.Forms.PictureBox pbLogo;
         private System.Windows.Forms.Button btnHelp;
         private System.Windows.Forms.Button btnSettings;
         private System.Windows.Forms.Panel navSeparator;

@@ -28,20 +28,23 @@ namespace RealEstateCRMWinForms.Views
             MinimizeBox = false;
             BackColor = Color.White;
 
+            // Use 12pt font for the form and controls
+            Font = new Font("Segoe UI", 12F);
+
             // Full Name
             var lblFullName = new Label
             {
                 Text = "Full Name:",
                 Location = new Point(20, 20),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             txtFullName = new TextBox
             {
                 Location = new Point(130, 20),
-                Size = new Size(320, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(320, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             // Email
@@ -49,15 +52,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Email:",
                 Location = new Point(20, 55),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             txtEmail = new TextBox
             {
                 Location = new Point(130, 55),
-                Size = new Size(320, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(320, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             // Phone
@@ -65,15 +68,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Phone:",
                 Location = new Point(20, 90),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             txtPhone = new TextBox
             {
                 Location = new Point(130, 90),
-                Size = new Size(200, 23),
-                Font = new Font("Segoe UI", 9F),
+                Size = new Size(200, 28),
+                Font = new Font("Segoe UI", 12F),
                 PlaceholderText = "+1 231 231 2312"
             };
 
@@ -82,15 +85,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Type:",
                 Location = new Point(20, 125),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             cmbType = new ComboBox
             {
                 Location = new Point(130, 125),
-                Size = new Size(120, 23),
-                Font = new Font("Segoe UI", 9F),
+                Size = new Size(150, 28),
+                Font = new Font("Segoe UI", 12F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cmbType.Items.AddRange(new[] { "Buyer", "Renter", "Owner" });
@@ -100,9 +103,9 @@ namespace RealEstateCRMWinForms.Views
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(280, 270),
-                Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F),
+                Location = new Point(250, 270),
+                Size = new Size(110, 35),
+                Font = new Font("Segoe UI", 12F),
                 DialogResult = DialogResult.Cancel,
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
@@ -114,8 +117,8 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Save Contact",
                 Location = new Point(370, 270),
-                Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Size = new Size(110, 35),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat

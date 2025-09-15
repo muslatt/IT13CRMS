@@ -1,4 +1,4 @@
-namespace RealEstateCRMWinForms.Views
+﻿namespace RealEstateCRMWinForms.Views
 {
     partial class DashboardView
     {
@@ -88,7 +88,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblLastUpdated.ForeColor = System.Drawing.Color.Gray;
             this.lblLastUpdated.Location = new System.Drawing.Point(750, 25);
             this.lblLastUpdated.Name = "lblLastUpdated";
-            this.lblLastUpdated.Size = new System.Drawing.Size(167, 15);
+            this.lblLastUpdated.Size = new System.Drawing.Size(179, 15);
             this.lblLastUpdated.TabIndex = 2;
             this.lblLastUpdated.Text = "Last updated: Sept 09, 2025 00:05";
             // 
@@ -99,7 +99,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblSubtitle.ForeColor = System.Drawing.Color.Gray;
             this.lblSubtitle.Location = new System.Drawing.Point(23, 50);
             this.lblSubtitle.Name = "lblSubtitle";
-            this.lblSubtitle.Size = new System.Drawing.Size(219, 19);
+            this.lblSubtitle.Size = new System.Drawing.Size(237, 19);
             this.lblSubtitle.TabIndex = 1;
             this.lblSubtitle.Text = "Overview of your real estate business";
             // 
@@ -110,7 +110,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblTitle.ForeColor = System.Drawing.Color.Black;
             this.lblTitle.Location = new System.Drawing.Point(20, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(198, 32);
+            this.lblTitle.Size = new System.Drawing.Size(230, 32);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "Agency Dashboard";
             // 
@@ -134,8 +134,7 @@ namespace RealEstateCRMWinForms.Views
             this.cardsPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.cardsPanel.Location = new System.Drawing.Point(20, 20);
             this.cardsPanel.Name = "cardsPanel";
-            this.cardsPanel.Size = new System.Drawing.Size(900, 160);
-            this.cardsPanel.TabIndex = 0;
+            this.cardsPanel.Size = new System.Drawing.Size(900, 240);
             // 
             // leadsCard
             // 
@@ -145,11 +144,13 @@ namespace RealEstateCRMWinForms.Views
             this.leadsCard.Controls.Add(this.lblLeadsValue);
             this.leadsCard.Controls.Add(this.lblLeadsDesc);
             this.leadsCard.Controls.Add(this.lblViewAllLeads);
-            this.leadsCard.Location = new System.Drawing.Point(690, 10);
-            this.leadsCard.Margin = new System.Windows.Forms.Padding(10);
+            // Position as 4th card - calculate to fill remaining space
+            this.leadsCard.Location = new System.Drawing.Point(675, 10);
+            this.leadsCard.Margin = new System.Windows.Forms.Padding(3);
             this.leadsCard.Name = "leadsCard";
             this.leadsCard.Padding = new System.Windows.Forms.Padding(20);
-            this.leadsCard.Size = new System.Drawing.Size(200, 140);
+            // Make card larger to span to the right edge
+            this.leadsCard.Size = new System.Drawing.Size(215, 220);
             this.leadsCard.TabIndex = 3;
             // 
             // lblLeadsIcon
@@ -158,11 +159,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblLeadsIcon.AutoSize = true;
             this.lblLeadsIcon.Font = new System.Drawing.Font("Segoe UI", 16F);
             this.lblLeadsIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(193)))), ((int)(((byte)(7)))));
-            this.lblLeadsIcon.Location = new System.Drawing.Point(150, 20);
+            this.lblLeadsIcon.Location = new System.Drawing.Point(157, 20);
             this.lblLeadsIcon.Name = "lblLeadsIcon";
             this.lblLeadsIcon.Size = new System.Drawing.Size(30, 30);
             this.lblLeadsIcon.TabIndex = 4;
-            this.lblLeadsIcon.Text = "?";
+            this.lblLeadsIcon.Text = "⚡";
             // 
             // lblLeadsTitle
             // 
@@ -171,7 +172,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblLeadsTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(133)))), ((int)(((byte)(77)))), ((int)(((byte)(14)))));
             this.lblLeadsTitle.Location = new System.Drawing.Point(20, 20);
             this.lblLeadsTitle.Name = "lblLeadsTitle";
-            this.lblLeadsTitle.Size = new System.Drawing.Size(82, 19);
+            this.lblLeadsTitle.Size = new System.Drawing.Size(84, 19);
             this.lblLeadsTitle.TabIndex = 0;
             this.lblLeadsTitle.Text = "Total Leads";
             // 
@@ -182,7 +183,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblLeadsValue.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(133)))), ((int)(((byte)(77)))), ((int)(((byte)(14)))));
             this.lblLeadsValue.Location = new System.Drawing.Point(20, 50);
             this.lblLeadsValue.Name = "lblLeadsValue";
-            this.lblLeadsValue.Size = new System.Drawing.Size(37, 45);
+            this.lblLeadsValue.Size = new System.Drawing.Size(38, 45);
             this.lblLeadsValue.TabIndex = 1;
             this.lblLeadsValue.Text = "3";
             // 
@@ -193,7 +194,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblLeadsDesc.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(133)))), ((int)(((byte)(77)))), ((int)(((byte)(14)))));
             this.lblLeadsDesc.Location = new System.Drawing.Point(60, 70);
             this.lblLeadsDesc.Name = "lblLeadsDesc";
-            this.lblLeadsDesc.Size = new System.Drawing.Size(93, 15);
+            this.lblLeadsDesc.Size = new System.Drawing.Size(94, 15);
             this.lblLeadsDesc.TabIndex = 2;
             this.lblLeadsDesc.Text = "Active Prospects";
             // 
@@ -203,11 +204,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblViewAllLeads.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblViewAllLeads.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblViewAllLeads.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(133)))), ((int)(((byte)(77)))), ((int)(((byte)(14)))));
-            this.lblViewAllLeads.Location = new System.Drawing.Point(20, 105);
+            this.lblViewAllLeads.Location = new System.Drawing.Point(20, 185);
             this.lblViewAllLeads.Name = "lblViewAllLeads";
-            this.lblViewAllLeads.Size = new System.Drawing.Size(85, 15);
+            this.lblViewAllLeads.Size = new System.Drawing.Size(215, 220);
             this.lblViewAllLeads.TabIndex = 3;
-            this.lblViewAllLeads.Text = "View All Leads ?";
+            this.lblViewAllLeads.Text = "View All Leads →";
             this.lblViewAllLeads.Click += new System.EventHandler(this.LblViewAllLeads_Click);
             // 
             // contactsCard
@@ -218,11 +219,12 @@ namespace RealEstateCRMWinForms.Views
             this.contactsCard.Controls.Add(this.lblContactsValue);
             this.contactsCard.Controls.Add(this.lblContactsDesc);
             this.contactsCard.Controls.Add(this.lblViewAllContacts);
-            this.contactsCard.Location = new System.Drawing.Point(470, 10);
-            this.contactsCard.Margin = new System.Windows.Forms.Padding(10);
+            // Position as 3rd card with better spacing
+            this.contactsCard.Location = new System.Drawing.Point(450, 10);
+            this.contactsCard.Margin = new System.Windows.Forms.Padding(3);
             this.contactsCard.Name = "contactsCard";
             this.contactsCard.Padding = new System.Windows.Forms.Padding(20);
-            this.contactsCard.Size = new System.Drawing.Size(200, 140);
+            this.contactsCard.Size = new System.Drawing.Size(215, 220);
             this.contactsCard.TabIndex = 2;
             // 
             // lblContactsIcon
@@ -231,11 +233,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblContactsIcon.AutoSize = true;
             this.lblContactsIcon.Font = new System.Drawing.Font("Segoe UI", 16F);
             this.lblContactsIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(138)))), ((int)(((byte)(43)))), ((int)(((byte)(226)))));
-            this.lblContactsIcon.Location = new System.Drawing.Point(150, 20);
+            this.lblContactsIcon.Location = new System.Drawing.Point(171, 20);
             this.lblContactsIcon.Name = "lblContactsIcon";
             this.lblContactsIcon.Size = new System.Drawing.Size(30, 30);
             this.lblContactsIcon.TabIndex = 4;
-            this.lblContactsIcon.Text = "??";
+            this.lblContactsIcon.Text = "👥";
             // 
             // lblContactsTitle
             // 
@@ -244,7 +246,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblContactsTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(107)))), ((int)(((byte)(33)))), ((int)(((byte)(168)))));
             this.lblContactsTitle.Location = new System.Drawing.Point(20, 20);
             this.lblContactsTitle.Name = "lblContactsTitle";
-            this.lblContactsTitle.Size = new System.Drawing.Size(100, 19);
+            this.lblContactsTitle.Size = new System.Drawing.Size(103, 19);
             this.lblContactsTitle.TabIndex = 0;
             this.lblContactsTitle.Text = "Total Contacts";
             // 
@@ -255,7 +257,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblContactsValue.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(107)))), ((int)(((byte)(33)))), ((int)(((byte)(168)))));
             this.lblContactsValue.Location = new System.Drawing.Point(20, 50);
             this.lblContactsValue.Name = "lblContactsValue";
-            this.lblContactsValue.Size = new System.Drawing.Size(37, 45);
+            this.lblContactsValue.Size = new System.Drawing.Size(38, 45);
             this.lblContactsValue.TabIndex = 1;
             this.lblContactsValue.Text = "4";
             // 
@@ -266,7 +268,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblContactsDesc.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(107)))), ((int)(((byte)(33)))), ((int)(((byte)(168)))));
             this.lblContactsDesc.Location = new System.Drawing.Point(60, 70);
             this.lblContactsDesc.Name = "lblContactsDesc";
-            this.lblContactsDesc.Size = new System.Drawing.Size(81, 15);
+            this.lblContactsDesc.Size = new System.Drawing.Size(107, 15);
             this.lblContactsDesc.TabIndex = 2;
             this.lblContactsDesc.Text = "4 Agents | 0 Clients";
             // 
@@ -276,11 +278,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblViewAllContacts.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblViewAllContacts.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblViewAllContacts.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(107)))), ((int)(((byte)(33)))), ((int)(((byte)(168)))));
-            this.lblViewAllContacts.Location = new System.Drawing.Point(20, 105);
+            this.lblViewAllContacts.Location = new System.Drawing.Point(20, 185);
             this.lblViewAllContacts.Name = "lblViewAllContacts";
-            this.lblViewAllContacts.Size = new System.Drawing.Size(103, 15);
+            this.lblViewAllContacts.Size = new System.Drawing.Size(102, 15);
             this.lblViewAllContacts.TabIndex = 3;
-            this.lblViewAllContacts.Text = "View All Contacts ?";
+            this.lblViewAllContacts.Text = "View All Contacts →";
             this.lblViewAllContacts.Click += new System.EventHandler(this.LblViewAllContacts_Click);
             // 
             // dealsCard
@@ -291,11 +293,12 @@ namespace RealEstateCRMWinForms.Views
             this.dealsCard.Controls.Add(this.lblDealsValue);
             this.dealsCard.Controls.Add(this.lblDealsDesc);
             this.dealsCard.Controls.Add(this.lblViewAllDeals);
-            this.dealsCard.Location = new System.Drawing.Point(250, 10);
-            this.dealsCard.Margin = new System.Windows.Forms.Padding(10);
+            // Position as 2nd card with better spacing
+            this.dealsCard.Location = new System.Drawing.Point(225, 10);
+            this.dealsCard.Margin = new System.Windows.Forms.Padding(3);
             this.dealsCard.Name = "dealsCard";
             this.dealsCard.Padding = new System.Windows.Forms.Padding(20);
-            this.dealsCard.Size = new System.Drawing.Size(200, 140);
+            this.dealsCard.Size = new System.Drawing.Size(215, 220);
             this.dealsCard.TabIndex = 1;
             // 
             // lblDealsIcon
@@ -304,11 +307,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblDealsIcon.AutoSize = true;
             this.lblDealsIcon.Font = new System.Drawing.Font("Segoe UI", 16F);
             this.lblDealsIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(167)))), ((int)(((byte)(69)))));
-            this.lblDealsIcon.Location = new System.Drawing.Point(150, 20);
+            this.lblDealsIcon.Location = new System.Drawing.Point(172, 20);
             this.lblDealsIcon.Name = "lblDealsIcon";
             this.lblDealsIcon.Size = new System.Drawing.Size(30, 30);
             this.lblDealsIcon.TabIndex = 4;
-            this.lblDealsIcon.Text = "??";
+            this.lblDealsIcon.Text = "💰";
             // 
             // lblDealsTitle
             // 
@@ -317,7 +320,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblDealsTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(101)))), ((int)(((byte)(52)))));
             this.lblDealsTitle.Location = new System.Drawing.Point(20, 20);
             this.lblDealsTitle.Name = "lblDealsTitle";
-            this.lblDealsTitle.Size = new System.Drawing.Size(78, 19);
+            this.lblDealsTitle.Size = new System.Drawing.Size(82, 19);
             this.lblDealsTitle.TabIndex = 0;
             this.lblDealsTitle.Text = "Total Deals";
             // 
@@ -328,7 +331,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblDealsValue.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(101)))), ((int)(((byte)(52)))));
             this.lblDealsValue.Location = new System.Drawing.Point(20, 50);
             this.lblDealsValue.Name = "lblDealsValue";
-            this.lblDealsValue.Size = new System.Drawing.Size(37, 45);
+            this.lblDealsValue.Size = new System.Drawing.Size(38, 45);
             this.lblDealsValue.TabIndex = 1;
             this.lblDealsValue.Text = "4";
             // 
@@ -339,7 +342,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblDealsDesc.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(101)))), ((int)(((byte)(52)))));
             this.lblDealsDesc.Location = new System.Drawing.Point(60, 70);
             this.lblDealsDesc.Name = "lblDealsDesc";
-            this.lblDealsDesc.Size = new System.Drawing.Size(101, 15);
+            this.lblDealsDesc.Size = new System.Drawing.Size(128, 15);
             this.lblDealsDesc.TabIndex = 2;
             this.lblDealsDesc.Text = "0 Closed | 0 In Progress";
             // 
@@ -349,11 +352,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblViewAllDeals.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblViewAllDeals.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblViewAllDeals.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(101)))), ((int)(((byte)(52)))));
-            this.lblViewAllDeals.Location = new System.Drawing.Point(20, 105);
+            this.lblViewAllDeals.Location = new System.Drawing.Point(20, 185);
             this.lblViewAllDeals.Name = "lblViewAllDeals";
-            this.lblViewAllDeals.Size = new System.Drawing.Size(81, 15);
+            this.lblViewAllDeals.Size = new System.Drawing.Size(83, 15);
             this.lblViewAllDeals.TabIndex = 3;
-            this.lblViewAllDeals.Text = "View All Deals ?";
+            this.lblViewAllDeals.Text = "View All Deals →";
             this.lblViewAllDeals.Click += new System.EventHandler(this.LblViewAllDeals_Click);
             // 
             // propertiesCard
@@ -364,11 +367,12 @@ namespace RealEstateCRMWinForms.Views
             this.propertiesCard.Controls.Add(this.lblPropertiesValue);
             this.propertiesCard.Controls.Add(this.lblPropertiesDesc);
             this.propertiesCard.Controls.Add(this.lblViewAllProperties);
-            this.propertiesCard.Location = new System.Drawing.Point(30, 10);
-            this.propertiesCard.Margin = new System.Windows.Forms.Padding(10);
+            // Position as 1st card - start from left
+            this.propertiesCard.Location = new System.Drawing.Point(0, 10);
+            this.propertiesCard.Margin = new System.Windows.Forms.Padding(3);
             this.propertiesCard.Name = "propertiesCard";
             this.propertiesCard.Padding = new System.Windows.Forms.Padding(20);
-            this.propertiesCard.Size = new System.Drawing.Size(200, 140);
+            this.propertiesCard.Size = new System.Drawing.Size(215, 220);
             this.propertiesCard.TabIndex = 0;
             // 
             // lblPropertiesIcon
@@ -377,11 +381,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblPropertiesIcon.AutoSize = true;
             this.lblPropertiesIcon.Font = new System.Drawing.Font("Segoe UI", 16F);
             this.lblPropertiesIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(78)))), ((int)(((byte)(216)))));
-            this.lblPropertiesIcon.Location = new System.Drawing.Point(150, 20);
+            this.lblPropertiesIcon.Location = new System.Drawing.Point(172, 20);
             this.lblPropertiesIcon.Name = "lblPropertiesIcon";
             this.lblPropertiesIcon.Size = new System.Drawing.Size(30, 30);
             this.lblPropertiesIcon.TabIndex = 4;
-            this.lblPropertiesIcon.Text = "??";
+            this.lblPropertiesIcon.Text = "🏠";
             // 
             // lblPropertiesTitle
             // 
@@ -390,7 +394,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblPropertiesTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(78)))), ((int)(((byte)(216)))));
             this.lblPropertiesTitle.Location = new System.Drawing.Point(20, 20);
             this.lblPropertiesTitle.Name = "lblPropertiesTitle";
-            this.lblPropertiesTitle.Size = new System.Drawing.Size(107, 19);
+            this.lblPropertiesTitle.Size = new System.Drawing.Size(116, 19);
             this.lblPropertiesTitle.TabIndex = 0;
             this.lblPropertiesTitle.Text = "Total Properties";
             // 
@@ -401,7 +405,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblPropertiesValue.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(78)))), ((int)(((byte)(216)))));
             this.lblPropertiesValue.Location = new System.Drawing.Point(20, 50);
             this.lblPropertiesValue.Name = "lblPropertiesValue";
-            this.lblPropertiesValue.Size = new System.Drawing.Size(54, 45);
+            this.lblPropertiesValue.Size = new System.Drawing.Size(56, 45);
             this.lblPropertiesValue.TabIndex = 1;
             this.lblPropertiesValue.Text = "10";
             // 
@@ -412,7 +416,7 @@ namespace RealEstateCRMWinForms.Views
             this.lblPropertiesDesc.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(78)))), ((int)(((byte)(216)))));
             this.lblPropertiesDesc.Location = new System.Drawing.Point(80, 70);
             this.lblPropertiesDesc.Name = "lblPropertiesDesc";
-            this.lblPropertiesDesc.Size = new System.Drawing.Size(80, 15);
+            this.lblPropertiesDesc.Size = new System.Drawing.Size(98, 15);
             this.lblPropertiesDesc.TabIndex = 2;
             this.lblPropertiesDesc.Text = "10 Active Listings";
             // 
@@ -422,11 +426,11 @@ namespace RealEstateCRMWinForms.Views
             this.lblViewAllProperties.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblViewAllProperties.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblViewAllProperties.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(78)))), ((int)(((byte)(216)))));
-            this.lblViewAllProperties.Location = new System.Drawing.Point(20, 105);
+            this.lblViewAllProperties.Location = new System.Drawing.Point(20, 185);
             this.lblViewAllProperties.Name = "lblViewAllProperties";
-            this.lblViewAllProperties.Size = new System.Drawing.Size(111, 15);
+            this.lblViewAllProperties.Size = new System.Drawing.Size(108, 15);
             this.lblViewAllProperties.TabIndex = 3;
-            this.lblViewAllProperties.Text = "View All Properties ?";
+            this.lblViewAllProperties.Text = "View All Properties →";
             this.lblViewAllProperties.Click += new System.EventHandler(this.LblViewAllProperties_Click);
             // 
             // DashboardView

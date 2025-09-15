@@ -1,5 +1,6 @@
 ﻿// RealEstateCRMWinForms\Views\ContactsView.Designer.cs
 using System.Windows.Forms;
+using System.Drawing;
 
 namespace RealEstateCRMWinForms.Views
 {
@@ -73,7 +74,7 @@ namespace RealEstateCRMWinForms.Views
             this.btnAddContact.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(123)))), ((int)(((byte)(255)))));
             this.btnAddContact.FlatAppearance.BorderSize = 0;
             this.btnAddContact.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnAddContact.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnAddContact.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.btnAddContact.ForeColor = System.Drawing.Color.White;
             this.btnAddContact.Location = new System.Drawing.Point(290, 5);
             this.btnAddContact.Name = "btnAddContact";
@@ -86,6 +87,7 @@ namespace RealEstateCRMWinForms.Views
             // sortComboBox
             // 
             this.sortComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.sortComboBox.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.sortComboBox.FormattingEnabled = true;
             this.sortComboBox.Items.AddRange(new object[] {
             "Newest to Oldest",
@@ -100,6 +102,7 @@ namespace RealEstateCRMWinForms.Views
             // 
             // filterButton
             // 
+            this.filterButton.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.filterButton.Location = new System.Drawing.Point(10, 7);
             this.filterButton.Name = "filterButton";
             this.filterButton.Size = new System.Drawing.Size(110, 27);
@@ -109,6 +112,7 @@ namespace RealEstateCRMWinForms.Views
             // 
             // searchBox
             // 
+            this.searchBox.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.searchBox.Location = new System.Drawing.Point(15, 19);
             this.searchBox.Name = "searchBox";
             this.searchBox.PlaceholderText = "Search Contacts...";

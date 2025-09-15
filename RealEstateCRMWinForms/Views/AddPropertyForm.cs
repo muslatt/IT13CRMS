@@ -33,6 +33,8 @@ namespace RealEstateCRMWinForms.Views
         private void InitializeComponent()
         {
             Text = "Add New Property";
+            // Set the form font (size 12) so the form's displayed font is 12pt
+            Font = new Font("Segoe UI", 12F);
             Size = new Size(600, 500);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -44,15 +46,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Title:",
                 Location = new Point(20, 20),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             txtTitle = new TextBox
             {
-                Location = new Point(130, 20),
+                Location = new Point(160, 20),
                 Size = new Size(320, 23),
-                Font = new Font("Segoe UI", 9F)
+                Font = new Font("Segoe UI", 12F)
             };
 
             // Address
@@ -60,15 +62,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Address:",
                 Location = new Point(20, 55),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             txtAddress = new TextBox
             {
-                Location = new Point(130, 55),
+                Location = new Point(160, 55),
                 Size = new Size(320, 23),
-                Font = new Font("Segoe UI", 9F)
+                Font = new Font("Segoe UI", 12F)
             };
 
             // Price
@@ -76,15 +78,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Price:",
                 Location = new Point(20, 90),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             numPrice = new NumericUpDown
             {
-                Location = new Point(130, 90),
+                Location = new Point(160, 90),
                 Size = new Size(150, 23),
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 12F),
                 Maximum = 999999999,
                 DecimalPlaces = 0,
                 ThousandsSeparator = true
@@ -95,15 +97,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Bedrooms:",
                 Location = new Point(20, 125),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             numBedrooms = new NumericUpDown
             {
-                Location = new Point(130, 125),
+                Location = new Point(160, 125),
                 Size = new Size(80, 23),
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 12F),
                 Minimum = 0,
                 Maximum = 20
             };
@@ -113,15 +115,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Bathrooms:",
                 Location = new Point(250, 125),
-                Size = new Size(80, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             numBathrooms = new NumericUpDown
             {
-                Location = new Point(340, 125),
+                Location = new Point(370, 125),
                 Size = new Size(80, 23),
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 12F),
                 Minimum = 0,
                 Maximum = 20
             };
@@ -131,15 +133,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Square Meters:",
                 Location = new Point(20, 160),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             numSquareMeters = new NumericUpDown
             {
-                Location = new Point(130, 160),
+                Location = new Point(160, 160),
                 Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 12F),
                 Minimum = 1,
                 Maximum = 10000
             };
@@ -149,15 +151,15 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Status:",
                 Location = new Point(20, 195),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             cmbStatus = new ComboBox
             {
-                Location = new Point(130, 195),
+                Location = new Point(160, 195),
                 Size = new Size(120, 23),
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 12F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cmbStatus.Items.AddRange(new[] { "Sell", "Rent" });
@@ -168,13 +170,13 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Property Image:",
                 Location = new Point(20, 230),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
             };
 
             pictureBoxPreview = new PictureBox
             {
-                Location = new Point(130, 230),
+                Location = new Point(160, 230),
                 Size = new Size(200, 150),
                 BorderStyle = BorderStyle.FixedSingle,
                 SizeMode = PictureBoxSizeMode.StretchImage,
@@ -184,9 +186,9 @@ namespace RealEstateCRMWinForms.Views
             btnSelectImage = new Button
             {
                 Text = "Select Image",
-                Location = new Point(350, 260),
+                Location = new Point(400, 260),
                 Size = new Size(100, 30),
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 12F),
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
@@ -200,7 +202,7 @@ namespace RealEstateCRMWinForms.Views
                 Text = "Cancel",
                 Location = new Point(400, 420),
                 Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 12F),
                 DialogResult = DialogResult.Cancel
             };
 
@@ -209,7 +211,7 @@ namespace RealEstateCRMWinForms.Views
                 Text = "Save",
                 Location = new Point(490, 420),
                 Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat

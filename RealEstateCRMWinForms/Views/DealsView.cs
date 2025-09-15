@@ -86,7 +86,7 @@ namespace RealEstateCRMWinForms.Views
             btnAddBoard = new Button
             {
                 Text = "+ Add Board",
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -101,7 +101,7 @@ namespace RealEstateCRMWinForms.Views
             btnAddDeal = new Button
             {
                 Text = "+ Add Deal",
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -664,54 +664,78 @@ namespace RealEstateCRMWinForms.Views
         private void InitializeComponent()
         {
             Text = "Add New Board";
-            Size = new Size(400, 180);
+            // Set client size so positions are relative to the client area (avoids being cut off by window chrome / DPI)
+            // Reduced client height so dialog isn't too tall
+            this.ClientSize = new Size(560, 260);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
             BackColor = Color.White;
 
+            // Use 12pt font for the dialog and controls
+            Font = new Font("Segoe UI", 12F);
+
             var lblPrompt = new Label
             {
                 Text = "Enter the name for the new board:",
                 Location = new Point(20, 20),
-                Size = new Size(350, 23),
-                Font = new Font("Segoe UI", 10F)
+                // Make label span the new dialog width with some padding
+                Size = new Size(520, 24),
+                Font = new Font("Segoe UI", 12F)
             };
+            lblPrompt.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             txtBoardName = new TextBox
             {
                 Location = new Point(20, 50),
-                Size = new Size(340, 23),
-                Font = new Font("Segoe UI", 10F)
+                // Wider textbox to fit within the expanded dialog
+                Size = new Size(520, 30),
+                Font = new Font("Segoe UI", 12F)
             };
+            txtBoardName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             var btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(200, 100),
-                Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F),
+                // Anchor buttons to bottom-right so they stay visible if dialog is resized
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
+                Size = new Size(110, 40),
+                Font = new Font("Segoe UI", 12F),
                 DialogResult = DialogResult.Cancel
             };
+            // Position the buttons relative to the client area so they are fully visible
+            var paddingBottom = 20;
+            btnCancel.Location = new Point(this.ClientSize.Width - btnCancel.Width - 10, this.ClientSize.Height - btnCancel.Height - paddingBottom);
 
             var btnSave = new Button
             {
                 Text = "Add Board",
-                Location = new Point(290, 100),
-                Size = new Size(80, 35),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                // Anchor buttons to bottom-right so they stay visible if dialog is resized
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
+                Size = new Size(120, 40),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
             };
             btnSave.FlatAppearance.BorderSize = 0;
             btnSave.Click += BtnSave_Click;
+            btnSave.Location = new Point(this.ClientSize.Width - btnSave.Width - 120 - 20, this.ClientSize.Height - btnSave.Height - paddingBottom);
 
             Controls.AddRange(new Control[] { lblPrompt, txtBoardName, btnCancel, btnSave });
 
-            CancelButton = btnCancel;
-            AcceptButton = btnSave;
+            // Position the buttons to the bottom-right with padding so they align to the right edge
+            var paddingRight = 20;
+            paddingBottom = 20;
+            btnSave.Location = new Point(this.ClientSize.Width - btnSave.Width - paddingRight, this.ClientSize.Height - btnSave.Height - paddingBottom);
+            btnCancel.Location = new Point(btnSave.Location.X - btnCancel.Width - 10, btnSave.Location.Y);
+            // Anchor buttons to bottom-right so they remain in place
+            btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+             CancelButton = btnCancel;
+             AcceptButton = btnSave;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)

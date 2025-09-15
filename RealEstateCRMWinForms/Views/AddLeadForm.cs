@@ -34,41 +34,45 @@ namespace RealEstateCRMWinForms.Views
             MinimizeBox = false;
             BackColor = Color.White;
 
+            // Use 12pt font for the form and controls
+            Font = new Font("Segoe UI", 12F);
+
             // Controls Initialization
-            var lblFullName = new Label { Text = "Full Name:", Location = new Point(20, 25), AutoSize = true };
-            txtFullName = new TextBox { Location = new Point(140, 20), Size = new Size(250, 23) };
+            var lblFullName = new Label { Text = "Full Name:", Location = new Point(20, 25), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            txtFullName = new TextBox { Location = new Point(140, 20), Size = new Size(250, 28), Font = new Font("Segoe UI", 12F) };
 
-            var lblEmail = new Label { Text = "Email:", Location = new Point(20, 55), AutoSize = true };
-            txtEmail = new TextBox { Location = new Point(140, 50), Size = new Size(250, 23) };
+            var lblEmail = new Label { Text = "Email:", Location = new Point(20, 55), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            txtEmail = new TextBox { Location = new Point(140, 50), Size = new Size(250, 28), Font = new Font("Segoe UI", 12F) };
 
-            var lblPhone = new Label { Text = "Phone:", Location = new Point(20, 85), AutoSize = true };
-            txtPhone = new TextBox { Location = new Point(140, 80), Size = new Size(250, 23) };
+            var lblPhone = new Label { Text = "Phone:", Location = new Point(20, 85), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            txtPhone = new TextBox { Location = new Point(140, 80), Size = new Size(250, 28), Font = new Font("Segoe UI", 12F) };
 
-            var lblAddress = new Label { Text = "Address:", Location = new Point(20, 115), AutoSize = true };
-            txtAddress = new TextBox { Location = new Point(140, 110), Size = new Size(250, 23) };
+            var lblAddress = new Label { Text = "Address:", Location = new Point(20, 115), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            txtAddress = new TextBox { Location = new Point(140, 110), Size = new Size(250, 28), Font = new Font("Segoe UI", 12F) };
 
-            var lblType = new Label { Text = "Type:", Location = new Point(20, 145), AutoSize = true };
-            cmbType = new ComboBox { Location = new Point(140, 140), Size = new Size(150, 23), DropDownStyle = ComboBoxStyle.DropDownList };
+            var lblType = new Label { Text = "Type:", Location = new Point(20, 145), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            cmbType = new ComboBox { Location = new Point(140, 140), Size = new Size(150, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
             cmbType.Items.AddRange(new[] { "Renter", "Owner", "Buyer" });
             cmbType.SelectedIndex = 0;
 
-            var lblStatus = new Label { Text = "Status:", Location = new Point(20, 175), AutoSize = true };
-            cmbStatus = new ComboBox { Location = new Point(140, 170), Size = new Size(150, 23), DropDownStyle = ComboBoxStyle.DropDownList };
+            var lblStatus = new Label { Text = "Status:", Location = new Point(20, 175), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            cmbStatus = new ComboBox { Location = new Point(140, 170), Size = new Size(150, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
             cmbStatus.Items.AddRange(new[] { "New Lead", "Contacted", "Qualified", "Unqualified" });
             cmbStatus.SelectedIndex = 0;
 
-            var lblLastContacted = new Label { Text = "Last Contacted:", Location = new Point(20, 205), AutoSize = true };
+            var lblLastContacted = new Label { Text = "Last Contacted:", Location = new Point(20, 205), AutoSize = true, Font = new Font("Segoe UI", 12F) };
             dtpLastContacted = new DateTimePicker
             {
                 Location = new Point(140, 200),
-                Size = new Size(150, 23),
+                Size = new Size(150, 28),
                 Format = DateTimePickerFormat.Short,
                 ShowCheckBox = true, // Allows user to specify if a date is set
-                Checked = false      // Unchecked by default, meaning null
+                Checked = false,     // Unchecked by default, meaning null
+                Font = new Font("Segoe UI", 12F)
             };
 
-            btnSave = new Button { Text = "Save", Location = new Point(290, 320), Size = new Size(100, 30), DialogResult = DialogResult.OK };
-            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 320), Size = new Size(100, 30), DialogResult = DialogResult.Cancel };
+            btnSave = new Button { Text = "Save", Location = new Point(290, 320), Size = new Size(110, 35), DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 12F) };
+            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 320), Size = new Size(110, 35), DialogResult = DialogResult.Cancel, Font = new Font("Segoe UI", 12F) };
 
             btnSave.Click += BtnSave_Click;
 
