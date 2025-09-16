@@ -743,5 +743,10 @@ namespace RealEstateCRMWinForms.Views
         {
 
         }
+
+        private void pbLogo_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

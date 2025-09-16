@@ -40,7 +40,7 @@ namespace RealEstateCRMWinForms.Views
 
                 // Update Deals Card (use actual Deal data)
                 lblDealsValue.Text = deals.Count.ToString();
-                
+
                 // Count deals by status - assuming "Closed" is one status and others are in progress
                 var closedDeals = deals.Count(d => d.Status == "Closed" || d.Status == "Contract Signed");
                 var inProgressDeals = deals.Count(d => d.Status != "Closed" && d.Status != "Contract Signed" && d.IsActive);
@@ -143,6 +143,16 @@ namespace RealEstateCRMWinForms.Views
         }
 
         private void lblContactsIcon_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lblPropertiesValue_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void dealsCard_Paint(object sender, PaintEventArgs e)
         {
 
         }
