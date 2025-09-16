@@ -78,6 +78,7 @@
             pbLogo.SizeMode = PictureBoxSizeMode.Zoom;
             pbLogo.TabIndex = 8;
             pbLogo.TabStop = false;
+            pbLogo.Click += pbLogo_Click;
             // 
             // btnHelp
             // 

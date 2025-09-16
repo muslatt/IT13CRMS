@@ -3,9 +3,15 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+
+EMAIL_VERIFICATION_SETUP.md
+FINAL_SUMMARY.md
+IMPROVEMENTS_DOCUMENTATION.md
+/RealEstateCRMWinForms/DATAGRID_ENHANCEMENTS.md
 #appsettings.json
 
 # User-specific files
+*.kiro
 *.rsuser
 *.suo
 *.user

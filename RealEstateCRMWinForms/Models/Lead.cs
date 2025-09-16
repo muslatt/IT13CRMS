@@ -3,7 +3,7 @@ using System;
 
 namespace RealEstateCRMWinForms.Models
 {
-    public class Lead
+    public partial class Lead
     {
         public int Id { get; set; }
         public string FullName { get; set; } = string.Empty;

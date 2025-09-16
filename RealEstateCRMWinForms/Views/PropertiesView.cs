@@ -30,7 +30,7 @@ namespace RealEstateCRMWinForms.Views
         private void LoadProperties()
         {
             flowLayoutPanel.Controls.Clear();
-            
+
             foreach (var property in _viewModel.Properties)
             {
                 var card = new PropertyCard
@@ -38,11 +38,11 @@ namespace RealEstateCRMWinForms.Views
                     Margin = new Padding(10)
                 };
                 card.SetProperty(property);
-                
+
                 // Subscribe to property events
                 card.PropertyUpdated += Card_PropertyUpdated;
                 card.PropertyDeleted += Card_PropertyDeleted;
-                
+
                 flowLayoutPanel.Controls.Add(card);
             }
         }
@@ -60,14 +60,24 @@ namespace RealEstateCRMWinForms.Views
             {
                 // Remove the card from the UI
                 flowLayoutPanel.Controls.Remove(card);
-                
+
                 // Dispose of the card to free resources
                 card.Dispose();
-                
+
                 // Optionally refresh the entire list to ensure consistency
                 _viewModel.LoadProperties();
                 LoadProperties();
             }
+        }
+
+        private void flowLayoutPanel_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void searchBoxContainer_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }

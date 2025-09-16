@@ -1,6 +1,8 @@
 ﻿// RealEstateCRMWinForms\Views\LeadsView.cs
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
+using RealEstateCRMWinForms.Controls;
+using RealEstateCRMWinForms.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -62,86 +64,182 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewLeads.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41);
             dataGridViewLeads.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(248, 249, 250);
 
-            // Set font size to 12 and styling
-            dataGridViewLeads.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            dataGridViewLeads.DefaultCellStyle.Font = new Font("Segoe UI", 12F, FontStyle.Regular);
+            // Set font size to 12 and styling using UIStyles
+            dataGridViewLeads.ColumnHeadersDefaultCellStyle.Font = UIStyles.BoldFont;
+            dataGridViewLeads.DefaultCellStyle.Font = UIStyles.DefaultFont;
             dataGridViewLeads.DefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41);
             dataGridViewLeads.DefaultCellStyle.BackColor = Color.White;
-            dataGridViewLeads.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 244, 255);
+            dataGridViewLeads.DefaultCellStyle.SelectionBackColor = UIStyles.SelectedRowColor;
             dataGridViewLeads.DefaultCellStyle.SelectionForeColor = Color.FromArgb(33, 37, 41);
             dataGridViewLeads.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 250, 250);
-            dataGridViewLeads.DefaultCellStyle.Padding = new Padding(8);
+            dataGridViewLeads.DefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
 
             // Prevent text wrapping in headers and cells
             dataGridViewLeads.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
             dataGridViewLeads.DefaultCellStyle.WrapMode = DataGridViewTriState.False;
             dataGridViewLeads.AlternatingRowsDefaultCellStyle.WrapMode = DataGridViewTriState.False;
 
-            // Increase row height for larger font
-            dataGridViewLeads.RowTemplate.Height = 40;
+            // Increase row height for avatars and larger font
+            dataGridViewLeads.RowTemplate.Height = Math.Max(UIStyles.AvatarSize + 8, 44);
 
             // Wire up events
             dataGridViewLeads.CellContentClick += DataGridViewLeads_CellContentClick;
             dataGridViewLeads.CellFormatting += DataGridViewLeads_CellFormatting;
             dataGridViewLeads.MouseClick += DataGridViewLeads_MouseClick;
+            dataGridViewLeads.CellMouseEnter += DataGridViewLeads_CellMouseEnter;
+            dataGridViewLeads.CellMouseLeave += DataGridViewLeads_CellMouseLeave;
         }
 
         private void CreateContextMenu()
         {
             _contextMenu = new ContextMenuStrip();
-            
+
             var editMenuItem = new ToolStripMenuItem("Edit Lead");
             editMenuItem.Click += EditMenuItem_Click;
-            
+
             var deleteMenuItem = new ToolStripMenuItem("Delete Lead");
             deleteMenuItem.Click += DeleteMenuItem_Click;
-            
+
             _contextMenu.Items.Add(editMenuItem);
             _contextMenu.Items.Add(deleteMenuItem);
         }
 
         private void InitializeData()
         {
-            // Create columns in the desired order
-            CreateGridColumns();
+            try
+            {
+                // Create columns in the desired order
+                CreateGridColumns();
 
-            _bindingSource.DataSource = _viewModel.Leads;
-            dataGridViewLeads.DataSource = _bindingSource;
-            if (sortComboBox != null)
-                sortComboBox.SelectedIndex = 0;
+                _bindingSource.DataSource = _viewModel.Leads;
+                dataGridViewLeads.DataSource = _bindingSource;
+                if (sortComboBox != null)
+                    sortComboBox.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing LeadsView data: {ex.Message}");
+                // Fallback to basic initialization if custom columns fail
+                InitializeBasicColumns();
+            }
+        }
+
+        /// <summary>
+        /// Fallback method to initialize basic columns if custom columns fail
+        /// </summary>
+        private void InitializeBasicColumns()
+        {
+            try
+            {
+                dataGridViewLeads.Columns.Clear();
+                dataGridViewLeads.AutoGenerateColumns = true;
+                _bindingSource.DataSource = _viewModel.Leads;
+                dataGridViewLeads.DataSource = _bindingSource;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in fallback initialization: {ex.Message}");
+                MessageBox.Show("Error loading leads data. Please restart the application.", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void CreateGridColumns()
         {
-            // Set fixed widths for each column to prevent shrinking and accommodate content without wrapping
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            // 1. Lead Name with Avatar (using custom ImageText column)
+            var nameColumn = new DataGridViewImageTextColumn
             {
-                DataPropertyName = "FullName",
-                HeaderText = "Lead",
+                ImagePropertyName = "AvatarPath",
+                TextPropertyName = "FullName",
+                HeaderText = "Name",
                 Name = "FullName",
-                Width = 150,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
+                Width = 200,
+                ShowInitialsWhenNoImage = true,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    WrapMode = DataGridViewTriState.False,
+                    Font = UIStyles.DefaultFont,
+                    Padding = new Padding(8, 4, 8, 4)
+                }
+            };
+            dataGridViewLeads.Columns.Add(nameColumn);
 
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            // 2. Status with colored badges (using custom Badge column)
+            var statusColumn = new DataGridViewBadgeColumn
             {
                 DataPropertyName = "Status",
                 HeaderText = "Status",
                 Name = "Status",
                 Width = 120,
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
+            };
+            dataGridViewLeads.Columns.Add(statusColumn);
 
-            dataGridViewLeads.Columns.Add(new DataGridViewButtonColumn
+            // 3. Source
+            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
             {
-                HeaderText = "Move to Contacts", // Changed from "Create a contact" to prevent wrapping
-                Name = "CreateContact",
-                Text = "Move to Contacts",
-                UseColumnTextForButtonValue = true,
-                Width = 160, // Increased width to accommodate the header text
+                DataPropertyName = "Source",
+                HeaderText = "Source",
+                Name = "Source",
+                Width = 120,
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
 
+            // 4. Score with color coding (using custom Score column)
+            var scoreColumn = new DataGridViewScoreColumn
+            {
+                DataPropertyName = "Score",
+                HeaderText = "Score",
+                Name = "Score",
+                Width = 80,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    WrapMode = DataGridViewTriState.False,
+                    Font = UIStyles.BoldFont
+                }
+            };
+            dataGridViewLeads.Columns.Add(scoreColumn);
+
+            // 5. Last Contacted
+            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "LastContacted",
+                HeaderText = "Last Contacted",
+                Name = "LastContacted",
+                Width = 150,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+            });
+
+            // 6. Agent with Avatar (using custom ImageText column)
+            var agentColumn = new DataGridViewImageTextColumn
+            {
+                ImagePropertyName = "AgentAvatarPath",
+                TextPropertyName = "AssignedAgent",
+                HeaderText = "Agent",
+                Name = "Agent",
+                Width = 180,
+                ShowInitialsWhenNoImage = true,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    WrapMode = DataGridViewTriState.False,
+                    Font = UIStyles.DefaultFont,
+                    Padding = new Padding(8, 4, 8, 4)
+                }
+            };
+            dataGridViewLeads.Columns.Add(agentColumn);
+
+            // 7. Move to Contacts Button (keep existing functionality)
+            dataGridViewLeads.Columns.Add(new DataGridViewButtonColumn
+            {
+                HeaderText = "Actions",
+                Name = "CreateContact",
+                Text = "Move to Contacts",
+                UseColumnTextForButtonValue = true,
+                Width = 140,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+            });
+
+            // Additional columns for detailed view (can be toggled)
             dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Email",
@@ -168,33 +266,6 @@ namespace RealEstateCRMWinForms.Views
                 Width = 100,
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
-
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "Source",
-                HeaderText = "Source",
-                Name = "Source",
-                Width = 120,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
-
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "LastContacted",
-                HeaderText = "Last Contacted",
-                Name = "LastContacted",
-                Width = 150, // Increased width to accommodate the header text without wrapping
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
-
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "Address",
-                HeaderText = "Address",
-                Name = "Address",
-                Width = 200,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
         }
 
         private void SearchBox_TextChanged(object? sender, EventArgs e)
@@ -210,7 +281,7 @@ namespace RealEstateCRMWinForms.Views
         private void ApplyFilter()
         {
             var query = searchBox?.Text?.Trim() ?? string.Empty;
-            
+
             if (string.IsNullOrEmpty(query))
             {
                 _bindingSource.DataSource = _viewModel.Leads;
@@ -275,13 +346,13 @@ namespace RealEstateCRMWinForms.Views
                 }
 
                 _viewModel.LoadLeads();
-                
+
                 if (searchBox != null)
                     searchBox.Text = string.Empty;
 
                 _bindingSource.DataSource = _viewModel.Leads;
                 ApplySort();
-                
+
                 if (selectedId.HasValue)
                 {
                     foreach (DataGridViewRow row in dataGridViewLeads.Rows)
@@ -297,7 +368,7 @@ namespace RealEstateCRMWinForms.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error refreshing leads: {ex.Message}", "Error", 
+                MessageBox.Show($"Error refreshing leads: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -398,7 +469,7 @@ namespace RealEstateCRMWinForms.Views
                         if (await _viewModel.MoveLeadToContactAsync(lead))
                         {
                             RefreshLeadsView();
-                            MessageBox.Show($"'{lead.FullName}' has been successfully moved to contacts and notified via email.", "Success", 
+                            MessageBox.Show($"'{lead.FullName}' has been successfully moved to contacts and notified via email.", "Success",
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
@@ -410,6 +481,33 @@ namespace RealEstateCRMWinForms.Views
                             gridView.Enabled = true;
                         }
                     }
+                }
+            }
+        }
+
+        private void DataGridViewLeads_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                var row = dataGridViewLeads.Rows[e.RowIndex];
+                if (!row.Selected)
+                {
+                    row.DefaultCellStyle.BackColor = UIStyles.RowHoverColor;
+                }
+            }
+        }
+
+        private void DataGridViewLeads_CellMouseLeave(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                var row = dataGridViewLeads.Rows[e.RowIndex];
+                if (!row.Selected)
+                {
+                    // Reset to alternating row color or default
+                    row.DefaultCellStyle.BackColor = (e.RowIndex % 2 == 1)
+                        ? dataGridViewLeads.AlternatingRowsDefaultCellStyle.BackColor
+                        : Color.White;
                 }
             }
         }
@@ -427,8 +525,13 @@ namespace RealEstateCRMWinForms.Views
                 return $"{digits.Substring(0, 4)} {digits.Substring(4, 3)} {digits.Substring(7)}";
             if (digits.Length == 10)
                 return $"0{digits.Substring(0, 3)} {digits.Substring(3, 3)} {digits.Substring(6)}";
-            
+
             return phoneNumber; // Return original if no match
+        }
+
+        private void dataGridViewLeads_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
+        {
+
         }
     }
 }

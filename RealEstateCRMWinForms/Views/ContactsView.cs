@@ -1,6 +1,8 @@
 // RealEstateCRMWinForms\Views\ContactsView.cs
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
+using RealEstateCRMWinForms.Controls;
+using RealEstateCRMWinForms.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -57,23 +59,25 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewContacts.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41);
             dataGridViewContacts.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(248, 249, 250);
 
-            // Set font size to 12 and styling
-            dataGridViewContacts.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            dataGridViewContacts.DefaultCellStyle.Font = new Font("Segoe UI", 12F, FontStyle.Regular);
+            // Set font size to 12 and styling using UIStyles
+            dataGridViewContacts.ColumnHeadersDefaultCellStyle.Font = UIStyles.BoldFont;
+            dataGridViewContacts.DefaultCellStyle.Font = UIStyles.DefaultFont;
             dataGridViewContacts.DefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41);
             dataGridViewContacts.DefaultCellStyle.BackColor = Color.White;
-            dataGridViewContacts.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 244, 255);
+            dataGridViewContacts.DefaultCellStyle.SelectionBackColor = UIStyles.SelectedRowColor;
             dataGridViewContacts.DefaultCellStyle.SelectionForeColor = Color.FromArgb(33, 37, 41);
             dataGridViewContacts.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 250, 250);
-            dataGridViewContacts.DefaultCellStyle.Padding = new Padding(8);
+            dataGridViewContacts.DefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
 
-            // Increase row height for larger font
-            dataGridViewContacts.RowTemplate.Height = 40;
+            // Increase row height for avatars and larger font
+            dataGridViewContacts.RowTemplate.Height = Math.Max(UIStyles.AvatarSize + 8, 44);
 
             // Wire up events
             dataGridViewContacts.CellContentClick += DataGridViewContacts_CellContentClick;
             dataGridViewContacts.CellFormatting += DataGridViewContacts_CellFormatting;
             dataGridViewContacts.MouseClick += DataGridViewContacts_MouseClick;
+            dataGridViewContacts.CellMouseEnter += DataGridViewContacts_CellMouseEnter;
+            dataGridViewContacts.CellMouseLeave += DataGridViewContacts_CellMouseLeave;
         }
 
         private void CreateContextMenu()
@@ -92,22 +96,121 @@ namespace RealEstateCRMWinForms.Views
 
         private void InitializeData()
         {
-            // Create columns in the desired order
-            CreateGridColumns();
+            try
+            {
+                // Create columns in the desired order
+                CreateGridColumns();
 
-            _bindingSource.DataSource = _viewModel.Contacts;
-            dataGridViewContacts.DataSource = _bindingSource;
-            if (sortComboBox != null)
-                sortComboBox.SelectedIndex = 0;
+                _bindingSource.DataSource = _viewModel.Contacts;
+                dataGridViewContacts.DataSource = _bindingSource;
+                if (sortComboBox != null)
+                    sortComboBox.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing ContactsView data: {ex.Message}");
+                // Fallback to basic initialization if custom columns fail
+                InitializeBasicColumns();
+            }
+        }
+        
+        /// <summary>
+        /// Fallback method to initialize basic columns if custom columns fail
+        /// </summary>
+        private void InitializeBasicColumns()
+        {
+            try
+            {
+                dataGridViewContacts.Columns.Clear();
+                dataGridViewContacts.AutoGenerateColumns = true;
+                _bindingSource.DataSource = _viewModel.Contacts;
+                dataGridViewContacts.DataSource = _bindingSource;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in fallback initialization: {ex.Message}");
+                MessageBox.Show("Error loading contacts data. Please restart the application.", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void CreateGridColumns()
         {
-            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "FullName", HeaderText = "Contact", Name = "FullName" });
-            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Email", HeaderText = "Email", Name = "Email" });
-            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Phone", HeaderText = "Phone", Name = "Phone" });
-            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Type", HeaderText = "Type", Name = "Type" });
-            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CreatedAt", HeaderText = "Date Added", Name = "CreatedAt" });
+            // 1. Contact Name with Avatar (using custom ImageText column)
+            var nameColumn = new DataGridViewImageTextColumn
+            {
+                ImagePropertyName = "AvatarPath",
+                TextPropertyName = "FullName",
+                HeaderText = "Name",
+                Name = "FullName",
+                Width = 200,
+                ShowInitialsWhenNoImage = true,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    WrapMode = DataGridViewTriState.False,
+                    Font = UIStyles.DefaultFont,
+                    Padding = new Padding(8, 4, 8, 4)
+                }
+            };
+            dataGridViewContacts.Columns.Add(nameColumn);
+
+            // 2. Email
+            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                DataPropertyName = "Email", 
+                HeaderText = "Email", 
+                Name = "Email",
+                Width = 220,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+            });
+
+            // 3. Phone
+            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                DataPropertyName = "Phone", 
+                HeaderText = "Phone", 
+                Name = "Phone",
+                Width = 140,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+            });
+
+            // 4. Type
+            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                DataPropertyName = "Type", 
+                HeaderText = "Type", 
+                Name = "Type",
+                Width = 100,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+            });
+
+            // 5. Date Added
+            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                DataPropertyName = "CreatedAt", 
+                HeaderText = "Date Added", 
+                Name = "CreatedAt",
+                Width = 120,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+            });
+
+            // 6. Agent with Avatar (using custom ImageText column)
+            var agentColumn = new DataGridViewImageTextColumn
+            {
+                ImagePropertyName = "AgentAvatarPath",
+                TextPropertyName = "AssignedAgent",
+                HeaderText = "Agent",
+                Name = "Agent",
+                Width = 180,
+                ShowInitialsWhenNoImage = true,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    WrapMode = DataGridViewTriState.False,
+                    Font = UIStyles.DefaultFont,
+                    Padding = new Padding(8, 4, 8, 4)
+                }
+            };
+            dataGridViewContacts.Columns.Add(agentColumn);
         }
 
         private void SearchBox_TextChanged(object? sender, EventArgs e)
@@ -275,6 +378,33 @@ namespace RealEstateCRMWinForms.Views
         private void DataGridViewContacts_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
             // Handle any button clicks if needed
+        }
+
+        private void DataGridViewContacts_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                var row = dataGridViewContacts.Rows[e.RowIndex];
+                if (!row.Selected)
+                {
+                    row.DefaultCellStyle.BackColor = UIStyles.RowHoverColor;
+                }
+            }
+        }
+
+        private void DataGridViewContacts_CellMouseLeave(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                var row = dataGridViewContacts.Rows[e.RowIndex];
+                if (!row.Selected)
+                {
+                    // Reset to alternating row color or default
+                    row.DefaultCellStyle.BackColor = (e.RowIndex % 2 == 1) 
+                        ? dataGridViewContacts.AlternatingRowsDefaultCellStyle.BackColor 
+                        : Color.White;
+                }
+            }
         }
 
         private static string FormatPhilippinePhoneNumber(string? phoneNumber)

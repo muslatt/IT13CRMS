@@ -30,47 +30,76 @@
         {
             flowLayoutPanel = new FlowLayoutPanel();
             searchPanel = new Panel();
+            searchBoxContainer = new Panel();
             searchBox = new TextBox();
+            searchIcon = new Label();
             rightControlsPanel = new Panel();
             btnFilter = new Button();
             sortComboBox = new ComboBox();
             btnAddProperty = new Button();
             searchPanel.SuspendLayout();
+            searchBoxContainer.SuspendLayout();
             rightControlsPanel.SuspendLayout();
             SuspendLayout();
             // 
             // flowLayoutPanel
             // 
             flowLayoutPanel.AutoScroll = true;
+            flowLayoutPanel.BackColor = Color.FromArgb(249, 250, 251);
             flowLayoutPanel.Dock = DockStyle.Fill;
-            flowLayoutPanel.FlowDirection = FlowDirection.LeftToRight;
-            flowLayoutPanel.Location = new Point(0, 60);
+            flowLayoutPanel.Location = new Point(0, 80);
             flowLayoutPanel.Name = "flowLayoutPanel";
-            flowLayoutPanel.Padding = new Padding(20);
-            flowLayoutPanel.Size = new Size(940, 540);
+            flowLayoutPanel.Padding = new Padding(30);
+            flowLayoutPanel.Size = new Size(1000, 590);
             flowLayoutPanel.TabIndex = 0;
-            flowLayoutPanel.WrapContents = true;
+            flowLayoutPanel.Paint += flowLayoutPanel_Paint;
             // 
             // searchPanel
             // 
-            searchPanel.BackColor = Color.Transparent;
-            searchPanel.Controls.Add(searchBox);
+            searchPanel.BackColor = Color.White;
+            searchPanel.Controls.Add(searchBoxContainer);
             searchPanel.Controls.Add(rightControlsPanel);
             searchPanel.Dock = DockStyle.Top;
             searchPanel.Location = new Point(0, 0);
             searchPanel.Name = "searchPanel";
-            searchPanel.Padding = new Padding(20, 15, 20, 15);
-            searchPanel.Size = new Size(940, 60);
+            searchPanel.Padding = new Padding(30, 20, 30, 20);
+            searchPanel.Size = new Size(1000, 80);
             searchPanel.TabIndex = 1;
+            // 
+            // searchBoxContainer
+            // 
+            searchBoxContainer.BackColor = Color.FromArgb(243, 244, 246);
+            searchBoxContainer.BorderStyle = BorderStyle.FixedSingle;
+            searchBoxContainer.Controls.Add(searchBox);
+            searchBoxContainer.Controls.Add(searchIcon);
+            searchBoxContainer.Location = new Point(30, 20);
+            searchBoxContainer.Name = "searchBoxContainer";
+            searchBoxContainer.Size = new Size(420, 40);
+            searchBoxContainer.TabIndex = 0;
+            searchBoxContainer.Paint += searchBoxContainer_Paint;
             // 
             // searchBox
             // 
-            searchBox.Font = new Font("Segoe UI", 10F);
-            searchBox.Location = new Point(20, 15);
+            searchBox.BackColor = Color.FromArgb(243, 244, 246);
+            searchBox.BorderStyle = BorderStyle.None;
+            searchBox.Font = new Font("Segoe UI", 11F);
+            searchBox.ForeColor = Color.FromArgb(107, 114, 128);
+            searchBox.Location = new Point(40, 10);
             searchBox.Name = "searchBox";
-            searchBox.PlaceholderText = "Search";
-            searchBox.Size = new Size(350, 25);
+            searchBox.PlaceholderText = "Search properties...";
+            searchBox.Size = new Size(340, 20);
             searchBox.TabIndex = 0;
+            // 
+            // searchIcon
+            // 
+            searchIcon.AutoSize = true;
+            searchIcon.Font = new Font("Segoe UI", 12F);
+            searchIcon.ForeColor = Color.FromArgb(156, 163, 175);
+            searchIcon.Location = new Point(12, 9);
+            searchIcon.Name = "searchIcon";
+            searchIcon.Size = new Size(32, 21);
+            searchIcon.TabIndex = 1;
+            searchIcon.Text = "🔍";
             // 
             // rightControlsPanel
             // 
@@ -79,50 +108,49 @@
             rightControlsPanel.Controls.Add(btnFilter);
             rightControlsPanel.Controls.Add(sortComboBox);
             rightControlsPanel.Controls.Add(btnAddProperty);
-            rightControlsPanel.Location = new Point(520, 12);
-            // Slightly larger panel to accommodate wider Add button
-            rightControlsPanel.Size = new Size(420, 40);
+            rightControlsPanel.Location = new Point(530, 20);
+            rightControlsPanel.Name = "rightControlsPanel";
+            rightControlsPanel.Size = new Size(440, 40);
             rightControlsPanel.TabIndex = 1;
             // 
             // btnFilter
             // 
             btnFilter.BackColor = Color.White;
-            btnFilter.FlatAppearance.BorderColor = Color.FromArgb(206, 212, 218);
-            btnFilter.FlatAppearance.BorderSize = 1;
+            btnFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             btnFilter.FlatStyle = FlatStyle.Flat;
-            btnFilter.Font = new Font("Segoe UI", 12F);
-            btnFilter.ForeColor = Color.FromArgb(108, 117, 125);
+            btnFilter.Font = new Font("Segoe UI", 10F);
+            btnFilter.ForeColor = Color.FromArgb(55, 65, 81);
             btnFilter.Location = new Point(0, 0);
             btnFilter.Name = "btnFilter";
-            // Make button wider so its content isn't clipped
-            btnFilter.Size = new Size(100, 35);
+            btnFilter.Size = new Size(100, 36);
             btnFilter.TabIndex = 0;
-            btnFilter.Text = "📋 Filter";
+            btnFilter.Text = "Filter";
             btnFilter.UseVisualStyleBackColor = false;
             // 
             // sortComboBox
             // 
+            sortComboBox.BackColor = Color.White;
             sortComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            sortComboBox.Font = new Font("Segoe UI", 12F);
+            sortComboBox.FlatStyle = FlatStyle.Flat;
+            sortComboBox.Font = new Font("Segoe UI", 10F);
+            sortComboBox.ForeColor = Color.FromArgb(55, 65, 81);
             sortComboBox.FormattingEnabled = true;
             sortComboBox.Items.AddRange(new object[] { "Newest to Oldest", "Price: Low to High", "Price: High to Low" });
-            // Shift to the right of the filter button and give more height for 12pt font
-            sortComboBox.Location = new Point(110, 0);
+            sortComboBox.Location = new Point(110, 3);
             sortComboBox.Name = "sortComboBox";
-            sortComboBox.Size = new Size(160, 35);
+            sortComboBox.Size = new Size(170, 25);
             sortComboBox.TabIndex = 1;
             // 
             // btnAddProperty
             // 
-            btnAddProperty.BackColor = Color.FromArgb(0, 123, 255);
+            btnAddProperty.BackColor = Color.FromArgb(37, 99, 235);
             btnAddProperty.FlatAppearance.BorderSize = 0;
             btnAddProperty.FlatStyle = FlatStyle.Flat;
-            btnAddProperty.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnAddProperty.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnAddProperty.ForeColor = Color.White;
-            // Position to the right of the combo box and enlarge so full text is visible
-            btnAddProperty.Location = new Point(280, 0);
+            btnAddProperty.Location = new Point(290, 0);
             btnAddProperty.Name = "btnAddProperty";
-            btnAddProperty.Size = new Size(130, 35);
+            btnAddProperty.Size = new Size(150, 36);
             btnAddProperty.TabIndex = 2;
             btnAddProperty.Text = "+ Add Property";
             btnAddProperty.UseVisualStyleBackColor = false;
@@ -132,25 +160,29 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(248, 249, 250);
+            BackColor = Color.FromArgb(249, 250, 251);
             Controls.Add(flowLayoutPanel);
             Controls.Add(searchPanel);
             Name = "PropertiesView";
-            Size = new Size(940, 600);
+            Size = new Size(1000, 670);
             searchPanel.ResumeLayout(false);
-            searchPanel.PerformLayout();
+            searchBoxContainer.ResumeLayout(false);
+            searchBoxContainer.PerformLayout();
             rightControlsPanel.ResumeLayout(false);
             ResumeLayout(false);
+
         }
 
         #endregion
 
-        private FlowLayoutPanel flowLayoutPanel;
-        private Panel searchPanel;
-        private TextBox searchBox;
-        private Panel rightControlsPanel;
-        private Button btnFilter;
-        private ComboBox sortComboBox;
-        private Button btnAddProperty;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel;
+        private System.Windows.Forms.Panel searchPanel;
+        private System.Windows.Forms.TextBox searchBox;
+        private System.Windows.Forms.Panel rightControlsPanel;
+        private System.Windows.Forms.Button btnFilter;
+        private System.Windows.Forms.ComboBox sortComboBox;
+        private System.Windows.Forms.Button btnAddProperty;
+        private System.Windows.Forms.Panel searchBoxContainer;
+        private System.Windows.Forms.Label searchIcon;
     }
 }
