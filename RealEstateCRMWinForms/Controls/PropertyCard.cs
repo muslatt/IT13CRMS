@@ -16,6 +16,56 @@ namespace RealEstateCRMWinForms.Controls
             InitializeComponent();
             SetDefaultImage();
             CreateContextMenu();
+            
+            // Add click events to make the card clickable
+            this.Click += PropertyCard_Click;
+            this.Cursor = Cursors.Hand;
+            
+            // Make all child controls clickable too
+            MakeChildControlsClickable(this);
+        }
+
+        private void MakeChildControlsClickable(Control parent)
+        {
+            foreach (Control control in parent.Controls)
+            {
+                control.Click += PropertyCard_Click;
+                control.Cursor = Cursors.Hand;
+                if (control.HasChildren)
+                {
+                    MakeChildControlsClickable(control);
+                }
+            }
+        }
+
+        private void PropertyCard_Click(object? sender, EventArgs e)
+        {
+            if (_property != null)
+            {
+                ShowPropertyDetails();
+            }
+        }
+
+        private void ShowPropertyDetails()
+        {
+            var detailsForm = new Views.PropertyDetailsForm(_property);
+            
+            // Subscribe to the PropertyUpdated event
+            detailsForm.PropertyUpdated += (sender, e) => {
+                // Refresh this card when the property is updated from the details form
+                RefreshPropertyFromDatabase();
+                
+                // Also notify the parent (PropertiesView) that the property was updated
+                PropertyUpdated?.Invoke(this, e);
+            };
+            
+            var result = detailsForm.ShowDialog();
+            
+            // If the property was modified in the details form, refresh the card
+            if (result == DialogResult.OK)
+            {
+                RefreshPropertyFromDatabase();
+            }
         }
 
         public void SetProperty(Property property)
@@ -37,19 +87,25 @@ namespace RealEstateCRMWinForms.Controls
         {
             _contextMenu = new ContextMenuStrip();
             
+            var viewMenuItem = new ToolStripMenuItem("View Details")
+            {
+                Image = SystemIcons.Information.ToBitmap()
+            };
+            viewMenuItem.Click += ViewMenuItem_Click;
+
             var editMenuItem = new ToolStripMenuItem("Edit Property")
             {
-                Image = SystemIcons.Application.ToBitmap() // You can use a better icon
+                Image = SystemIcons.Application.ToBitmap()
             };
             editMenuItem.Click += EditMenuItem_Click;
 
             var deleteMenuItem = new ToolStripMenuItem("Delete Property")
             {
-                Image = SystemIcons.Error.ToBitmap() // You can use a better icon
+                Image = SystemIcons.Error.ToBitmap()
             };
             deleteMenuItem.Click += DeleteMenuItem_Click;
 
-            _contextMenu.Items.AddRange(new ToolStripItem[] { editMenuItem, deleteMenuItem });
+            _contextMenu.Items.AddRange(new ToolStripItem[] { viewMenuItem, editMenuItem, deleteMenuItem });
             
             // Assign context menu to the card and its child controls
             this.ContextMenuStrip = _contextMenu;
@@ -68,6 +124,11 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
+        private void ViewMenuItem_Click(object? sender, EventArgs e)
+        {
+            ShowPropertyDetails();
+        }
+
         private void EditMenuItem_Click(object? sender, EventArgs e)
         {
             if (_property == null) return;
@@ -75,11 +136,32 @@ namespace RealEstateCRMWinForms.Controls
             var editForm = new Views.EditPropertyForm(_property);
             if (editForm.ShowDialog() == DialogResult.OK)
             {
-                // Update the card display
-                UpdateCardUI();
+                // Refresh property data from database after edit
+                RefreshPropertyFromDatabase();
                 
                 // Notify parent that property was updated
                 PropertyUpdated?.Invoke(this, new PropertyEventArgs(_property));
+            }
+        }
+
+        private void RefreshPropertyFromDatabase()
+        {
+            if (_property == null) return;
+
+            try
+            {
+                var viewModel = new ViewModels.PropertyViewModel();
+                var refreshedProperty = viewModel.GetPropertyById(_property.Id);
+                
+                if (refreshedProperty != null)
+                {
+                    _property = refreshedProperty;
+                    UpdateCardUI();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error refreshing property from database: {ex.Message}");
             }
         }
 
@@ -117,21 +199,64 @@ namespace RealEstateCRMWinForms.Controls
         {
             if (_property == null) return;
             
+            // Title / address / price / status
             lblTitle.Text = _property.Title;
             lblAddress.Text = _property.Address;
             lblPrice.Text = $"₱ {_property.Price:N0}";
-            lblBedrooms.Text = $"🛏️ {_property.Bedrooms}";
-            lblBathrooms.Text = $"🚿 {_property.Bathrooms}";
-            lblSquareMeters.Text = $"📐 {_property.SquareMeters} sqm";
             lblStatus.Text = _property.Status;
-            
+
             // Set status color
             statusPanel.BackColor = _property.Status == "Rent" 
                 ? Color.FromArgb(108, 117, 125) 
                 : Color.FromArgb(0, 123, 255);
 
+            // --- FEATURE ICONS (render into small bitmaps for consistent sizing) ---
+            // Create small icon bitmaps using emoji rendered with Segoe UI Emoji for visual clarity.
+
+            // Bed icon
+            pbBedIcon.Image?.Dispose();
+            pbBedIcon.Image = CreateEmojiIconBitmap("🛏️", 24, 24);
+
+            // Bath icon
+            pbBathIcon.Image?.Dispose();
+            pbBathIcon.Image = CreateEmojiIconBitmap("🚿", 24, 24);
+
+            // SQM icon (use a ruler-like emoji)
+            pbSqmIcon.Image?.Dispose();
+            pbSqmIcon.Image = CreateEmojiIconBitmap("📐", 24, 24);
+
+            // Numeric values: larger, bold and clearly distinguished
+            lblBedValue.Text = _property.Bedrooms.ToString();
+            lblBedValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+
+            lblBathValue.Text = _property.Bathrooms.ToString();
+            lblBathValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+
+            lblSqmValue.Text = $"{_property.SquareMeters} sqm";
+            lblSqmValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+
             // Load property image
             LoadPropertyImage();
+        }
+
+        // Helper that generates a small bitmap with an emoji centered. Keeps icons consistent size.
+        private Bitmap CreateEmojiIconBitmap(string emoji, int width, int height)
+        {
+            var bmp = new Bitmap(width, height);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.Clear(Color.Transparent);
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+                // Use Segoe UI Emoji for best emoji rendering on Windows
+                using (var font = new Font("Segoe UI Emoji", Math.Max(12, height - 4), FontStyle.Regular, GraphicsUnit.Pixel))
+                using (var brush = new SolidBrush(Color.FromArgb(90, 95, 100)))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString(emoji, font, brush, new RectangleF(0, 0, width, height), sf);
+                }
+            }
+            return bmp;
         }
 
         private void LoadPropertyImage()

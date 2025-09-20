@@ -1,6 +1,8 @@
 using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.ViewModels;
 using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace RealEstateCRMWinForms.Views
@@ -13,21 +15,26 @@ namespace RealEstateCRMWinForms.Views
         private TextBox txtAddress;
         private ComboBox cmbType;
         private ComboBox cmbStatus;
+        private ComboBox cmbAgent;
         private DateTimePicker dtpLastContacted;
         private Button btnSave;
         private Button btnCancel;
+
+        private readonly ContactViewModel _contactViewModel;
 
         public Lead? CreatedLead { get; private set; }
 
         public AddLeadForm()
         {
+            _contactViewModel = new ContactViewModel();
             InitializeComponent();
+            LoadAgents();
         }
 
         private void InitializeComponent()
         {
             Text = "Add New Lead";
-            Size = new Size(450, 400);
+            Size = new Size(450, 460);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -60,10 +67,13 @@ namespace RealEstateCRMWinForms.Views
             cmbStatus.Items.AddRange(new[] { "New Lead", "Contacted", "Qualified", "Unqualified" });
             cmbStatus.SelectedIndex = 0;
 
-            var lblLastContacted = new Label { Text = "Last Contacted:", Location = new Point(20, 205), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            var lblAgent = new Label { Text = "Agent:", Location = new Point(20, 205), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            cmbAgent = new ComboBox { Location = new Point(140, 200), Size = new Size(250, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
+
+            var lblLastContacted = new Label { Text = "Last Contacted:", Location = new Point(20, 235), AutoSize = true, Font = new Font("Segoe UI", 12F) };
             dtpLastContacted = new DateTimePicker
             {
-                Location = new Point(140, 200),
+                Location = new Point(140, 230),
                 Size = new Size(150, 28),
                 Format = DateTimePickerFormat.Short,
                 ShowCheckBox = true, // Allows user to specify if a date is set
@@ -71,19 +81,53 @@ namespace RealEstateCRMWinForms.Views
                 Font = new Font("Segoe UI", 12F)
             };
 
-            btnSave = new Button { Text = "Save", Location = new Point(290, 320), Size = new Size(110, 35), DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 12F) };
-            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 320), Size = new Size(110, 35), DialogResult = DialogResult.Cancel, Font = new Font("Segoe UI", 12F) };
+            btnSave = new Button { Text = "Save", Location = new Point(290, 370), Size = new Size(110, 35), DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 12F) };
+            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 370), Size = new Size(110, 35), DialogResult = DialogResult.Cancel, Font = new Font("Segoe UI", 12F) };
 
             btnSave.Click += BtnSave_Click;
 
             Controls.AddRange(new Control[] {
                 lblFullName, txtFullName, lblEmail, txtEmail, lblPhone, txtPhone, lblAddress, txtAddress,
-                lblType, cmbType, lblStatus, cmbStatus, lblLastContacted, dtpLastContacted,
+                lblType, cmbType, lblStatus, cmbStatus, lblAgent, cmbAgent, lblLastContacted, dtpLastContacted,
                 btnSave, btnCancel
             });
 
             AcceptButton = btnSave;
             CancelButton = btnCancel;
+        }
+
+        private void LoadAgents()
+        {
+            try
+            {
+                cmbAgent.Items.Clear();
+                cmbAgent.Items.Add("(No Agent)");
+
+                // Load agents from contacts 
+                var agents = _contactViewModel.Contacts
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.FullName)
+                    .ToList();
+
+                foreach (var agent in agents)
+                {
+                    cmbAgent.Items.Add(agent);
+                }
+
+                cmbAgent.DisplayMember = "FullName";
+                cmbAgent.ValueMember = "Id";
+                cmbAgent.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading agents: {ex.Message}");
+                // If loading fails, at least have "No Agent" option
+                if (cmbAgent.Items.Count == 0)
+                {
+                    cmbAgent.Items.Add("(No Agent)");
+                    cmbAgent.SelectedIndex = 0;
+                }
+            }
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -113,6 +157,16 @@ namespace RealEstateCRMWinForms.Views
                 return;
             }
 
+            // Get selected agent information
+            string assignedAgent = string.Empty;
+            string? agentAvatarPath = null;
+
+            if (cmbAgent.SelectedItem is Contact selectedAgent)
+            {
+                assignedAgent = selectedAgent.FullName;
+                agentAvatarPath = selectedAgent.AvatarPath;
+            }
+
             CreatedLead = new Lead
             {
                 FullName = txtFullName.Text.Trim(),
@@ -122,6 +176,8 @@ namespace RealEstateCRMWinForms.Views
                 Type = cmbType.SelectedItem?.ToString() ?? "Renter",
                 Status = cmbStatus.SelectedItem?.ToString() ?? "New Lead",
                 LastContacted = dtpLastContacted.Checked ? dtpLastContacted.Value : (DateTime?)null,
+                AssignedAgent = assignedAgent,
+                AgentAvatarPath = agentAvatarPath,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };

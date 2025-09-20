@@ -1,9 +1,10 @@
-using RealEstateCRMWinForms.Models;
+﻿using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
 using RealEstateCRMWinForms.Controls;
 using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
+using System.Reflection;
 
 namespace RealEstateCRMWinForms.Views
 {
@@ -18,11 +19,25 @@ namespace RealEstateCRMWinForms.Views
         private NumericUpDown numBathrooms;
         private NumericUpDown numSquareMeters;
         private ComboBox cmbStatus;
+        private ComboBox cmbPropertyType;
+        private ComboBox cmbTransactionType;
+        private TextBox txtAgent;
+        private TextBox txtDescription;
         private PictureBox pictureBoxPreview;
         private Button btnSelectImage;
         private Button btnSave;
         private Button btnCancel;
         private string _selectedImagePath;
+
+        // New controls for calculated values
+        private Label lblCalculatedHeader;
+        private Label lblSQFTLabel;
+        private Label lblSQFTValue;
+        private Label lblPricePerSqftLabel;
+        private Label lblPricePerSqftValue;
+
+        // Listing date control
+        private DateTimePicker dtpListingDate;
 
         public AddPropertyForm()
         {
@@ -35,7 +50,9 @@ namespace RealEstateCRMWinForms.Views
             Text = "Add New Property";
             // Set the form font (size 12) so the form's displayed font is 12pt
             Font = new Font("Segoe UI", 12F);
-            Size = new Size(600, 500);
+
+            // Increased size and better spacing for less-clumpy layout
+            Size = new Size(860, 820);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -53,7 +70,7 @@ namespace RealEstateCRMWinForms.Views
             txtTitle = new TextBox
             {
                 Location = new Point(160, 20),
-                Size = new Size(320, 23),
+                Size = new Size(660, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
@@ -61,15 +78,15 @@ namespace RealEstateCRMWinForms.Views
             var lblAddress = new Label
             {
                 Text = "Address:",
-                Location = new Point(20, 55),
+                Location = new Point(20, 60),
                 Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
             txtAddress = new TextBox
             {
-                Location = new Point(160, 55),
-                Size = new Size(320, 23),
+                Location = new Point(160, 60),
+                Size = new Size(660, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
@@ -77,34 +94,35 @@ namespace RealEstateCRMWinForms.Views
             var lblPrice = new Label
             {
                 Text = "Price:",
-                Location = new Point(20, 90),
+                Location = new Point(20, 100),
                 Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
             numPrice = new NumericUpDown
             {
-                Location = new Point(160, 90),
-                Size = new Size(150, 23),
+                Location = new Point(160, 100),
+                Size = new Size(240, 28),
                 Font = new Font("Segoe UI", 12F),
                 Maximum = 999999999,
                 DecimalPlaces = 0,
                 ThousandsSeparator = true
             };
+            numPrice.ValueChanged += OnAreaOrPriceChanged;
 
             // Bedrooms
             var lblBedrooms = new Label
             {
                 Text = "Bedrooms:",
-                Location = new Point(20, 125),
+                Location = new Point(420, 100),
                 Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
             numBedrooms = new NumericUpDown
             {
-                Location = new Point(160, 125),
-                Size = new Size(80, 23),
+                Location = new Point(540, 100),
+                Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F),
                 Minimum = 0,
                 Maximum = 20
@@ -114,15 +132,15 @@ namespace RealEstateCRMWinForms.Views
             var lblBathrooms = new Label
             {
                 Text = "Bathrooms:",
-                Location = new Point(250, 125),
-                Size = new Size(100, 28),
+                Location = new Point(20, 140),
+                Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
             numBathrooms = new NumericUpDown
             {
-                Location = new Point(370, 125),
-                Size = new Size(80, 23),
+                Location = new Point(160, 140),
+                Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F),
                 Minimum = 0,
                 Maximum = 20
@@ -132,52 +150,186 @@ namespace RealEstateCRMWinForms.Views
             var lblSquareMeters = new Label
             {
                 Text = "Square Meters:",
-                Location = new Point(20, 160),
-                Size = new Size(120, 28),
+                Location = new Point(300, 140),
+                Size = new Size(140, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
             numSquareMeters = new NumericUpDown
             {
-                Location = new Point(160, 160),
-                Size = new Size(100, 23),
+                Location = new Point(450, 140),
+                Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F),
                 Minimum = 1,
                 Maximum = 10000
+            };
+            numSquareMeters.ValueChanged += OnAreaOrPriceChanged;
+
+            // Calculated Values header and labels (after square meters)
+            lblCalculatedHeader = new Label
+            {
+                Text = "Calculated Values",
+                Location = new Point(20, 180),
+                Size = new Size(200, 22),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+            };
+
+            lblSQFTLabel = new Label
+            {
+                Text = "SQFT:",
+                Location = new Point(30, 210),
+                Size = new Size(120, 20),
+                Font = new Font("Segoe UI", 10F)
+            };
+
+            lblSQFTValue = new Label
+            {
+                Text = "-",
+                Location = new Point(150, 210),
+                Size = new Size(160, 20),
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = Color.FromArgb(33, 37, 41)
+            };
+
+            lblPricePerSqftLabel = new Label
+            {
+                Text = "Price Per SQFT:",
+                Location = new Point(340, 210),
+                Size = new Size(140, 20),
+                Font = new Font("Segoe UI", 10F)
+            };
+
+            lblPricePerSqftValue = new Label
+            {
+                Text = "-",
+                Location = new Point(480, 210),
+                Size = new Size(260, 20),
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = Color.FromArgb(33, 37, 41)
             };
 
             // Status
             var lblStatus = new Label
             {
                 Text = "Status:",
-                Location = new Point(20, 195),
+                Location = new Point(20, 250),
                 Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
             cmbStatus = new ComboBox
             {
-                Location = new Point(160, 195),
-                Size = new Size(120, 23),
+                Location = new Point(160, 250),
+                Size = new Size(180, 28),
                 Font = new Font("Segoe UI", 12F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cmbStatus.Items.AddRange(new[] { "Sell", "Rent" });
             cmbStatus.SelectedIndex = 0;
 
-            // Image selection
+            // Property Type
+            var lblPropertyType = new Label
+            {
+                Text = "Property Type:",
+                Location = new Point(360, 250),
+                Size = new Size(140, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            cmbPropertyType = new ComboBox
+            {
+                Location = new Point(520, 250),
+                Size = new Size(300, 28),
+                Font = new Font("Segoe UI", 12F),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cmbPropertyType.Items.AddRange(new[] { "Residential", "Commercial", "Raw Land" });
+            cmbPropertyType.SelectedIndex = 0;
+
+            // Transaction Type (Buying, Viewing)
+            var lblTransactionType = new Label
+            {
+                Text = "Type:",
+                Location = new Point(20, 290),
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            cmbTransactionType = new ComboBox
+            {
+                Location = new Point(160, 290),
+                Size = new Size(180, 28),
+                Font = new Font("Segoe UI", 12F),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cmbTransactionType.Items.AddRange(new[] { "Buying", "Viewing" });
+            cmbTransactionType.SelectedIndex = 0;
+
+            // Agent
+            var lblAgent = new Label
+            {
+                Text = "Agent:",
+                Location = new Point(360, 290),
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            txtAgent = new TextBox
+            {
+                Location = new Point(520, 290),
+                Size = new Size(300, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            // Listing Date
+            var lblListingDate = new Label
+            {
+                Text = "Listing Date:",
+                Location = new Point(20, 330),
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            dtpListingDate = new DateTimePicker
+            {
+                Location = new Point(160, 330),
+                Size = new Size(180, 28),
+                Font = new Font("Segoe UI", 12F),
+                Format = DateTimePickerFormat.Short,
+                Value = DateTime.Now
+            };
+
+            // Description
+            var lblDescription = new Label
+            {
+                Text = "Description:",
+                Location = new Point(20, 370),
+                Size = new Size(120, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            txtDescription = new TextBox
+            {
+                Location = new Point(160, 370),
+                Size = new Size(660, 120),
+                Font = new Font("Segoe UI", 12F),
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical
+            };
+
+            // Image selection (moved down)
             var lblImage = new Label
             {
                 Text = "Property Image:",
-                Location = new Point(20, 230),
+                Location = new Point(20, 480),
                 Size = new Size(120, 28),
                 Font = new Font("Segoe UI", 12F)
             };
 
             pictureBoxPreview = new PictureBox
             {
-                Location = new Point(160, 230),
-                Size = new Size(200, 150),
+                Location = new Point(160, 480),
+                Size = new Size(360, 200),
                 BorderStyle = BorderStyle.FixedSingle,
                 SizeMode = PictureBoxSizeMode.StretchImage,
                 BackColor = Color.LightGray
@@ -186,8 +338,8 @@ namespace RealEstateCRMWinForms.Views
             btnSelectImage = new Button
             {
                 Text = "Select Image",
-                Location = new Point(400, 260),
-                Size = new Size(100, 30),
+                Location = new Point(540, 520),
+                Size = new Size(160, 40),
                 Font = new Font("Segoe UI", 12F),
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
@@ -200,8 +352,8 @@ namespace RealEstateCRMWinForms.Views
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(400, 420),
-                Size = new Size(80, 35),
+                Location = new Point(560, 720),
+                Size = new Size(120, 40),
                 Font = new Font("Segoe UI", 12F),
                 DialogResult = DialogResult.Cancel
             };
@@ -209,8 +361,8 @@ namespace RealEstateCRMWinForms.Views
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point(490, 420),
-                Size = new Size(80, 35),
+                Location = new Point(700, 720),
+                Size = new Size(120, 40),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
@@ -223,11 +375,16 @@ namespace RealEstateCRMWinForms.Views
             Controls.AddRange(new Control[] {
                 lblTitle, txtTitle,
                 lblAddress, txtAddress,
-                lblPrice, numPrice,
-                lblBedrooms, numBedrooms,
+                lblPrice, numPrice, lblBedrooms, numBedrooms,
                 lblBathrooms, numBathrooms,
                 lblSquareMeters, numSquareMeters,
+                lblCalculatedHeader, lblSQFTLabel, lblSQFTValue, lblPricePerSqftLabel, lblPricePerSqftValue,
                 lblStatus, cmbStatus,
+                lblPropertyType, cmbPropertyType,
+                lblTransactionType, cmbTransactionType,
+                lblAgent, txtAgent,
+                lblListingDate, dtpListingDate,
+                lblDescription, txtDescription,
                 lblImage, pictureBoxPreview, btnSelectImage,
                 btnCancel, btnSave
             });
@@ -237,16 +394,19 @@ namespace RealEstateCRMWinForms.Views
 
             // Set default image
             SetDefaultPreviewImage();
+
+            // initialize calculated values
+            UpdateCalculatedValues();
         }
 
         private void SetDefaultPreviewImage()
         {
-            var defaultBitmap = new Bitmap(200, 150);
+            var defaultBitmap = new Bitmap(360, 200);
             using (var g = Graphics.FromImage(defaultBitmap))
             {
                 g.Clear(Color.LightGray);
                 using (var brush = new SolidBrush(Color.Gray))
-                using (var font = new Font("Segoe UI", 10, FontStyle.Bold))
+                using (var font = new Font("Segoe UI", 12, FontStyle.Bold))
                 {
                     string text = "No Image Selected";
                     var textSize = g.MeasureString(text, font);
@@ -327,9 +487,15 @@ namespace RealEstateCRMWinForms.Views
                 Bathrooms = (int)numBathrooms.Value,
                 SquareMeters = (int)numSquareMeters.Value,
                 Status = cmbStatus.SelectedItem?.ToString() ?? "Sell",
-                CreatedAt = DateTime.Now,
+                CreatedAt = dtpListingDate?.Value ?? DateTime.Now,
                 IsActive = true
             };
+
+            // Try to set commonly named string properties on the Property model via reflection.
+            TrySetStringProperty(newProperty, new[] { "PropertyType", "Type" }, cmbPropertyType.SelectedItem?.ToString() ?? "Residential");
+            TrySetStringProperty(newProperty, new[] { "TransactionType", "Type", "ListingType", "ListingMode" }, cmbTransactionType.SelectedItem?.ToString() ?? "Buying");
+            TrySetStringProperty(newProperty, new[] { "Agent", "AgentName", "AssignedAgent" }, txtAgent.Text?.Trim() ?? string.Empty);
+            TrySetStringProperty(newProperty, new[] { "Description", "Notes", "Details" }, txtDescription.Text?.Trim() ?? string.Empty);
 
             // Save to database first to get the ID
             if (_viewModel.AddProperty(newProperty))
@@ -352,6 +518,22 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
+        // Helper: set the first writable string property found from a set of candidate names
+        private void TrySetStringProperty(object target, string[] candidateNames, string value)
+        {
+            if (target == null || candidateNames == null) return;
+            var t = target.GetType();
+            foreach (var name in candidateNames)
+            {
+                var pi = t.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+                if (pi != null && pi.CanWrite && pi.PropertyType == typeof(string))
+                {
+                    pi.SetValue(target, value);
+                    return;
+                }
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -359,6 +541,43 @@ namespace RealEstateCRMWinForms.Views
                 pictureBoxPreview?.Image?.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        // Event handler when area (sqm) or price changes — update calculated values
+        private void OnAreaOrPriceChanged(object? sender, EventArgs e)
+        {
+            UpdateCalculatedValues();
+        }
+
+        // Calculate SQFT and PricePerSQFT and update UI
+        private void UpdateCalculatedValues()
+        {
+            // Area in square meters
+            decimal area = numSquareMeters?.Value ?? 0m;
+            decimal sqft = 0m;
+
+            if (area > 0)
+            {
+                // 1 sqm = 10.7639 sqft
+                sqft = area * 10.7639m;
+                lblSQFTValue.Text = $"{sqft:N2} sqft";
+            }
+            else
+            {
+                lblSQFTValue.Text = "-";
+            }
+
+            // Price per sqft
+            decimal price = numPrice?.Value ?? 0m;
+            if (price > 0 && sqft > 0)
+            {
+                decimal ppsqft = price / sqft;
+                lblPricePerSqftValue.Text = $"₱ {ppsqft:N2}";
+            }
+            else
+            {
+                lblPricePerSqftValue.Text = "-";
+            }
         }
     }
 }

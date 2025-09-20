@@ -185,22 +185,7 @@ namespace RealEstateCRMWinForms.Views
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
 
-            // 4. Score with color coding (using custom Score column)
-            var scoreColumn = new DataGridViewScoreColumn
-            {
-                DataPropertyName = "Score",
-                HeaderText = "Score",
-                Name = "Score",
-                Width = 80,
-                DefaultCellStyle = new DataGridViewCellStyle
-                {
-                    WrapMode = DataGridViewTriState.False,
-                    Font = UIStyles.BoldFont
-                }
-            };
-            dataGridViewLeads.Columns.Add(scoreColumn);
-
-            // 5. Last Contacted
+            // 4. Last Contacted
             dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "LastContacted",
@@ -210,7 +195,7 @@ namespace RealEstateCRMWinForms.Views
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
 
-            // 6. Agent with Avatar (using custom ImageText column)
+            // 5. Agent with Avatar (using custom ImageText column)
             var agentColumn = new DataGridViewImageTextColumn
             {
                 ImagePropertyName = "AgentAvatarPath",
@@ -228,7 +213,7 @@ namespace RealEstateCRMWinForms.Views
             };
             dataGridViewLeads.Columns.Add(agentColumn);
 
-            // 7. Move to Contacts Button (keep existing functionality)
+            // 6. Move to Contacts Button (keep existing functionality)
             dataGridViewLeads.Columns.Add(new DataGridViewButtonColumn
             {
                 HeaderText = "Actions",

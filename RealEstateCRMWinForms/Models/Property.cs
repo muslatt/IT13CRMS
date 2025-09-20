@@ -19,5 +19,11 @@ namespace RealEstateCRMWinForms.Models
         public string? ImagePath { get; set; } // Path to property image
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public bool IsActive { get; set; } = true;
+        
+        // Additional fields added from AddPropertyForm
+        public string PropertyType { get; set; } = string.Empty; // "Residential", "Commercial", "Raw Land"
+        public string TransactionType { get; set; } = string.Empty; // "Buying", "Viewing"
+        public string Agent { get; set; } = string.Empty; // Agent name/info
+        public string Description { get; set; } = string.Empty; // Property description
     }
 }

@@ -1,5 +1,6 @@
 // RealEstateCRMWinForms\Controls\DataGridViewScoreColumn.cs
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using RealEstateCRMWinForms.Utils;
@@ -14,31 +15,37 @@ namespace RealEstateCRMWinForms.Controls
         /// <summary>
         /// Threshold for high scores (green color)
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public int HighScoreThreshold { get; set; } = 80;
         
         /// <summary>
         /// Threshold for medium scores (yellow color)
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public int MediumScoreThreshold { get; set; } = 60;
         
         /// <summary>
         /// Color for high scores
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public Color HighScoreColor { get; set; } = UIStyles.HighScoreColor;
         
         /// <summary>
         /// Color for medium scores
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public Color MediumScoreColor { get; set; } = UIStyles.MediumScoreColor;
         
         /// <summary>
         /// Color for low scores
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public Color LowScoreColor { get; set; } = UIStyles.LowScoreColor;
         
         /// <summary>
         /// Whether to use bold font for scores
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public bool UseBoldFont { get; set; } = true;
         
         public DataGridViewScoreColumn() : base(new DataGridViewScoreCell())
@@ -63,7 +70,7 @@ namespace RealEstateCRMWinForms.Controls
             };
         }
         
-        public override DataGridViewCell CellTemplate
+        public override DataGridViewCell? CellTemplate
         {
             get => base.CellTemplate;
             set
@@ -87,13 +94,13 @@ namespace RealEstateCRMWinForms.Controls
             this.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
         }
         
-        public override Type EditType => null; // Read-only cell
+        public override Type? EditType => null; // Read-only cell
         
         public override Type ValueType => typeof(int);
         
         protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, 
-            int rowIndex, DataGridViewElementStates cellState, object value, object formattedValue, 
-            string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, 
+            int rowIndex, DataGridViewElementStates cellState, object? value, object? formattedValue, 
+            string? errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, 
             DataGridViewPaintParts paintParts)
         {
             try
@@ -164,7 +171,7 @@ namespace RealEstateCRMWinForms.Controls
         /// <summary>
         /// Attempts to parse a score value from the cell value
         /// </summary>
-        private bool TryParseScore(object value, out int score)
+        private bool TryParseScore(object? value, out int score)
         {
             score = 0;
             

@@ -1,8 +1,7 @@
-﻿using RealEstateCRMWinForms.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
-using System;
 using System.ComponentModel;
-using System.Linq;
 
 namespace RealEstateCRMWinForms.ViewModels
 {
@@ -11,11 +10,15 @@ namespace RealEstateCRMWinForms.ViewModels
         private readonly AppDbContext _context;
         public BindingList<Property> Properties { get; set; }
 
+        // Add this static event
+        public static event EventHandler? PropertiesUpdated;
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public PropertyViewModel()
         {
             _context = DbContextHelper.CreateDbContext();
+            Properties = new BindingList<Property>();
             LoadProperties();
         }
 
@@ -25,6 +28,9 @@ namespace RealEstateCRMWinForms.ViewModels
             var properties = _context.Properties.Where(p => p.IsActive).ToList();
             Properties = new BindingList<Property>(properties);
             OnPropertyChanged(nameof(Properties));
+
+            // Notify global listeners (Dashboard subscribes to this)
+            PropertiesUpdated?.Invoke(this, EventArgs.Empty);
         }
 
         public void LoadAllProperties()
@@ -33,6 +39,23 @@ namespace RealEstateCRMWinForms.ViewModels
             var properties = _context.Properties.ToList();
             Properties = new BindingList<Property>(properties);
             OnPropertyChanged(nameof(Properties));
+
+            // Notify global listeners
+            PropertiesUpdated?.Invoke(this, EventArgs.Empty);
+        }
+
+        public Property? GetPropertyById(int id)
+        {
+            try
+            {
+                return _context.Properties.FirstOrDefault(p => p.Id == id);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.WriteLine($"Error getting property by ID: {ex.Message}");
+                return null;
+            }
         }
 
         public bool AddProperty(Property property)
@@ -41,7 +64,7 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 _context.Properties.Add(property);
                 _context.SaveChanges();
-                LoadProperties(); // Refresh the list
+                LoadProperties(); // Refresh the list and notify
                 return true;
             }
             catch (Exception ex)
@@ -61,7 +84,7 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     _context.Entry(property).CurrentValues.SetValues(propertyToUpdate);
                     _context.SaveChanges();
-                    LoadProperties(); // Refresh the list
+                    LoadProperties(); // Refresh the list and notify
                     return true;
                 }
                 return false;
@@ -84,7 +107,7 @@ namespace RealEstateCRMWinForms.ViewModels
                     // Soft delete: set IsActive to false instead of removing
                     property.IsActive = false;
                     _context.SaveChanges();
-                    LoadProperties(); // Refresh the list
+                    LoadProperties(); // Refresh the list and notify
                     return true;
                 }
                 return false;
@@ -106,7 +129,7 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     property.IsActive = true;
                     _context.SaveChanges();
-                    LoadProperties(); // Refresh the list
+                    LoadProperties(); // Refresh the list and notify
                     return true;
                 }
                 return false;

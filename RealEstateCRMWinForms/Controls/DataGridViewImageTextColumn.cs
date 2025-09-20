@@ -16,21 +16,25 @@ namespace RealEstateCRMWinForms.Controls
         /// <summary>
         /// Property name for the image/avatar path in the data source
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public string ImagePropertyName { get; set; } = "AvatarPath";
         
         /// <summary>
         /// Property name for the text to display in the data source
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public string TextPropertyName { get; set; } = "FullName";
         
         /// <summary>
         /// Whether to show initials when no image is available
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public bool ShowInitialsWhenNoImage { get; set; } = true;
         
         /// <summary>
         /// Size of the avatar image
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public int AvatarSize { get; set; } = UIStyles.AvatarSize;
         
         public DataGridViewImageTextColumn() : base(new DataGridViewImageTextCell())
@@ -39,7 +43,7 @@ namespace RealEstateCRMWinForms.Controls
             this.DefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
         }
         
-        public override DataGridViewCell CellTemplate
+        public override DataGridViewCell? CellTemplate
         {
             get => base.CellTemplate;
             set
@@ -66,13 +70,13 @@ namespace RealEstateCRMWinForms.Controls
             this.Style.Alignment = DataGridViewContentAlignment.MiddleLeft;
         }
         
-        public override Type EditType => null; // Read-only cell
+        public override Type? EditType => null; // Read-only cell
         
         public override Type ValueType => typeof(object);
         
         protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, 
-            int rowIndex, DataGridViewElementStates cellState, object value, object formattedValue, 
-            string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, 
+            int rowIndex, DataGridViewElementStates cellState, object? value, object? formattedValue, 
+            string? errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, 
             DataGridViewPaintParts paintParts)
         {
             try

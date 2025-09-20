@@ -1,4 +1,8 @@
-﻿namespace RealEstateCRMWinForms.Controls
+﻿using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace RealEstateCRMWinForms.Controls
 {
     partial class PropertyCard
     {
@@ -21,7 +25,24 @@
                     pictureBox.Image.Dispose();
                     pictureBox.Image = null;
                 }
-                
+
+                // dispose the feature icons if any
+                if (pbBedIcon?.Image != null)
+                {
+                    pbBedIcon.Image.Dispose();
+                    pbBedIcon.Image = null;
+                }
+                if (pbBathIcon?.Image != null)
+                {
+                    pbBathIcon.Image.Dispose();
+                    pbBathIcon.Image = null;
+                }
+                if (pbSqmIcon?.Image != null)
+                {
+                    pbSqmIcon.Image.Dispose();
+                    pbSqmIcon.Image = null;
+                }
+
                 if (components != null)
                 {
                     components.Dispose();
@@ -30,166 +51,7 @@
             base.Dispose(disposing);
         }
 
-        #region Component Designer generated code
-
-        /// <summary> 
-        /// Required method for Designer support - do not modify 
-        /// the contents of this method with the code editor.
-        /// </summary>
-        private void InitializeComponent()
-        {
-            pictureBox = new PictureBox();
-            titlePanel = new Panel();
-            lblTitle = new Label();
-            statusPanel = new Panel();
-            lblStatus = new Label();
-            lblAddress = new Label();
-            detailsPanel = new Panel();
-            lblBedrooms = new Label();
-            lblBathrooms = new Label();
-            lblSquareMeters = new Label();
-            lblPrice = new Label();
-            ((System.ComponentModel.ISupportInitialize)pictureBox).BeginInit();
-            titlePanel.SuspendLayout();
-            statusPanel.SuspendLayout();
-            detailsPanel.SuspendLayout();
-            SuspendLayout();
-            // 
-            // pictureBox
-            // 
-            pictureBox.BackColor = Color.LightGray;
-            pictureBox.Location = new Point(8, 8);
-            pictureBox.Name = "pictureBox";
-            pictureBox.Size = new Size(264, 180);
-            pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
-            pictureBox.TabIndex = 0;
-            pictureBox.TabStop = false;
-            // 
-            // titlePanel
-            // 
-            titlePanel.Controls.Add(lblTitle);
-            titlePanel.Controls.Add(statusPanel);
-            titlePanel.Location = new Point(8, 196);
-            titlePanel.Name = "titlePanel";
-            titlePanel.Size = new Size(264, 24);
-            titlePanel.TabIndex = 1;
-            // 
-            // lblTitle
-            // 
-            lblTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            lblTitle.ForeColor = Color.FromArgb(33, 37, 41);
-            lblTitle.Location = new Point(0, 0);
-            lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(180, 24);
-            lblTitle.TabIndex = 0;
-            lblTitle.Text = "Property Title";
-            lblTitle.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // statusPanel
-            // 
-            statusPanel.BackColor = Color.FromArgb(0, 123, 255);
-            statusPanel.Controls.Add(lblStatus);
-            statusPanel.Location = new Point(204, 0);
-            statusPanel.Name = "statusPanel";
-            statusPanel.Size = new Size(60, 24);
-            statusPanel.TabIndex = 1;
-            // 
-            // lblStatus
-            // 
-            lblStatus.Dock = DockStyle.Fill;
-            lblStatus.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
-            lblStatus.ForeColor = Color.White;
-            lblStatus.Location = new Point(0, 0);
-            lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(60, 24);
-            lblStatus.TabIndex = 0;
-            lblStatus.Text = "Sell";
-            lblStatus.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // lblAddress
-            // 
-            lblAddress.Font = new Font("Segoe UI", 9F);
-            lblAddress.ForeColor = Color.FromArgb(108, 117, 125);
-            lblAddress.Location = new Point(8, 228);
-            lblAddress.Name = "lblAddress";
-            lblAddress.Size = new Size(264, 20);
-            lblAddress.TabIndex = 2;
-            lblAddress.Text = "Property Address";
-            // 
-            // detailsPanel
-            // 
-            detailsPanel.BackColor = Color.Transparent;
-            detailsPanel.Controls.Add(lblBedrooms);
-            detailsPanel.Controls.Add(lblBathrooms);
-            detailsPanel.Controls.Add(lblSquareMeters);
-            detailsPanel.Location = new Point(8, 256);
-            detailsPanel.Name = "detailsPanel";
-            detailsPanel.Size = new Size(264, 32);
-            detailsPanel.TabIndex = 3;
-            // 
-            // lblBedrooms
-            // 
-            lblBedrooms.Font = new Font("Segoe UI", 9F);
-            lblBedrooms.ForeColor = Color.FromArgb(108, 117, 125);
-            lblBedrooms.Location = new Point(0, 8);
-            lblBedrooms.Name = "lblBedrooms";
-            lblBedrooms.Size = new Size(60, 16);
-            lblBedrooms.TabIndex = 0;
-            lblBedrooms.Text = "🛏️ 4";
-            // 
-            // lblBathrooms
-            // 
-            lblBathrooms.Font = new Font("Segoe UI", 9F);
-            lblBathrooms.ForeColor = Color.FromArgb(108, 117, 125);
-            lblBathrooms.Location = new Point(70, 8);
-            lblBathrooms.Name = "lblBathrooms";
-            lblBathrooms.Size = new Size(60, 16);
-            lblBathrooms.TabIndex = 1;
-            lblBathrooms.Text = "🚿 2";
-            // 
-            // lblSquareMeters
-            // 
-            lblSquareMeters.Font = new Font("Segoe UI", 9F);
-            lblSquareMeters.ForeColor = Color.FromArgb(108, 117, 125);
-            lblSquareMeters.Location = new Point(140, 8);
-            lblSquareMeters.Name = "lblSquareMeters";
-            lblSquareMeters.Size = new Size(80, 16);
-            lblSquareMeters.TabIndex = 2;
-            lblSquareMeters.Text = "📐 99 sqm";
-            // 
-            // lblPrice
-            // 
-            lblPrice.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
-            lblPrice.ForeColor = Color.FromArgb(33, 37, 41);
-            lblPrice.Location = new Point(8, 296);
-            lblPrice.Name = "lblPrice";
-            lblPrice.Size = new Size(264, 24);
-            lblPrice.TabIndex = 4;
-            lblPrice.Text = "₱ 9,999,999";
-            // 
-            // PropertyCard
-            // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.White;
-            BorderStyle = BorderStyle.FixedSingle;
-            Controls.Add(lblPrice);
-            Controls.Add(detailsPanel);
-            Controls.Add(lblAddress);
-            Controls.Add(titlePanel);
-            Controls.Add(pictureBox);
-            Name = "PropertyCard";
-            Padding = new Padding(8);
-            Size = new Size(280, 360);
-            ((System.ComponentModel.ISupportInitialize)pictureBox).EndInit();
-            titlePanel.ResumeLayout(false);
-            statusPanel.ResumeLayout(false);
-            detailsPanel.ResumeLayout(false);
-            ResumeLayout(false);
-        }
-
-        #endregion
-
+        // Designer-created controls
         private PictureBox pictureBox;
         private Panel titlePanel;
         private Label lblTitle;
@@ -197,9 +59,201 @@
         private Label lblStatus;
         private Label lblAddress;
         private Panel detailsPanel;
-        private Label lblBedrooms;
-        private Label lblBathrooms;
-        private Label lblSquareMeters;
+
+        // New icon + value controls that PropertyCard.cs expects
+        private PictureBox pbBedIcon;
+        private Label lblBedValue;
+        private PictureBox pbBathIcon;
+        private Label lblBathValue;
+        private PictureBox pbSqmIcon;
+        private Label lblSqmValue;
+
         private Label lblPrice;
+
+        // InitializeComponent to create and assign all controls
+        private void InitializeComponent()
+        {
+            // container for potential designer components
+            this.components = new System.ComponentModel.Container();
+
+            // Basic UserControl sizing
+            this.SuspendLayout();
+            this.BackColor = Color.White;
+            this.BorderStyle = BorderStyle.FixedSingle;
+            this.Size = new Size(280, 320);
+            this.Margin = new Padding(8);
+
+            // pictureBox (top)
+            pictureBox = new PictureBox
+            {
+                Name = "pictureBox",
+                Location = new Point(8, 8),
+                Size = new Size(264, 180),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.FromArgb(240, 242, 245)
+            };
+
+            // titlePanel contains title and status badge
+            titlePanel = new Panel
+            {
+                Name = "titlePanel",
+                Location = new Point(8, 196),
+                Size = new Size(264, 36),
+                BackColor = Color.Transparent
+            };
+
+            lblTitle = new Label
+            {
+                Name = "lblTitle",
+                Location = new Point(0, 0),
+                Size = new Size(200, 36),
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33, 37, 41),
+                AutoEllipsis = true,
+                Text = "Title"
+            };
+
+            // status panel on the right within titlePanel
+            statusPanel = new Panel
+            {
+                Name = "statusPanel",
+                Size = new Size(56, 24),
+                Location = new Point(titlePanel.Width - 66, 6),
+                BackColor = Color.FromArgb(0, 123, 255)
+            };
+
+            lblStatus = new Label
+            {
+                Name = "lblStatus",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.White,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Text = "Sell"
+            };
+
+            statusPanel.Controls.Add(lblStatus);
+            titlePanel.Controls.Add(lblTitle);
+            titlePanel.Controls.Add(statusPanel);
+
+            // address label under title
+            lblAddress = new Label
+            {
+                Name = "lblAddress",
+                Location = new Point(8, 236),
+                Size = new Size(264, 18),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(108, 117, 125),
+                Text = "Address"
+            };
+
+            // detailsPanel holds icon + number pairs for bedrooms, bathrooms, sqm
+            detailsPanel = new Panel
+            {
+                Name = "detailsPanel",
+                Location = new Point(8, 258),
+                Size = new Size(264, 28),
+                BackColor = Color.Transparent
+            };
+
+            // Calculate even spacing for 3 features across 264px width
+            // Each feature gets about 88px (264/3), with small margins
+            int featureWidth = 80;  // slightly less than 88 to allow spacing
+            int spaceBetween = 8;   // small gap between features
+
+            // Bed feature: icon + value (left third)
+            pbBedIcon = new PictureBox
+            {
+                Name = "pbBedIcon",
+                Location = new Point(0, 0),
+                Size = new Size(20, 28),
+                SizeMode = PictureBoxSizeMode.CenterImage,
+                BackColor = Color.Transparent
+            };
+
+            lblBedValue = new Label
+            {
+                Name = "lblBedValue",
+                Location = new Point(22, 0),
+                Size = new Size(featureWidth - 22, 28),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(50, 54, 59),
+                Text = "0",
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            // Bath feature: icon + value (middle third)
+            int bathStartX = featureWidth + spaceBetween;
+            pbBathIcon = new PictureBox
+            {
+                Name = "pbBathIcon",
+                Location = new Point(bathStartX, 0),
+                Size = new Size(20, 28),
+                SizeMode = PictureBoxSizeMode.CenterImage,
+                BackColor = Color.Transparent
+            };
+
+            lblBathValue = new Label
+            {
+                Name = "lblBathValue",
+                Location = new Point(bathStartX + 22, 0),
+                Size = new Size(featureWidth - 22, 28),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(50, 54, 59),
+                Text = "0",
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            // SQM feature: icon + value + unit (right third)
+            int sqmStartX = (featureWidth + spaceBetween) * 2;
+            pbSqmIcon = new PictureBox
+            {
+                Name = "pbSqmIcon",
+                Location = new Point(sqmStartX, 0),
+                Size = new Size(20, 28),
+                SizeMode = PictureBoxSizeMode.CenterImage,
+                BackColor = Color.Transparent
+            };
+
+            lblSqmValue = new Label
+            {
+                Name = "lblSqmValue",
+                Location = new Point(sqmStartX + 22, 0),
+                Size = new Size(264 - sqmStartX - 22, 28), // use remaining width to fit "sqm"
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(50, 54, 59),
+                Text = "0 sqm",
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            detailsPanel.Controls.Add(pbBedIcon);
+            detailsPanel.Controls.Add(lblBedValue);
+            detailsPanel.Controls.Add(pbBathIcon);
+            detailsPanel.Controls.Add(lblBathValue);
+            detailsPanel.Controls.Add(pbSqmIcon);
+            detailsPanel.Controls.Add(lblSqmValue);
+
+            // price label at bottom
+            lblPrice = new Label
+            {
+                Name = "lblPrice",
+                Location = new Point(8, 288),
+                Size = new Size(264, 24),
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33, 37, 41),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Text = "₱ 0"
+            };
+
+            // Add controls to the UserControl
+            this.Controls.Add(pictureBox);
+            this.Controls.Add(titlePanel);
+            this.Controls.Add(lblAddress);
+            this.Controls.Add(detailsPanel);
+            this.Controls.Add(lblPrice);
+
+            this.ResumeLayout(false);
+        }
     }
 }

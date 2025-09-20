@@ -1,6 +1,7 @@
 // RealEstateCRMWinForms\Controls\DataGridViewBadgeColumn.cs
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -33,21 +34,25 @@ namespace RealEstateCRMWinForms.Controls
         /// <summary>
         /// Dictionary mapping status values to their visual styles
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Dictionary<string, BadgeStyle> StatusStyles { get; set; }
         
         /// <summary>
         /// Default style for unknown status values
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public BadgeStyle DefaultStyle { get; set; }
         
         /// <summary>
         /// Corner radius for the badge rounded rectangle
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public int CornerRadius { get; set; } = UIStyles.BadgeCornerRadius;
         
         /// <summary>
         /// Padding inside the badge
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public int BadgePadding { get; set; } = UIStyles.BadgePadding;
         
         public DataGridViewBadgeColumn() : base(new DataGridViewBadgeCell())
@@ -99,7 +104,7 @@ namespace RealEstateCRMWinForms.Controls
             return StatusStyles.TryGetValue(status, out var style) ? style : DefaultStyle;
         }
         
-        public override DataGridViewCell CellTemplate
+        public override DataGridViewCell? CellTemplate
         {
             get => base.CellTemplate;
             set
@@ -123,13 +128,13 @@ namespace RealEstateCRMWinForms.Controls
             this.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
         }
         
-        public override Type EditType => null; // Read-only cell
+        public override Type? EditType => null; // Read-only cell
         
         public override Type ValueType => typeof(string);
         
         protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, 
-            int rowIndex, DataGridViewElementStates cellState, object value, object formattedValue, 
-            string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, 
+            int rowIndex, DataGridViewElementStates cellState, object? value, object? formattedValue, 
+            string? errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, 
             DataGridViewPaintParts paintParts)
         {
             try

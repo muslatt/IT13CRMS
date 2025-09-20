@@ -33,21 +33,16 @@ namespace RealEstateCRMWinForms.ViewModels
                     {
                         Contacts.Add(contact);
                     }
-                    
-                    // If no contacts in database, load sample data
-                    if (Contacts.Count == 0)
-                    {
-                        LoadSampleData();
-                    }
+
+                    // NOTE: Removed sample data insertion — the list will remain empty if DB has no contacts.
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading contacts: {ex.Message}", "Error", 
+                // Log and show a single minimal message for UI stability
+                System.Diagnostics.Debug.WriteLine($"Error loading contacts: {ex.Message}");
+                MessageBox.Show($"Error loading contacts. Check database connection.", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
-                
-                // Fallback to sample data
-                LoadSampleData();
             }
         }
 
@@ -113,99 +108,6 @@ namespace RealEstateCRMWinForms.ViewModels
                 MessageBox.Show($"Error deleting contact: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
-            }
-        }
-
-        private void LoadSampleData()
-        {
-            // Sample data for initial display
-            var sampleContacts = new List<Contact>
-            {
-                new Contact
-                {
-                    FullName = "Name 1",
-                    Email = "email@example.com",
-                    Phone = "+1 231 231 2312",
-                    Type = "Buyer",
-                    AvatarPath = null,
-                    CreatedAt = DateTime.UtcNow,
-                    IsActive = true
-                },
-                new Contact
-                {
-                    FullName = "Name 2",
-                    Email = "email@example.com",
-                    Phone = "+1 231 231 2312",
-                    Type = "Buyer",
-                    AvatarPath = null,
-                    CreatedAt = DateTime.UtcNow.AddHours(-1),
-                    IsActive = true
-                },
-                new Contact
-                {
-                    FullName = "Name 3",
-                    Email = "email@example.com",
-                    Phone = "+1 231 231 2312",
-                    Type = "Buyer",
-                    AvatarPath = null,
-                    CreatedAt = DateTime.UtcNow.AddDays(-1),
-                    IsActive = true
-                },
-                new Contact
-                {
-                    FullName = "Name 4",
-                    Email = "email@example.com",
-                    Phone = "+1 231 231 2312",
-                    Type = "Buyer",
-                    AvatarPath = null,
-                    CreatedAt = DateTime.UtcNow.AddDays(-2),
-                    IsActive = true
-                },
-                new Contact
-                {
-                    FullName = "Name 5",
-                    Email = "email@example.com",
-                    Phone = "+1 231 231 2312",
-                    Type = "Buyer",
-                    AvatarPath = null,
-                    CreatedAt = DateTime.UtcNow.AddDays(-3),
-                    IsActive = true
-                },
-                new Contact
-                {
-                    FullName = "Name 6",
-                    Email = "email@example.com",
-                    Phone = "+1 231 231 2312",
-                    Type = "Renter",
-                    AvatarPath = null,
-                    CreatedAt = DateTime.UtcNow.AddDays(-4),
-                    IsActive = true
-                }
-            };
-
-            // Save sample data to database
-            try
-            {
-                using (var dbContext = DbContextHelper.CreateDbContext())
-                {
-                    foreach (var contact in sampleContacts)
-                    {
-                        dbContext.Contacts.Add(contact);
-                        Contacts.Add(contact);
-                    }
-                    dbContext.SaveChanges();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saving sample data: {ex.Message}", "Error", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                
-                // If database save fails, just add to memory
-                foreach (var contact in sampleContacts)
-                {
-                    Contacts.Add(contact);
-                }
             }
         }
     }

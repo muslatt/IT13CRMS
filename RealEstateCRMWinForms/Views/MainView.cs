@@ -611,7 +611,9 @@ namespace RealEstateCRMWinForms.Views
 
         public void SwitchSection(string section)
         {
-            lblSectionTitle.Text = section;
+            // Show "Agency Dashboard" in the small top header when Dashboard is active,
+            // otherwise show the section name as-is.
+            lblSectionTitle.Text = section == "Dashboard" ? "Agency Dashboard" : section;
 
             // set visual active button and update content
             switch (section)
