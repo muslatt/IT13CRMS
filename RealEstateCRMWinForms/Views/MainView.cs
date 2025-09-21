@@ -1,4 +1,4 @@
-﻿using RealEstateCRMWinForms.ViewModels;
+using RealEstateCRMWinForms.ViewModels;
 using System.Drawing;
 using System.Windows.Forms;
 using System.IO;

@@ -20,13 +20,13 @@ namespace RealEstateCRMWinForms.Views
         private Button btnSave;
         private Button btnCancel;
 
-        private readonly ContactViewModel _contactViewModel;
+        private readonly PropertyViewModel _propertyViewModel;
 
         public Lead? CreatedLead { get; private set; }
 
         public AddLeadForm()
         {
-            _contactViewModel = new ContactViewModel();
+            _propertyViewModel = new PropertyViewModel();
             InitializeComponent();
             LoadAgents();
         }
@@ -103,10 +103,12 @@ namespace RealEstateCRMWinForms.Views
                 cmbAgent.Items.Clear();
                 cmbAgent.Items.Add("(No Agent)");
 
-                // Load agents from contacts 
-                var agents = _contactViewModel.Contacts
-                    .Where(c => c.IsActive)
-                    .OrderBy(c => c.FullName)
+                // Load agents from properties - get unique agent names
+                var agents = _propertyViewModel.Properties
+                    .Where(p => p.IsActive && !string.IsNullOrEmpty(p.Agent))
+                    .Select(p => p.Agent)
+                    .Distinct()
+                    .OrderBy(agent => agent)
                     .ToList();
 
                 foreach (var agent in agents)
@@ -114,8 +116,6 @@ namespace RealEstateCRMWinForms.Views
                     cmbAgent.Items.Add(agent);
                 }
 
-                cmbAgent.DisplayMember = "FullName";
-                cmbAgent.ValueMember = "Id";
                 cmbAgent.SelectedIndex = 0;
             }
             catch (Exception ex)
@@ -159,12 +159,9 @@ namespace RealEstateCRMWinForms.Views
 
             // Get selected agent information
             string assignedAgent = string.Empty;
-            string? agentAvatarPath = null;
-
-            if (cmbAgent.SelectedItem is Contact selectedAgent)
+            if (cmbAgent.SelectedIndex > 0) // Skip "(No Agent)" option
             {
-                assignedAgent = selectedAgent.FullName;
-                agentAvatarPath = selectedAgent.AvatarPath;
+                assignedAgent = cmbAgent.SelectedItem?.ToString() ?? string.Empty;
             }
 
             CreatedLead = new Lead
@@ -176,8 +173,7 @@ namespace RealEstateCRMWinForms.Views
                 Type = cmbType.SelectedItem?.ToString() ?? "Renter",
                 Status = cmbStatus.SelectedItem?.ToString() ?? "New Lead",
                 LastContacted = dtpLastContacted.Checked ? dtpLastContacted.Value : (DateTime?)null,
-                AssignedAgent = assignedAgent,
-                AgentAvatarPath = agentAvatarPath,
+                AssignedAgent = assignedAgent, // Set the NotMapped property
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };

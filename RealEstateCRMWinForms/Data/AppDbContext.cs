@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RealEstateCRMWinForms.Models;
 
 namespace RealEstateCRMWinForms.Data

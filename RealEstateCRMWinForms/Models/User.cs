@@ -1,4 +1,6 @@
-﻿namespace RealEstateCRMWinForms.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace RealEstateCRMWinForms.Models
 {
     public class User
     {
@@ -12,5 +14,11 @@
         public bool IsEmailVerified { get; set; } = false;
         public string? EmailVerificationToken { get; set; }
         public DateTime? EmailVerificationSentAt { get; set; }
+        
+        /// <summary>
+        /// Gets the full name of the user (FirstName + LastName)
+        /// </summary>
+        [NotMapped]
+        public string FullName => $"{FirstName} {LastName}".Trim();
     }
 }
