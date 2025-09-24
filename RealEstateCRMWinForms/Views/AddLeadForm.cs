@@ -12,11 +12,9 @@ namespace RealEstateCRMWinForms.Views
         private TextBox txtFullName;
         private TextBox txtEmail;
         private TextBox txtPhone;
-        private TextBox txtAddress;
-        private ComboBox cmbType;
-        private ComboBox cmbStatus;
+        private TextBox txtOccupation;
+        private TextBox txtSalary;
         private ComboBox cmbAgent;
-        private DateTimePicker dtpLastContacted;
         private Button btnSave;
         private Button btnCancel;
 
@@ -34,7 +32,7 @@ namespace RealEstateCRMWinForms.Views
         private void InitializeComponent()
         {
             Text = "Add New Lead";
-            Size = new Size(450, 460);
+            Size = new Size(450, 450); // Reduced height since we removed Type field
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -54,41 +52,25 @@ namespace RealEstateCRMWinForms.Views
             var lblPhone = new Label { Text = "Phone:", Location = new Point(20, 85), AutoSize = true, Font = new Font("Segoe UI", 12F) };
             txtPhone = new TextBox { Location = new Point(140, 80), Size = new Size(250, 28), Font = new Font("Segoe UI", 12F) };
 
-            var lblAddress = new Label { Text = "Address:", Location = new Point(20, 115), AutoSize = true, Font = new Font("Segoe UI", 12F) };
-            txtAddress = new TextBox { Location = new Point(140, 110), Size = new Size(250, 28), Font = new Font("Segoe UI", 12F) };
+            var lblOccupation = new Label { Text = "Occupation:", Location = new Point(20, 115), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            txtOccupation = new TextBox { Location = new Point(140, 110), Size = new Size(250, 28), Font = new Font("Segoe UI", 12F) };
 
-            var lblType = new Label { Text = "Type:", Location = new Point(20, 145), AutoSize = true, Font = new Font("Segoe UI", 12F) };
-            cmbType = new ComboBox { Location = new Point(140, 140), Size = new Size(150, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
-            cmbType.Items.AddRange(new[] { "Renter", "Owner", "Buyer" });
-            cmbType.SelectedIndex = 0;
+            var lblSalary = new Label { Text = "Salary:", Location = new Point(20, 145), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            txtSalary = new TextBox { Location = new Point(140, 140), Size = new Size(200, 28), Font = new Font("Segoe UI", 12F), PlaceholderText = "Optional" };
 
-            var lblStatus = new Label { Text = "Status:", Location = new Point(20, 175), AutoSize = true, Font = new Font("Segoe UI", 12F) };
-            cmbStatus = new ComboBox { Location = new Point(140, 170), Size = new Size(150, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
-            cmbStatus.Items.AddRange(new[] { "New Lead", "Contacted", "Qualified", "Unqualified" });
-            cmbStatus.SelectedIndex = 0;
+            // Removed Type dropdown and label - moved Agent up to fill the gap
+            var lblAgent = new Label { Text = "Agent:", Location = new Point(20, 175), AutoSize = true, Font = new Font("Segoe UI", 12F) };
+            cmbAgent = new ComboBox { Location = new Point(140, 170), Size = new Size(250, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
 
-            var lblAgent = new Label { Text = "Agent:", Location = new Point(20, 205), AutoSize = true, Font = new Font("Segoe UI", 12F) };
-            cmbAgent = new ComboBox { Location = new Point(140, 200), Size = new Size(250, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
-
-            var lblLastContacted = new Label { Text = "Last Contacted:", Location = new Point(20, 235), AutoSize = true, Font = new Font("Segoe UI", 12F) };
-            dtpLastContacted = new DateTimePicker
-            {
-                Location = new Point(140, 230),
-                Size = new Size(150, 28),
-                Format = DateTimePickerFormat.Short,
-                ShowCheckBox = true, // Allows user to specify if a date is set
-                Checked = false,     // Unchecked by default, meaning null
-                Font = new Font("Segoe UI", 12F)
-            };
-
-            btnSave = new Button { Text = "Save", Location = new Point(290, 370), Size = new Size(110, 35), DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 12F) };
-            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 370), Size = new Size(110, 35), DialogResult = DialogResult.Cancel, Font = new Font("Segoe UI", 12F) };
+            btnSave = new Button { Text = "Save", Location = new Point(290, 350), Size = new Size(110, 35), DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 12F) };
+            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 350), Size = new Size(110, 35), DialogResult = DialogResult.Cancel, Font = new Font("Segoe UI", 12F) };
 
             btnSave.Click += BtnSave_Click;
 
             Controls.AddRange(new Control[] {
-                lblFullName, txtFullName, lblEmail, txtEmail, lblPhone, txtPhone, lblAddress, txtAddress,
-                lblType, cmbType, lblStatus, cmbStatus, lblAgent, cmbAgent, lblLastContacted, dtpLastContacted,
+                lblFullName, txtFullName, lblEmail, txtEmail, lblPhone, txtPhone,
+                lblOccupation, txtOccupation, lblSalary, txtSalary,
+                lblAgent, cmbAgent,
                 btnSave, btnCancel
             });
 
@@ -157,6 +139,23 @@ namespace RealEstateCRMWinForms.Views
                 return;
             }
 
+            // Parse salary if provided
+            decimal? salary = null;
+            if (!string.IsNullOrWhiteSpace(txtSalary.Text))
+            {
+                if (decimal.TryParse(txtSalary.Text, out decimal parsedSalary))
+                {
+                    salary = parsedSalary;
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a valid salary amount.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtSalary.Focus();
+                    DialogResult = DialogResult.None; // Keep form open
+                    return;
+                }
+            }
+
             // Get selected agent information
             string assignedAgent = string.Empty;
             if (cmbAgent.SelectedIndex > 0) // Skip "(No Agent)" option
@@ -169,11 +168,10 @@ namespace RealEstateCRMWinForms.Views
                 FullName = txtFullName.Text.Trim(),
                 Email = txtEmail.Text.Trim(),
                 Phone = txtPhone.Text.Trim(),
-                Address = txtAddress.Text.Trim(),
-                Type = cmbType.SelectedItem?.ToString() ?? "Renter",
-                Status = cmbStatus.SelectedItem?.ToString() ?? "New Lead",
-                LastContacted = dtpLastContacted.Checked ? dtpLastContacted.Value : (DateTime?)null,
-                AssignedAgent = assignedAgent, // Set the NotMapped property
+                Occupation = txtOccupation.Text.Trim(),
+                Salary = salary,
+                Type = "Lead", // Set default type to "Lead" for new entries
+                AssignedAgent = assignedAgent, // NotMapped property provided by Lead.Extensions
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };

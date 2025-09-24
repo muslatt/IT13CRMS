@@ -29,6 +29,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     var leadsFromDb = dbContext.Leads.Where(l => l.IsActive).ToList();
                     
                     // Get available agents from properties
@@ -55,15 +58,18 @@ namespace RealEstateCRMWinForms.ViewModels
                         Leads.Add(lead);
                     }
 
-                    // NOTE: removed sample data insertion � the list will remain empty if DB has no leads.
+                    // NOTE: removed sample data insertion – the list will remain empty if DB has no leads.
                 }
             }
             catch (Exception ex)
             {
-                // Fail silently for UI stability; log to Debug and show a single minimal message if desired.
+                // Log the specific error for debugging
                 System.Diagnostics.Debug.WriteLine($"Error loading leads: {ex.Message}");
-                MessageBox.Show($"Error loading leads. Check database connection.", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                
+                // Don't show error dialog in constructor to prevent UI blocking
+                // Instead, log and continue with empty list
+                Console.WriteLine($"Database connection error: {ex.Message}");
             }
         }
 
@@ -73,6 +79,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     // The AssignedAgent property is NotMapped, so it won't be saved to DB
                     // but it will be preserved in memory for display
                     dbContext.Leads.Add(lead);
@@ -97,6 +106,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     dbContext.Leads.Update(lead);
                     dbContext.SaveChanges();
                     return true;
@@ -116,6 +128,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     // Soft delete - just mark as inactive
                     lead.IsActive = false;
                     dbContext.Leads.Update(lead);
@@ -140,27 +155,35 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
-                    // Create a new contact from the lead
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
+                    // Create a new contact from the lead with ALL fields transferred
                     var contact = new Contact
                     {
                         FullName = lead.FullName,
                         Email = lead.Email,
                         Phone = lead.Phone,
-                        Type = lead.Type,
+                        Type = "Contact", // Set type to Contact for the new record
                         AvatarPath = lead.AvatarPath,
-                        CreatedAt = DateTime.Now,
+                        Occupation = lead.Occupation, // Transfer occupation
+                        Salary = lead.Salary, // Transfer salary
+                        CreatedAt = lead.CreatedAt, // Preserve original creation date
                         IsActive = true
                     };
 
                     // Add the contact to the database
                     dbContext.Contacts.Add(contact);
                     
-                    // Mark the lead as inactive (soft delete)
-                    lead.IsActive = false;
-                    dbContext.Leads.Update(lead);
+                    // HARD DELETE: Completely remove the lead from the Leads table
+                    var leadToDelete = dbContext.Leads.Find(lead.Id);
+                    if (leadToDelete != null)
+                    {
+                        dbContext.Leads.Remove(leadToDelete);
+                    }
                     
-                    // Save changes
-                    dbContext.SaveChanges();
+                    // Save changes in a single transaction to ensure data integrity
+                    await dbContext.SaveChangesAsync();
                     
                     // Remove from local collection
                     Leads.Remove(lead);
@@ -182,8 +205,29 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error moving lead to contact: {ex.Message}");
                 MessageBox.Show($"Error moving lead to contact: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Test database connection and create database if needed
+        /// </summary>
+        public bool TestConnection()
+        {
+            try
+            {
+                using (var dbContext = DbContextHelper.CreateDbContext())
+                {
+                    dbContext.Database.EnsureCreated();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Database connection test failed: {ex.Message}");
                 return false;
             }
         }

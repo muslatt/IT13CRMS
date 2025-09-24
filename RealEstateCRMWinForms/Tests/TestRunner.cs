@@ -112,7 +112,6 @@ namespace RealEstateCRMWinForms.Tests
                 var testLead = new RealEstateCRMWinForms.Models.Lead
                 {
                     FullName = "Test User",
-                    Status = "New",
                     Type = "Buyer"
                 };
                 

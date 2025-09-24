@@ -10,11 +10,9 @@ namespace RealEstateCRMWinForms.Views
         private TextBox txtFullName;
         private TextBox txtEmail;
         private TextBox txtPhone;
-        private TextBox txtAddress;
+        private TextBox txtOccupation;
+        private TextBox txtSalary;
         private ComboBox cmbType;
-        private ComboBox cmbStatus;
-        private ComboBox cmbSource;
-        private DateTimePicker dtpLastContacted;
         private Button btnSave;
         private Button btnCancel;
         private Lead _lead;
@@ -29,7 +27,7 @@ namespace RealEstateCRMWinForms.Views
         private void InitializeComponent()
         {
             Text = "Edit Lead";
-            Size = new Size(500, 480);
+            Size = new Size(500, 350);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -85,100 +83,62 @@ namespace RealEstateCRMWinForms.Views
                 PlaceholderText = "0XXX XXX XXXX"
             };
 
-            // Address
-            var lblAddress = new Label
+            // Occupation
+            var lblOccupation = new Label
             {
-                Text = "Address:",
+                Text = "Occupation:",
                 Location = new Point(20, 125),
                 Size = new Size(100, 23),
                 Font = new Font("Segoe UI", 9F)
             };
 
-            txtAddress = new TextBox
+            txtOccupation = new TextBox
             {
                 Location = new Point(130, 125),
                 Size = new Size(320, 23),
                 Font = new Font("Segoe UI", 9F)
             };
 
+            // Salary
+            var lblSalary = new Label
+            {
+                Text = "Salary:",
+                Location = new Point(20, 160),
+                Size = new Size(100, 23),
+                Font = new Font("Segoe UI", 9F)
+            };
+
+            txtSalary = new TextBox
+            {
+                Location = new Point(130, 160),
+                Size = new Size(200, 23),
+                Font = new Font("Segoe UI", 9F),
+                PlaceholderText = "Optional"
+            };
+
             // Type
             var lblType = new Label
             {
                 Text = "Type:",
-                Location = new Point(20, 160),
+                Location = new Point(20, 195),
                 Size = new Size(100, 23),
                 Font = new Font("Segoe UI", 9F)
             };
 
             cmbType = new ComboBox
             {
-                Location = new Point(130, 160),
+                Location = new Point(130, 195),
                 Size = new Size(120, 23),
                 Font = new Font("Segoe UI", 9F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cmbType.Items.AddRange(new[] { "Renter", "Owner", "Buyer" });
 
-            // Status
-            var lblStatus = new Label
-            {
-                Text = "Status:",
-                Location = new Point(20, 195),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            cmbStatus = new ComboBox
-            {
-                Location = new Point(130, 195),
-                Size = new Size(150, 23),
-                Font = new Font("Segoe UI", 9F),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            cmbStatus.Items.AddRange(new[] { "New Lead", "Contacted", "Qualified", "Unqualified" });
-
-            // Source
-            var lblSource = new Label
-            {
-                Text = "Source:",
-                Location = new Point(20, 230),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            cmbSource = new ComboBox
-            {
-                Location = new Point(130, 230),
-                Size = new Size(150, 23),
-                Font = new Font("Segoe UI", 9F),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            cmbSource.Items.AddRange(new[] { "Website", "Facebook", "Instagram", "Referral", "Walk-in", "Phone Call", "Email", "Other" });
-
-            // Last Contacted
-            var lblLastContacted = new Label
-            {
-                Text = "Last Contacted:",
-                Location = new Point(20, 265),
-                Size = new Size(100, 23),
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            dtpLastContacted = new DateTimePicker
-            {
-                Location = new Point(130, 265),
-                Size = new Size(200, 23),
-                Font = new Font("Segoe UI", 9F),
-                Format = DateTimePickerFormat.Short,
-                ShowCheckBox = true, // Allow null values by checking/unchecking
-                Checked = false
-            };
-
             // Buttons
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(280, 390),
+                Location = new Point(280, 260),
                 Size = new Size(80, 35),
                 Font = new Font("Segoe UI", 9F),
                 DialogResult = DialogResult.Cancel,
@@ -191,7 +151,7 @@ namespace RealEstateCRMWinForms.Views
             btnSave = new Button
             {
                 Text = "Save Changes",
-                Location = new Point(370, 390),
+                Location = new Point(370, 260),
                 Size = new Size(100, 35),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
@@ -206,11 +166,9 @@ namespace RealEstateCRMWinForms.Views
                 lblFullName, txtFullName,
                 lblEmail, txtEmail,
                 lblPhone, txtPhone,
-                lblAddress, txtAddress,
+                lblOccupation, txtOccupation,
+                lblSalary, txtSalary,
                 lblType, cmbType,
-                lblStatus, cmbStatus,
-                lblSource, cmbSource,
-                lblLastContacted, dtpLastContacted,
                 btnCancel, btnSave
             });
 
@@ -223,22 +181,10 @@ namespace RealEstateCRMWinForms.Views
             txtFullName.Text = _lead.FullName;
             txtEmail.Text = _lead.Email;
             txtPhone.Text = _lead.Phone;
-            txtAddress.Text = _lead.Address;
+            txtOccupation.Text = _lead.Occupation;
+            txtSalary.Text = _lead.Salary?.ToString() ?? "";
             
             cmbType.SelectedItem = _lead.Type;
-            cmbStatus.SelectedItem = _lead.Status;
-            cmbSource.SelectedItem = _lead.Source;
-
-            if (_lead.LastContacted.HasValue)
-            {
-                dtpLastContacted.Checked = true;
-                dtpLastContacted.Value = _lead.LastContacted.Value;
-            }
-            else
-            {
-                dtpLastContacted.Checked = false;
-                dtpLastContacted.Value = DateTime.Now;
-            }
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -269,15 +215,30 @@ namespace RealEstateCRMWinForms.Views
                 return;
             }
 
+            // Parse salary if provided
+            decimal? salary = null;
+            if (!string.IsNullOrWhiteSpace(txtSalary.Text))
+            {
+                if (decimal.TryParse(txtSalary.Text, out decimal parsedSalary))
+                {
+                    salary = parsedSalary;
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a valid salary amount.", "Validation Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtSalary.Focus();
+                    return;
+                }
+            }
+
             // Update lead object
             _lead.FullName = txtFullName.Text.Trim();
             _lead.Email = txtEmail.Text.Trim();
             _lead.Phone = txtPhone.Text.Trim();
-            _lead.Address = txtAddress.Text.Trim();
+            _lead.Occupation = txtOccupation.Text.Trim();
+            _lead.Salary = salary;
             _lead.Type = cmbType.SelectedItem?.ToString() ?? "Renter";
-            _lead.Status = cmbStatus.SelectedItem?.ToString() ?? "New Lead";
-            _lead.Source = cmbSource.SelectedItem?.ToString() ?? "Website";
-            _lead.LastContacted = dtpLastContacted.Checked ? dtpLastContacted.Value : null;
 
             DialogResult = DialogResult.OK;
             Close();

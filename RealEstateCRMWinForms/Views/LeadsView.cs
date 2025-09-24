@@ -10,6 +10,8 @@ using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Threading.Tasks;
+using Timer = System.Windows.Forms.Timer; 
 
 namespace RealEstateCRMWinForms.Views
 {
@@ -37,7 +39,7 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewLeads.AutoGenerateColumns = false;
             dataGridViewLeads.Columns.Clear();
 
-            // Make table read-only (no inline editing)
+            // Allow editing only for Type column (dropdown functionality)
             dataGridViewLeads.EnableHeadersVisualStyles = false;
             // Changed from Fill to None to prevent column shrinking and enable horizontal scrolling
             dataGridViewLeads.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
@@ -46,8 +48,8 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewLeads.MultiSelect = false;
             dataGridViewLeads.AllowUserToAddRows = false;
             dataGridViewLeads.AllowUserToDeleteRows = false;
-            dataGridViewLeads.ReadOnly = true;
-            dataGridViewLeads.EditMode = DataGridViewEditMode.EditProgrammatically;
+            dataGridViewLeads.ReadOnly = false; // Allow editing for dropdown functionality
+            dataGridViewLeads.EditMode = DataGridViewEditMode.EditOnEnter;
 
             // Enable horizontal scrolling
             dataGridViewLeads.ScrollBars = ScrollBars.Both;
@@ -88,6 +90,10 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewLeads.MouseClick += DataGridViewLeads_MouseClick;
             dataGridViewLeads.CellMouseEnter += DataGridViewLeads_CellMouseEnter;
             dataGridViewLeads.CellMouseLeave += DataGridViewLeads_CellMouseLeave;
+            dataGridViewLeads.CellValueChanged += DataGridViewLeads_CellValueChanged;
+            dataGridViewLeads.CurrentCellDirtyStateChanged += DataGridViewLeads_CurrentCellDirtyStateChanged;
+            dataGridViewLeads.CellBeginEdit += DataGridViewLeads_CellBeginEdit;
+            dataGridViewLeads.DataError += DataGridViewLeads_DataError;
         }
 
         private void CreateContextMenu()
@@ -108,6 +114,14 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
+                // Test database connection first
+                if (!_viewModel.TestConnection())
+                {
+                    // Show a user-friendly message without blocking the UI
+                    ShowDatabaseConnectionInfo();
+                    return;
+                }
+
                 // Create columns in the desired order
                 CreateGridColumns();
 
@@ -122,6 +136,29 @@ namespace RealEstateCRMWinForms.Views
                 // Fallback to basic initialization if custom columns fail
                 InitializeBasicColumns();
             }
+        }
+
+        private void ShowDatabaseConnectionInfo()
+        {
+            // Create a label to show database status instead of blocking error dialog
+            var infoLabel = new Label
+            {
+                Text = "Database connection not available. Some features may be limited.",
+                ForeColor = Color.Orange,
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Padding = new Padding(10)
+            };
+
+            // Insert at the top of the control
+            this.Controls.Add(infoLabel);
+            infoLabel.BringToFront();
+
+            // Still initialize the grid with empty data
+            CreateGridColumns();
+            _bindingSource.DataSource = _viewModel.Leads;
+            dataGridViewLeads.DataSource = _bindingSource;
         }
 
         /// <summary>
@@ -139,8 +176,16 @@ namespace RealEstateCRMWinForms.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error in fallback initialization: {ex.Message}");
-                MessageBox.Show("Error loading leads data. Please restart the application.", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Create a simple message instead of blocking dialog
+                var errorLabel = new Label
+                {
+                    Text = "Unable to load leads data. Please check your configuration.",
+                    ForeColor = Color.Red,
+                    AutoSize = true,
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleCenter
+                };
+                this.Controls.Add(errorLabel);
             }
         }
 
@@ -155,6 +200,7 @@ namespace RealEstateCRMWinForms.Views
                 Name = "FullName",
                 Width = 200,
                 ShowInitialsWhenNoImage = true,
+                ReadOnly = true, // Name column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     WrapMode = DataGridViewTriState.False,
@@ -164,38 +210,28 @@ namespace RealEstateCRMWinForms.Views
             };
             dataGridViewLeads.Columns.Add(nameColumn);
 
-            // 2. Status with colored badges (using custom Badge column)
-            var statusColumn = new DataGridViewBadgeColumn
+            // Type column with dropdown functionality - UPDATED
+            var typeColumn = new DataGridViewComboBoxColumn
             {
-                DataPropertyName = "Status",
-                HeaderText = "Status",
-                Name = "Status",
+                DataPropertyName = "Type",
+                HeaderText = "Type",
+                Name = "Type",
                 Width = 120,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False },
+                DropDownWidth = 120,
+                MaxDropDownItems = 5,
+                FlatStyle = FlatStyle.Flat
             };
-            dataGridViewLeads.Columns.Add(statusColumn);
+            
+            // Add dropdown items - only "Contact" for conversion functionality
+            typeColumn.Items.AddRange(new string[] { "Contact" });
+            typeColumn.DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing; // Show dropdown arrow only on edit
+            
+            dataGridViewLeads.Columns.Add(typeColumn);
 
-            // 3. Source
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "Source",
-                HeaderText = "Source",
-                Name = "Source",
-                Width = 120,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
+            // NOTE: Removed Status, Source, Last Contacted, and Actions columns per request.
 
-            // 4. Last Contacted
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "LastContacted",
-                HeaderText = "Last Contacted",
-                Name = "LastContacted",
-                Width = 150,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
-
-            // 5. Agent with Avatar (using custom ImageText column)
+            // 2. Agent with Avatar (using custom ImageText column)
             var agentColumn = new DataGridViewImageTextColumn
             {
                 ImagePropertyName = "AgentAvatarPath",
@@ -204,6 +240,7 @@ namespace RealEstateCRMWinForms.Views
                 Name = "Agent",
                 Width = 180,
                 ShowInitialsWhenNoImage = true,
+                ReadOnly = true, // Agent column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     WrapMode = DataGridViewTriState.False,
@@ -213,17 +250,6 @@ namespace RealEstateCRMWinForms.Views
             };
             dataGridViewLeads.Columns.Add(agentColumn);
 
-            // 6. Move to Contacts Button (keep existing functionality)
-            dataGridViewLeads.Columns.Add(new DataGridViewButtonColumn
-            {
-                HeaderText = "Actions",
-                Name = "CreateContact",
-                Text = "Move to Contacts",
-                UseColumnTextForButtonValue = true,
-                Width = 140,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
-
             // Additional columns for detailed view (can be toggled)
             dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -231,6 +257,7 @@ namespace RealEstateCRMWinForms.Views
                 HeaderText = "Email",
                 Name = "Email",
                 Width = 200,
+                ReadOnly = true, // Email column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
 
@@ -240,17 +267,274 @@ namespace RealEstateCRMWinForms.Views
                 HeaderText = "Phone",
                 Name = "Phone",
                 Width = 140,
+                ReadOnly = true, // Phone column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
 
+            // New: Occupation column
             dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "Type",
-                HeaderText = "Type",
-                Name = "Type",
-                Width = 100,
+                DataPropertyName = "Occupation",
+                HeaderText = "Occupation",
+                Name = "Occupation",
+                Width = 160,
+                ReadOnly = true, // Occupation column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
+
+            // New: Salary column
+            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Salary",
+                HeaderText = "Salary",
+                Name = "Salary",
+                Width = 120,
+                ReadOnly = true, // Salary column should not be editable
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    WrapMode = DataGridViewTriState.False,
+                    Alignment = DataGridViewContentAlignment.MiddleRight,
+                    // We'll format the salary in CellFormatting handler for currency display
+                }
+            });
+        }
+
+        // NEW EVENT HANDLERS FOR DROPDOWN FUNCTIONALITY
+        private void DataGridViewLeads_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
+        {
+            // Only allow editing of the Type column
+            if (dataGridViewLeads.Columns[e.ColumnIndex].Name != "Type")
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            // Get the current lead and its type
+            if (e.RowIndex >= 0 && dataGridViewLeads.Rows[e.RowIndex].DataBoundItem is Lead lead)
+            {
+                var typeColumn = dataGridViewLeads.Columns[e.ColumnIndex] as DataGridViewComboBoxColumn;
+                if (typeColumn != null)
+                {
+                    // Clear existing items
+                    typeColumn.Items.Clear();
+                    
+                    // Always only show "Contact" option since we want to convert leads to contacts only
+                    typeColumn.Items.Add("Contact");
+                }
+            }
+        }
+
+        private void DataGridViewLeads_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+        {
+            // Commit changes immediately when dropdown selection changes
+            if (dataGridViewLeads.IsCurrentCellDirty && dataGridViewLeads.CurrentCell?.OwningColumn?.Name == "Type")
+            {
+                dataGridViewLeads.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        private async void DataGridViewLeads_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+        {
+            // Handle Type column changes
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0 &&
+                dataGridViewLeads.Columns[e.ColumnIndex].Name == "Type")
+            {
+                var lead = dataGridViewLeads.Rows[e.RowIndex].DataBoundItem as Lead;
+                if (lead != null)
+                {
+                    var newValue = dataGridViewLeads.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
+                    var originalType = lead.Type; // Store original type for potential reversion
+
+                    if (newValue == "Contact")
+                    {
+                        await HandleLeadToContactConversion(lead, e.RowIndex, originalType);
+                    }
+                    else
+                    {
+                        // Update the lead type in the model for other type changes
+                        lead.Type = newValue ?? "Renter";
+                        if (_viewModel.UpdateLead(lead))
+                        {
+                            // Check if row still exists before accessing it
+                            if (e.RowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[e.RowIndex].DataBoundItem == lead)
+                            {
+                                // Show brief confirmation with visual feedback
+                                var originalColor = dataGridViewLeads.Rows[e.RowIndex].DefaultCellStyle.BackColor;
+                                dataGridViewLeads.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.LightGreen;
+
+                            
+                                var timer = new Timer(); // NOW THIS WILL WORK CORRECTLY
+                                timer.Interval = 1500;
+                                timer.Tick += (s, args) =>
+                                {
+                                    // Double-check row still exists and matches the lead
+                                    if (e.RowIndex < dataGridViewLeads.Rows.Count &&
+                                        dataGridViewLeads.Rows[e.RowIndex].DataBoundItem == lead)
+                                    {
+                                        dataGridViewLeads.Rows[e.RowIndex].DefaultCellStyle.BackColor = originalColor;
+                                    }
+                                    timer.Stop();
+                                    timer.Dispose();
+                                };
+                                timer.Start();
+                            }
+                        }
+                        else
+                        {
+                            // If update failed, revert to original type
+                            lead.Type = originalType;
+                            // Check if row still exists before accessing it
+                            if (e.RowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[e.RowIndex].DataBoundItem == lead)
+                            {
+                                dataGridViewLeads.Rows[e.RowIndex].Cells["Type"].Value = originalType;
+                            }
+                            MessageBox.Show("Failed to update lead type. Please try again.", "Update Failed",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task HandleLeadToContactConversion(Lead lead, int rowIndex, string originalType)
+        {
+            try
+            {
+                // Show confirmation dialog
+                var result = MessageBox.Show(
+                    $"Convert '{lead.FullName}' from Lead to Contact?\n\n" +
+                    "This will MOVE the lead to the Contacts section and REMOVE it from the Leads list.\n" +
+                    "This action cannot be undone.",
+                    "Convert to Contact",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    // Show processing indicator
+                    this.Cursor = Cursors.WaitCursor;
+                    
+                    try
+                    {
+                        // Use the existing MoveLeadToContactAsync method from LeadViewModel
+                        // This method should:
+                        // 1. Create a new Contact with the lead's data
+                        // 2. Set the lead's IsActive to false (soft delete)
+                        // 3. Remove the lead from the local collection
+                        bool conversionSuccess = await _viewModel.MoveLeadToContactAsync(lead);
+                        
+                        if (conversionSuccess)
+                        {
+                            // Refresh the leads view to remove the converted lead
+                            RefreshLeadsView();
+                            
+                            // Show success message
+                            MessageBox.Show(
+                                $"'{lead.FullName}' has been successfully converted to a Contact!\n\n" +
+                                "You can now find them in the Contacts section.",
+                                "Conversion Successful",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information);
+                        }
+                        else
+                        {
+                            // Conversion failed, revert the dropdown selection
+                            // Check if row still exists before accessing it
+                            if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
+                            {
+                                dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
+                            }
+                            lead.Type = originalType;
+                            
+                            MessageBox.Show(
+                                "Failed to convert lead to contact. The database operation was not successful.\n\n" +
+                                "Please check your database connection and try again.",
+                                "Conversion Failed",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+                        }
+                    }
+                    catch (Exception conversionEx)
+                    {
+                        // Handle any exceptions during conversion
+                        // Check if row still exists before accessing it
+                        if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
+                        {
+                            dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
+                        }
+                        lead.Type = originalType;
+                        
+                        MessageBox.Show(
+                            $"An error occurred during conversion:\n{conversionEx.Message}\n\n" +
+                            "The lead type has been reverted to its original value.",
+                            "Conversion Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                        this.Cursor = Cursors.Default;
+                    }
+                }
+                else
+                {
+                    // User cancelled, revert the dropdown selection
+                    // Check if row still exists before accessing it
+                    if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
+                    {
+                        dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
+                    }
+                    lead.Type = originalType;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error during conversion process: {ex.Message}",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                
+                // Revert the dropdown selection on error
+                // Check if row still exists before accessing it
+                if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
+                {
+                    dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
+                }
+                lead.Type = originalType;
+            }
+        }
+
+        private void DataGridViewLeads_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            var columnName = dataGridViewLeads.Columns[e.ColumnIndex].Name;
+
+            if (columnName == "Phone" && e.Value != null)
+            {
+                e.Value = FormatPhilippinePhoneNumber(e.Value.ToString());
+                e.FormattingApplied = true;
+            }
+            else if (columnName == "Salary" && e.Value != null)
+            {
+                // Format salary as currency with no decimal places (₱)
+                if (decimal.TryParse(e.Value.ToString(), out var sal))
+                {
+                    e.Value = $"₱{sal:N0}";
+                    e.FormattingApplied = true;
+                }
+                else
+                {
+                    // If it's not parseable leave as-is
+                }
+            }
+        }
+
+        private async void DataGridViewLeads_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            // Actions column removed; keep handler empty for future use.
+            return;
         }
 
         private void SearchBox_TextChanged(object? sender, EventArgs e)
@@ -277,9 +561,8 @@ namespace RealEstateCRMWinForms.Views
                     (l.FullName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (l.Email?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (l.Phone?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (l.Address?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (l.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (l.Status?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+                    (l.Occupation?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (l.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
 
                 _bindingSource.DataSource = new BindingList<Lead>(filtered);
             }
@@ -414,62 +697,6 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private void DataGridViewLeads_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
-
-            var columnName = dataGridViewLeads.Columns[e.ColumnIndex].Name;
-
-            if (columnName == "Phone" && e.Value != null)
-            {
-                e.Value = FormatPhilippinePhoneNumber(e.Value.ToString());
-                e.FormattingApplied = true;
-            }
-            else if (columnName == "LastContacted" && e.Value is DateTime dt)
-            {
-                e.Value = dt.ToString("MMM dd, yyyy");
-                e.FormattingApplied = true;
-            }
-        }
-
-        private async void DataGridViewLeads_CellContentClick(object? sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
-
-            if (dataGridViewLeads.Columns[e.ColumnIndex].Name == "CreateContact" && dataGridViewLeads.Rows[e.RowIndex].DataBoundItem is Lead lead)
-            {
-                var result = MessageBox.Show($"This will move '{lead.FullName}' to Contacts and remove them from Leads.\n\nThey will receive a welcome email notification. Continue?", "Move to Contacts",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (result == DialogResult.Yes)
-                {
-                    // Disable the button to prevent multiple clicks
-                    if (sender is DataGridView dgv)
-                    {
-                        dgv.Enabled = false;
-                    }
-
-                    try
-                    {
-                        if (await _viewModel.MoveLeadToContactAsync(lead))
-                        {
-                            RefreshLeadsView();
-                            MessageBox.Show($"'{lead.FullName}' has been successfully moved to contacts and notified via email.", "Success",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                    }
-                    finally
-                    {
-                        // Re-enable the grid
-                        if (sender is DataGridView gridView)
-                        {
-                            gridView.Enabled = true;
-                        }
-                    }
-                }
-            }
-        }
-
         private void DataGridViewLeads_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
@@ -517,6 +744,20 @@ namespace RealEstateCRMWinForms.Views
         private void dataGridViewLeads_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
         {
 
+        }
+
+        private void DataGridViewLeads_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            if (e.Context == DataGridViewDataErrorContexts.Formatting || 
+                e.Context == DataGridViewDataErrorContexts.Display)
+            {
+                e.Cancel = true; // Suppress the error dialog
+                // Optionally set a default value
+                if (dataGridViewLeads.Columns[e.ColumnIndex].Name == "Type")
+                {
+                    dataGridViewLeads.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = "Contact";
+                }
+            }
         }
     }
 }

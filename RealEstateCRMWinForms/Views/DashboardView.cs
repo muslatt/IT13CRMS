@@ -14,6 +14,9 @@ namespace RealEstateCRMWinForms.Views
         private readonly ContactViewModel _contactViewModel;
         private readonly DealViewModel _dealViewModel;
 
+        // Filter control for the occupation card
+        private ComboBox? cmbOccupation;
+
         public DashboardView()
         {
             InitializeComponent();
@@ -26,6 +29,52 @@ namespace RealEstateCRMWinForms.Views
 
             // Load data after all controls are initialized
             this.Load += DashboardView_Load;
+        }
+
+        // Helper: compute a nice rounded axis maximum given a target value and tick count
+        private static decimal GetNiceAxisMax(decimal targetMax, int ticks)
+        {
+            if (ticks <= 0) ticks = 5;
+            if (targetMax <= 0) return 1; // fallback
+
+            double x = (double)targetMax;
+            // step size is a nice number of (1, 2, 5, 10) * 10^n
+            double step = NiceNumber(x / ticks, roundUp: true);
+            double axisMax = step * ticks; // ensures top gridline >= targetMax
+            return (decimal)axisMax;
+        }
+
+        private static double NiceNumber(double x, bool roundUp)
+        {
+            if (x <= 0) return 1;
+            double exp = Math.Floor(Math.Log10(x));
+            double f = x / Math.Pow(10, exp); // fractional part 1..10
+            double nf;
+            if (roundUp)
+            {
+                if (f <= 1) nf = 1;
+                else if (f <= 2) nf = 2;
+                else if (f <= 5) nf = 5;
+                else nf = 10;
+            }
+            else
+            {
+                if (f < 1.5) nf = 1;
+                else if (f < 3) nf = 2;
+                else if (f < 7) nf = 5;
+                else nf = 10;
+            }
+            return nf * Math.Pow(10, exp);
+        }
+
+        // Helper: format axis values with compact currency units
+        private static string FormatCurrencyCompact(decimal value)
+        {
+            if (value >= 1_000_000m)
+                return $"₱{value / 1_000_000m:0.#}M";
+            if (value >= 1_000m)
+                return $"₱{value / 1_000m:0.#}k";
+            return $"₱{value:0}";
         }
 
         private void DashboardView_Load(object? sender, EventArgs e)
@@ -132,6 +181,12 @@ namespace RealEstateCRMWinForms.Views
 
                 // Lead Conversion Chart Card
                 CreateChartCard(leadConversionChartCard, "Lead Conversion", "Lead conversion funnel");
+
+                // Average Client Salary Chart Card
+                CreateChartCard(avgSalaryChartCard, "Average Client Salary (Last 12 months)", "Monthly average - clients only");
+
+                // Preferred Property Type by Occupation Card
+                CreateOccupationPreferenceCard();
             }
             catch (Exception ex)
             {
@@ -176,7 +231,164 @@ namespace RealEstateCRMWinForms.Views
             card.Controls.AddRange(new Control[] { titleLabel, descLabel, chartArea });
         }
 
+        private void CreateOccupationPreferenceCard()
+        {
+            if (occupationPreferenceCard == null) return;
+            occupationPreferenceCard.Controls.Clear();
 
+            var titleLabel = new Label
+            {
+                Text = "Preferred Property Type by Occupation",
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39),
+                Location = new Point(20, 15),
+                AutoSize = true
+            };
+
+            var lblSelect = new Label
+            {
+                Text = "Select Occupation",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                Location = new Point(20, 45),
+                AutoSize = true
+            };
+
+            cmbOccupation = new ComboBox
+            {
+                Location = new Point(20, 65),
+                Size = new Size(320, 24),
+                Font = new Font("Segoe UI", 9F),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cmbOccupation.SelectedIndexChanged += (s, e) => RenderOccupationPreferenceChart();
+
+            var hintLabel = new Label
+            {
+                Text = "Counts derived from Deals with matched Contact and Property, grouped by type.",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128),
+                Location = new Point(20, 95),
+                AutoSize = true
+            };
+
+            // Populate occupations
+            var occupations = _contactViewModel.Contacts
+                .Where(c => c.IsActive && !string.IsNullOrWhiteSpace(c.Occupation))
+                .Select(c => c.Occupation!.Trim())
+                .Distinct()
+                .OrderBy(o => o)
+                .ToList();
+
+            if (occupations.Any())
+            {
+                cmbOccupation.Items.Add("All");
+                foreach (var o in occupations) cmbOccupation.Items.Add(o);
+                cmbOccupation.SelectedIndex = 0;
+            }
+            else
+            {
+                cmbOccupation.Items.Add("No data available");
+                cmbOccupation.SelectedIndex = 0;
+                cmbOccupation.Enabled = false;
+            }
+
+            // Chart area on right
+            var chartArea = new Panel
+            {
+                Name = "chartArea_occupationPreference",
+                BackColor = Color.FromArgb(249, 250, 251),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                Location = new Point(370, 20),
+                Size = new Size(occupationPreferenceCard.Width - 390, occupationPreferenceCard.Height - 40)
+            };
+
+            occupationPreferenceCard.Controls.AddRange(new Control[] { titleLabel, lblSelect, cmbOccupation, hintLabel, chartArea });
+
+            occupationPreferenceCard.Resize -= OccupationPreferenceCard_Resize;
+            occupationPreferenceCard.Resize += OccupationPreferenceCard_Resize;
+
+            RenderOccupationPreferenceChart();
+        }
+
+        private void OccupationPreferenceCard_Resize(object? sender, EventArgs e)
+        {
+            var chartArea = occupationPreferenceCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name == "chartArea_occupationPreference");
+            if (chartArea != null && occupationPreferenceCard != null)
+            {
+                chartArea.Location = new Point(370, 20);
+                chartArea.Size = new Size(occupationPreferenceCard.Width - 390, occupationPreferenceCard.Height - 40);
+                RenderOccupationPreferenceChart();
+            }
+        }
+
+        private void RenderOccupationPreferenceChart()
+        {
+            var chartArea = occupationPreferenceCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name == "chartArea_occupationPreference");
+            if (chartArea == null) return;
+
+            chartArea.Controls.Clear();
+
+            string? occ = (cmbOccupation != null && cmbOccupation.Enabled && cmbOccupation.SelectedItem != null)
+                ? cmbOccupation.SelectedItem.ToString()
+                : null;
+
+            var deals = _dealViewModel.Deals
+                .Where(d => d.IsActive && d.Contact != null && d.Property != null && d.Contact!.IsActive)
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(occ) && occ != "All")
+            {
+                deals = deals
+                    .Where(d => string.Equals(d.Contact!.Occupation, occ, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            var categories = new[] { "Residential", "Commercial", "Raw Land", "Other" };
+            var counts = categories.ToDictionary(c => c, c => 0);
+            foreach (var d in deals)
+            {
+                var type = d.Property!.PropertyType?.Trim();
+                if (string.IsNullOrWhiteSpace(type)) type = "Other";
+                if (!categories.Contains(type)) type = "Other";
+                counts[type]++;
+            }
+
+            // chart layout
+            int leftPad = 60;
+            int bottomPad = 40;
+            int topPad = 20;
+            int width = Math.Max(10, chartArea.Width - leftPad - 20);
+            int height = Math.Max(10, chartArea.Height - topPad - bottomPad);
+            int gap = 18;
+            int barW = Math.Max(10, (width - gap * (categories.Length + 1)) / categories.Length);
+            int max = Math.Max(1, counts.Values.Max());
+
+            // grid
+            var gridColor = Color.FromArgb(229, 231, 235);
+            for (int i = 0; i <= 5; i++)
+            {
+                int y = topPad + height * i / 5;
+                var grid = new Panel { BackColor = gridColor, Location = new Point(leftPad, y), Size = new Size(width, 1) };
+                int gv = (int)Math.Round(max * (1 - i / 5.0));
+                var yLabel = new Label { Text = gv.ToString(), Font = new Font("Segoe UI", 8F), ForeColor = Color.FromArgb(107, 114, 128), AutoSize = true, Location = new Point(10, y - 8) };
+                chartArea.Controls.AddRange(new Control[] { grid, yLabel });
+            }
+
+            for (int i = 0; i < categories.Length; i++)
+            {
+                string cat = categories[i];
+                int val = counts[cat];
+                int barH = (int)(height * (val / (double)max));
+                int x = leftPad + gap + i * (barW + gap);
+                int y = topPad + (height - barH);
+
+                var bar = new Panel { BackColor = Color.FromArgb(59, 130, 246), Location = new Point(x, y), Size = new Size(barW, barH) };
+                var xtxt = new Label { Text = cat, Font = new Font("Segoe UI", 9F), ForeColor = Color.FromArgb(75, 85, 99), AutoSize = true, Location = new Point(x + Math.Max(0, (barW - TextRenderer.MeasureText(cat, new Font("Segoe UI", 9F)).Width) / 2), topPad + height + 6) };
+                var vtxt = new Label { Text = val.ToString(), Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(33, 37, 41), AutoSize = true, Location = new Point(x + barW / 2 - 6, y - 16) };
+                chartArea.Controls.AddRange(new Control[] { bar, xtxt, vtxt });
+            }
+        }
 
         private void InitializeTotalCounts()
         {
@@ -321,6 +533,8 @@ namespace RealEstateCRMWinForms.Views
                 LoadSalesChart();
                 LoadPropertyStatusChart();
                 LoadLeadConversionChart();
+                LoadAverageSalaryChart();
+                RenderOccupationPreferenceChart();
             }
             catch (Exception ex)
             {
@@ -437,7 +651,8 @@ namespace RealEstateCRMWinForms.Views
 
             // Calculate conversion funnel
             var totalLeads = _leadViewModel.Leads.Count(l => l.IsActive);
-            var qualifiedLeads = _leadViewModel.Leads.Count(l => l.IsActive && l.Status.ToLower() != "new");
+            // Since leads don't have a status, consider leads with high scores as qualified
+            var qualifiedLeads = _leadViewModel.Leads.Count(l => l.IsActive && l.Score >= 40);
             var activeDeals = _dealViewModel.Deals.Count(d => d.IsActive);
             var closedDeals = _dealViewModel.Deals.Count(d => d.Status.ToLower() == "closed");
 
@@ -476,6 +691,169 @@ namespace RealEstateCRMWinForms.Views
 
                 chartArea.Controls.AddRange(new Control[] { label, bar });
             }
+        }
+
+        private void LoadAverageSalaryChart()
+        {
+            var chartArea = avgSalaryChartCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("chartArea_"));
+            if (chartArea == null) return;
+
+            chartArea.Controls.Clear();
+
+            // Fixed range: September 2024 through September 2025 (inclusive)
+            var startDate = new DateTime(2024, 9, 1);
+            var endDateInclusive = new DateTime(2025, 9, 30);
+            var monthsCount = ((endDateInclusive.Year - startDate.Year) * 12 + endDateInclusive.Month - startDate.Month) + 1;
+
+            // Get monthly average salary data for the fixed range
+            var monthlySalaryData = new List<(DateTime Month, decimal AverageSalary)>();
+
+            for (int i = 0; i < monthsCount; i++)
+            {
+                var monthDate = startDate.AddMonths(i);
+                var monthStart = new DateTime(monthDate.Year, monthDate.Month, 1);
+                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+                // Get contacts created in this month that have salary data
+                var contactsInMonth = _contactViewModel.Contacts
+                    .Where(c => c.IsActive &&
+                               c.CreatedAt >= monthStart &&
+                               c.CreatedAt <= monthEnd &&
+                               c.Salary.HasValue &&
+                               c.Salary > 0)
+                    .ToList();
+
+                var avgSalary = contactsInMonth.Any() ? contactsInMonth.Average(c => c.Salary!.Value) : 0;
+                monthlySalaryData.Add((monthDate, avgSalary));
+            }
+
+            // Determine axis max dynamically from Contacts table salaries and data
+            var maxContactSalary = _contactViewModel.Contacts
+                .Where(c => c.IsActive && c.Salary.HasValue && c.Salary > 0)
+                .Select(c => c.Salary!.Value)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            var dataMax = monthlySalaryData.Any() ? monthlySalaryData.Max(x => x.AverageSalary) : 0;
+            var targetMax = Math.Max(maxContactSalary, dataMax);
+            if (targetMax <= 0) targetMax = 1; // fallback
+
+            int ticks = 5; // number of grid segments
+            var axisMax = GetNiceAxisMax(targetMax, ticks);
+
+            // Create line chart representation
+            var chartWidth = chartArea.Width - 80;
+            var chartHeight = chartArea.Height - 60;
+            var pointWidth = chartWidth / Math.Max(monthlySalaryData.Count - 1, 1);
+
+            // Draw grid lines and Y-axis labels based on dynamic axisMax
+            var gridColor = Color.FromArgb(229, 231, 235);
+            for (int i = 0; i <= ticks; i++)
+            {
+                var y = 30 + (chartHeight * i / ticks);
+                var gridLine = new Panel
+                {
+                    BackColor = gridColor,
+                    Size = new Size(chartWidth, 1),
+                    Location = new Point(40, y)
+                };
+
+                var yValue = axisMax * (ticks - i) / ticks;
+                var yLabel = new Label
+                {
+                    Text = FormatCurrencyCompact(yValue),
+                    Font = new Font("Segoe UI", 8F),
+                    ForeColor = Color.FromArgb(107, 114, 128),
+                    AutoSize = true,
+                    Location = new Point(5, y - 8)
+                };
+
+                chartArea.Controls.AddRange(new Control[] { gridLine, yLabel });
+            }
+
+            // Draw data points and connecting lines scaled to axisMax
+            var chartColor = Color.FromArgb(59, 130, 246);
+            Panel? previousPoint = null;
+
+            for (int i = 0; i < monthlySalaryData.Count; i++)
+            {
+                var data = monthlySalaryData[i];
+                var x = 40 + (i * pointWidth);
+                var y = axisMax > 0 ? 30 + (int)((axisMax - (data.AverageSalary)) / axisMax * chartHeight) : 30 + chartHeight / 2;
+
+                // Create data point
+                var point = new Panel
+                {
+                    BackColor = chartColor,
+                    Size = new Size(6, 6),
+                    Location = new Point(x - 3, y - 3)
+                };
+
+                // Create connecting line to previous point (simple approximation)
+                if (previousPoint != null && i > 0)
+                {
+                    var prevX = previousPoint.Location.X + 3;
+                    var prevY = previousPoint.Location.Y + 3;
+                    var steps = Math.Max(Math.Abs(x - prevX), Math.Abs(y - prevY));
+                    for (int step = 0; step < steps; step += 2)
+                    {
+                        var lineX = prevX + ((x - prevX) * step / steps);
+                        var lineY = prevY + ((y - prevY) * step / steps);
+                        var linePoint = new Panel
+                        {
+                            BackColor = chartColor,
+                            Size = new Size(2, 2),
+                            Location = new Point(lineX, lineY)
+                        };
+                        chartArea.Controls.Add(linePoint);
+                    }
+                }
+
+                // X-axis labels (month names)
+                if (i % 2 == 0) // Show every other month to avoid crowding
+                {
+                    var monthLabel = new Label
+                    {
+                        Text = data.Month.ToString("MMM yyyy"),
+                        Font = new Font("Segoe UI", 7F),
+                        ForeColor = Color.FromArgb(107, 114, 128),
+                        AutoSize = true,
+                        Location = new Point(x - 20, chartHeight + 35)
+                    };
+                    chartArea.Controls.Add(monthLabel);
+                }
+
+                chartArea.Controls.Add(point);
+                previousPoint = point;
+            }
+
+            // Add legend
+            var legendPanel = new Panel
+            {
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Size = new Size(140, 25),
+                Location = new Point(chartArea.Width - 160, 10)
+            };
+
+            var legendColor = new Panel
+            {
+                BackColor = chartColor,
+                Size = new Size(15, 3),
+                Location = new Point(8, 11)
+            };
+
+            var legendLabel = new Label
+            {
+                Text = "Avg Salary (₱)",
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                Location = new Point(28, 6),
+                AutoSize = true
+            };
+
+            legendPanel.Controls.AddRange(new Control[] { legendColor, legendLabel });
+            chartArea.Controls.Add(legendPanel);
         }
 
         private void LoadAnalyticsContent()
@@ -620,8 +998,10 @@ namespace RealEstateCRMWinForms.Views
                 new { Icon = "💼", Label = "Total Deals", Count = totalDeals, Color = Color.FromArgb(139, 92, 246) }
             };
 
-            // Create a horizontal layout for the counts
-            var itemWidth = (contentPanel.Width - 40) / 4; // Divide available width by 4 items
+            // Create a horizontal layout for the counts with better spacing
+            var itemWidth = (contentPanel.Width - 60) / 4; // More padding for better spacing
+            var startY = 15; // Starting Y position
+            var contentHeight = contentPanel.Height - 30; // Available content height
 
             for (int i = 0; i < counts.Length; i++)
             {
@@ -629,35 +1009,41 @@ namespace RealEstateCRMWinForms.Views
 
                 var itemPanel = new Panel
                 {
-                    Size = new Size(itemWidth - 10, contentPanel.Height - 20),
-                    Location = new Point(i * itemWidth + 10, 10),
+                    Size = new Size(itemWidth - 15, contentHeight),
+                    Location = new Point(i * itemWidth + 30, startY),
                     BackColor = Color.Transparent
                 };
+
+                // Center the content within each item panel
+                var centerX = itemWidth / 2 - 7;
 
                 var iconLabel = new Label
                 {
                     Text = item.Icon,
-                    Font = new Font("Segoe UI", 24F),
-                    Location = new Point(itemWidth / 2 - 15, 10),
-                    AutoSize = true
+                    Font = new Font("Segoe UI", 28F), // Slightly larger icon
+                    Location = new Point(centerX - 20, 15),
+                    AutoSize = true,
+                    TextAlign = ContentAlignment.MiddleCenter
                 };
 
                 var countLabel = new Label
                 {
                     Text = item.Count.ToString(),
-                    Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 24F, FontStyle.Bold), // Larger count text
                     ForeColor = item.Color,
-                    Location = new Point(itemWidth / 2 - 20, 50),
-                    AutoSize = true
+                    Location = new Point(centerX - 25, 65),
+                    AutoSize = true,
+                    TextAlign = ContentAlignment.MiddleCenter
                 };
 
                 var labelText = new Label
                 {
                     Text = item.Label,
-                    Font = new Font("Segoe UI", 11F),
+                    Font = new Font("Segoe UI", 12F), // Slightly larger label text
                     ForeColor = Color.FromArgb(75, 85, 99),
-                    Location = new Point(itemWidth / 2 - 40, 80),
-                    AutoSize = true
+                    Location = new Point(centerX - 50, 110),
+                    Size = new Size(100, 40),
+                    TextAlign = ContentAlignment.MiddleCenter
                 };
 
                 itemPanel.Controls.AddRange(new Control[] { iconLabel, countLabel, labelText });

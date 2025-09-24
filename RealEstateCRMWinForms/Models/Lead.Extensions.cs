@@ -28,42 +28,35 @@ namespace RealEstateCRMWinForms.Models
         public string? AgentAvatarPath { get; set; }
         
         /// <summary>
-        /// Calculates a lead score based on status, recency, and other factors
+        /// Calculates a lead score based on recency, type and other available factors.
+        /// Adapted to only use properties present on the Lead model.
         /// </summary>
         /// <returns>Score from 0-100</returns>
         private int CalculateLeadScore()
         {
             int score = 0;
-            
-            // Base score based on status
-            score += Status switch
-            {
-                "New Lead" => 30,
-                "Contacted" => 50,
-                "Qualified" => 80,
-                "Unqualified" => 10,
-                _ => 20
-            };
-            
-            // Bonus points for recent activity
+
+            // Boost score for recent leads
             if (DaysOld <= 7)
-                score += 20;
+                score += 30;
             else if (DaysOld <= 30)
-                score += 10;
-            
-            // Deduct points for old leads without contact
-            if (DaysSinceLastContact.HasValue && DaysSinceLastContact > 30)
-                score -= 20;
-            
-            // Type-based scoring
+                score += 15;
+            else if (DaysOld <= 90)
+                score += 5;
+
+            // Type-based scoring (Buyer/Owner/Renter)
             score += Type switch
             {
-                "Buyer" => 15,
-                "Owner" => 10,
-                "Renter" => 5,
-                _ => 0
+                "Buyer" => 40,
+                "Owner" => 25,
+                "Renter" => 10,
+                _ => 5
             };
-            
+
+            // Bonus for having salary info (indicates qualification)
+            if (Salary.HasValue && Salary > 0)
+                score += 10;
+
             return Math.Max(0, Math.Min(100, score));
         }
         
@@ -84,19 +77,12 @@ namespace RealEstateCRMWinForms.Models
         /// Indicates if this lead needs immediate attention
         /// </summary>
         [NotMapped]
-        public bool NeedsAttention => Score >= 70 || (DaysSinceLastContact.HasValue && DaysSinceLastContact > 14);
+        public bool NeedsAttention => Score >= 70;
         
         /// <summary>
         /// Gets the number of days since the lead was created
         /// </summary>
         [NotMapped]
         public int DaysOld => (int)(DateTime.UtcNow - CreatedAt).TotalDays;
-        
-        /// <summary>
-        /// Gets the number of days since last contact (null if never contacted)
-        /// </summary>
-        [NotMapped]
-        public int? DaysSinceLastContact => LastContacted.HasValue ? 
-            (int)(DateTime.UtcNow - LastContacted.Value).TotalDays : null;
     }
 }

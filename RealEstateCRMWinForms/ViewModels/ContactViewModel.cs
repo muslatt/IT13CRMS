@@ -27,6 +27,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     var contactsFromDb = dbContext.Contacts.Where(c => c.IsActive).ToList();
                     
                     foreach (var contact in contactsFromDb)
@@ -39,10 +42,13 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
-                // Log and show a single minimal message for UI stability
+                // Log the specific error for debugging
                 System.Diagnostics.Debug.WriteLine($"Error loading contacts: {ex.Message}");
-                MessageBox.Show($"Error loading contacts. Check database connection.", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                
+                // Don't show error dialog in constructor to prevent UI blocking
+                // Instead, log and continue with empty list
+                Console.WriteLine($"Database connection error: {ex.Message}");
             }
         }
 
@@ -52,6 +58,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     dbContext.Contacts.Add(contact);
                     dbContext.SaveChanges();
                     
@@ -74,6 +83,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     dbContext.Contacts.Update(contact);
                     dbContext.SaveChanges();
                     return true;
@@ -93,6 +105,9 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
+                    // Ensure database is created
+                    dbContext.Database.EnsureCreated();
+                    
                     // Soft delete - just mark as inactive
                     contact.IsActive = false;
                     dbContext.Contacts.Update(contact);
@@ -107,6 +122,26 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 MessageBox.Show($"Error deleting contact: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Test database connection and create database if needed
+        /// </summary>
+        public bool TestConnection()
+        {
+            try
+            {
+                using (var dbContext = DbContextHelper.CreateDbContext())
+                {
+                    dbContext.Database.EnsureCreated();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Database connection test failed: {ex.Message}");
                 return false;
             }
         }

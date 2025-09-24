@@ -181,7 +181,7 @@ namespace RealEstateCRMWinForms.Views
             this.dataGridViewLeads.ReadOnly = true;
             this.dataGridViewLeads.Size = new System.Drawing.Size(940, 530);
             this.dataGridViewLeads.TabIndex = 0;
-            this.dataGridViewLeads.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewLeads_CellContentClick_1);
+            this.dataGridViewLeads.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGridViewLeads_CellContentClick);
             // 
             // LeadsView
             // 

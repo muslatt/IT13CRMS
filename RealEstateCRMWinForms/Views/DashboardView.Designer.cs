@@ -44,6 +44,8 @@ namespace RealEstateCRMWinForms.Views
             salesChartCard = new Panel();
             propertyStatusChartCard = new Panel();
             leadConversionChartCard = new Panel();
+            avgSalaryChartCard = new Panel();
+            occupationPreferenceCard = new Panel();
             kpiPanel = new TableLayoutPanel();
             totalRevenueCard = new Panel();
             avgDealValueCard = new Panel();
@@ -108,8 +110,11 @@ namespace RealEstateCRMWinForms.Views
             // 
             mainPanel.AutoScroll = true;
             mainPanel.BackColor = Color.FromArgb(249, 250, 251);
+            // Order: Top to bottom -> KPI, Charts, Avg Salary (full width), Occupation Preference (full width), System Overview, Analytics
             mainPanel.Controls.Add(analyticsPanel);
             mainPanel.Controls.Add(totalCountsPanel);
+            mainPanel.Controls.Add(occupationPreferenceCard);
+            mainPanel.Controls.Add(avgSalaryChartCard);
             mainPanel.Controls.Add(chartsPanel);
             mainPanel.Controls.Add(kpiPanel);
             mainPanel.Dock = DockStyle.Fill;
@@ -129,7 +134,7 @@ namespace RealEstateCRMWinForms.Views
             analyticsPanel.Controls.Add(performanceAnalyticsCard, 0, 1);
             analyticsPanel.Controls.Add(trendsAnalyticsCard, 1, 1);
             analyticsPanel.Dock = DockStyle.Top;
-            analyticsPanel.Location = new Point(30, 650);
+            analyticsPanel.Location = new Point(30, 910);
             analyticsPanel.Name = "analyticsPanel";
             analyticsPanel.RowCount = 2;
             analyticsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
@@ -191,11 +196,11 @@ namespace RealEstateCRMWinForms.Views
             totalCountsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             totalCountsPanel.Controls.Add(totalCountsCard, 0, 0);
             totalCountsPanel.Dock = DockStyle.Top;
-            totalCountsPanel.Location = new Point(30, 470);
+            totalCountsPanel.Location = new Point(30, 690);
             totalCountsPanel.Name = "totalCountsPanel";
             totalCountsPanel.RowCount = 1;
             totalCountsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            totalCountsPanel.Size = new Size(1323, 180);
+            totalCountsPanel.Size = new Size(1323, 220);
             totalCountsPanel.TabIndex = 2;
             // 
             // totalCountsCard
@@ -207,24 +212,25 @@ namespace RealEstateCRMWinForms.Views
             totalCountsCard.Margin = new Padding(12);
             totalCountsCard.Name = "totalCountsCard";
             totalCountsCard.Padding = new Padding(20);
-            totalCountsCard.Size = new Size(1299, 156);
+            totalCountsCard.Size = new Size(1299, 196);
             totalCountsCard.TabIndex = 0;
             totalCountsCard.Paint += totalCountsCard_Paint;
             // 
-            // chartsPanel
+            // chartsPanel (keeps three charts only)
             // 
-            chartsPanel.ColumnCount = 3;
-            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34F));
+            chartsPanel.ColumnCount = 2;
+            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             chartsPanel.Controls.Add(salesChartCard, 0, 0);
             chartsPanel.Controls.Add(propertyStatusChartCard, 1, 0);
-            chartsPanel.Controls.Add(leadConversionChartCard, 2, 0);
+            chartsPanel.Controls.Add(leadConversionChartCard, 0, 1);
+            // removed avgSalaryChartCard from chartsPanel
             chartsPanel.Dock = DockStyle.Top;
             chartsPanel.Location = new Point(30, 211);
             chartsPanel.Name = "chartsPanel";
-            chartsPanel.RowCount = 1;
-            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            chartsPanel.RowCount = 2;
+            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             chartsPanel.Size = new Size(1323, 259);
             chartsPanel.TabIndex = 1;
             // 
@@ -237,7 +243,7 @@ namespace RealEstateCRMWinForms.Views
             salesChartCard.Margin = new Padding(12);
             salesChartCard.Name = "salesChartCard";
             salesChartCard.Padding = new Padding(20);
-            salesChartCard.Size = new Size(416, 235);
+            salesChartCard.Size = new Size(649, 105);
             salesChartCard.TabIndex = 0;
             // 
             // propertyStatusChartCard
@@ -245,11 +251,11 @@ namespace RealEstateCRMWinForms.Views
             propertyStatusChartCard.BackColor = Color.White;
             propertyStatusChartCard.BorderStyle = BorderStyle.FixedSingle;
             propertyStatusChartCard.Dock = DockStyle.Fill;
-            propertyStatusChartCard.Location = new Point(452, 12);
+            propertyStatusChartCard.Location = new Point(673, 12);
             propertyStatusChartCard.Margin = new Padding(12);
             propertyStatusChartCard.Name = "propertyStatusChartCard";
             propertyStatusChartCard.Padding = new Padding(20);
-            propertyStatusChartCard.Size = new Size(416, 235);
+            propertyStatusChartCard.Size = new Size(638, 105);
             propertyStatusChartCard.TabIndex = 1;
             // 
             // leadConversionChartCard
@@ -257,12 +263,36 @@ namespace RealEstateCRMWinForms.Views
             leadConversionChartCard.BackColor = Color.White;
             leadConversionChartCard.BorderStyle = BorderStyle.FixedSingle;
             leadConversionChartCard.Dock = DockStyle.Fill;
-            leadConversionChartCard.Location = new Point(892, 12);
+            leadConversionChartCard.Location = new Point(12, 141);
             leadConversionChartCard.Margin = new Padding(12);
             leadConversionChartCard.Name = "leadConversionChartCard";
             leadConversionChartCard.Padding = new Padding(20);
-            leadConversionChartCard.Size = new Size(419, 235);
+            leadConversionChartCard.Size = new Size(649, 106);
             leadConversionChartCard.TabIndex = 2;
+            // 
+            // avgSalaryChartCard (now full width like System Overview)
+            // 
+            avgSalaryChartCard.BackColor = Color.White;
+            avgSalaryChartCard.BorderStyle = BorderStyle.FixedSingle;
+            avgSalaryChartCard.Dock = DockStyle.Top;
+            avgSalaryChartCard.Location = new Point(30, 470);
+            avgSalaryChartCard.Margin = new Padding(12);
+            avgSalaryChartCard.Name = "avgSalaryChartCard";
+            avgSalaryChartCard.Padding = new Padding(20);
+            avgSalaryChartCard.Size = new Size(1323, 220); // match System Overview height
+            avgSalaryChartCard.TabIndex = 4;
+            // 
+            // occupationPreferenceCard (full width like avg salary)
+            // 
+            occupationPreferenceCard.BackColor = Color.White;
+            occupationPreferenceCard.BorderStyle = BorderStyle.FixedSingle;
+            occupationPreferenceCard.Dock = DockStyle.Top;
+            occupationPreferenceCard.Location = new Point(30, 690);
+            occupationPreferenceCard.Margin = new Padding(12);
+            occupationPreferenceCard.Name = "occupationPreferenceCard";
+            occupationPreferenceCard.Padding = new Padding(20);
+            occupationPreferenceCard.Size = new Size(1323, 220);
+            occupationPreferenceCard.TabIndex = 5;
             // 
             // kpiPanel
             // 
@@ -369,6 +399,8 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.Panel salesChartCard;
         private System.Windows.Forms.Panel propertyStatusChartCard;
         private System.Windows.Forms.Panel leadConversionChartCard;
+        private System.Windows.Forms.Panel avgSalaryChartCard;
+        private System.Windows.Forms.Panel occupationPreferenceCard;
         
         private System.Windows.Forms.TableLayoutPanel totalCountsPanel;
         private System.Windows.Forms.Panel totalCountsCard;

@@ -1,4 +1,4 @@
-// RealEstateCRMWinForms\Views\ContactsView.cs
+﻿// RealEstateCRMWinForms\Views\ContactsView.cs
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
 using RealEstateCRMWinForms.Controls;
@@ -6,11 +6,11 @@ using RealEstateCRMWinForms.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
+using System.Drawing;   
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-
+        
 namespace RealEstateCRMWinForms.Views
 {
     public partial class ContactsView : UserControl
@@ -98,6 +98,14 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
+                // Test database connection first
+                if (!_viewModel.TestConnection())
+                {
+                    // Show a user-friendly message without blocking the UI
+                    ShowDatabaseConnectionInfo();
+                    return;
+                }
+
                 // Create columns in the desired order
                 CreateGridColumns();
 
@@ -114,6 +122,29 @@ namespace RealEstateCRMWinForms.Views
             }
         }
         
+        private void ShowDatabaseConnectionInfo()
+        {
+            // Create a label to show database status instead of blocking error dialog
+            var infoLabel = new Label
+            {
+                Text = "Database connection not available. Some features may be limited.",
+                ForeColor = Color.Orange,
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Padding = new Padding(10)
+            };
+
+            // Insert at the top of the control
+            this.Controls.Add(infoLabel);
+            infoLabel.BringToFront();
+
+            // Still initialize the grid with empty data
+            CreateGridColumns();
+            _bindingSource.DataSource = _viewModel.Contacts;
+            dataGridViewContacts.DataSource = _bindingSource;
+        }
+
         /// <summary>
         /// Fallback method to initialize basic columns if custom columns fail
         /// </summary>
@@ -129,8 +160,16 @@ namespace RealEstateCRMWinForms.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error in fallback initialization: {ex.Message}");
-                MessageBox.Show("Error loading contacts data. Please restart the application.", "Error", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Create a simple message instead of blocking dialog
+                var errorLabel = new Label
+                {
+                    Text = "Unable to load contacts data. Please check your configuration.",
+                    ForeColor = Color.Red,
+                    AutoSize = true,
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleCenter
+                };
+                this.Controls.Add(errorLabel);
             }
         }
 
@@ -154,6 +193,33 @@ namespace RealEstateCRMWinForms.Views
             };
             dataGridViewContacts.Columns.Add(nameColumn);
 
+            // 4. Type
+            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Type",
+                HeaderText = "Type",
+                Name = "Type",
+                Width = 100,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
+            });
+
+            // 6. Agent with Avatar (using custom ImageText column)
+            var agentColumn = new DataGridViewImageTextColumn
+            {
+                ImagePropertyName = "AgentAvatarPath",
+                TextPropertyName = "AssignedAgent",
+                HeaderText = "Agent",
+                Name = "Agent",
+                Width = 180,
+                ShowInitialsWhenNoImage = true,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    WrapMode = DataGridViewTriState.False,
+                    Font = UIStyles.DefaultFont,
+                    Padding = new Padding(8, 4, 8, 4)
+                }
+            };
+            dataGridViewContacts.Columns.Add(agentColumn);
             // 2. Email
             dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn 
             { 
@@ -174,15 +240,31 @@ namespace RealEstateCRMWinForms.Views
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
 
-            // 4. Type
-            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn 
-            { 
-                DataPropertyName = "Type", 
-                HeaderText = "Type", 
-                Name = "Type",
-                Width = 100,
+            // New: Occupation
+            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Occupation",
+                HeaderText = "Occupation",
+                Name = "Occupation",
+                Width = 160,
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
+
+            // New: Salary
+            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Salary",
+                HeaderText = "Salary",
+                Name = "Salary",
+                Width = 120,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    WrapMode = DataGridViewTriState.False,
+                    Alignment = DataGridViewContentAlignment.MiddleRight
+                }
+            });
+
+           
 
             // 5. Date Added
             dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn 
@@ -194,23 +276,7 @@ namespace RealEstateCRMWinForms.Views
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             });
 
-            // 6. Agent with Avatar (using custom ImageText column)
-            var agentColumn = new DataGridViewImageTextColumn
-            {
-                ImagePropertyName = "AgentAvatarPath",
-                TextPropertyName = "AssignedAgent",
-                HeaderText = "Agent",
-                Name = "Agent",
-                Width = 180,
-                ShowInitialsWhenNoImage = true,
-                DefaultCellStyle = new DataGridViewCellStyle 
-                { 
-                    WrapMode = DataGridViewTriState.False,
-                    Font = UIStyles.DefaultFont,
-                    Padding = new Padding(8, 4, 8, 4)
-                }
-            };
-            dataGridViewContacts.Columns.Add(agentColumn);
+            
         }
 
         private void SearchBox_TextChanged(object? sender, EventArgs e)
@@ -237,7 +303,9 @@ namespace RealEstateCRMWinForms.Views
                     (c.FullName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (c.Email?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (c.Phone?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (c.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+                    (c.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Occupation?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+                ).ToList();
 
                 _bindingSource.DataSource = new BindingList<Contact>(filtered);
             }
@@ -372,6 +440,14 @@ namespace RealEstateCRMWinForms.Views
             {
                 e.Value = dt.ToString("MMM dd, yyyy");
                 e.FormattingApplied = true;
+            }
+            else if (columnName == "Salary" && e.Value != null)
+            {
+                if (decimal.TryParse(e.Value.ToString(), out var sal))
+                {
+                    e.Value = $"₱{sal:N0}";
+                    e.FormattingApplied = true;
+                }
             }
         }
 

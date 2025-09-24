@@ -18,6 +18,10 @@ namespace RealEstateCRMWinForms.Views
         private Button btnSave;
         private Button btnCancel;
 
+        // Keep filtered lists to map ComboBox selection back to entities
+        private List<Property> _filteredProperties = new();
+        private List<Contact> _filteredContacts = new();
+
         public Deal? CreatedDeal { get; private set; }
 
         public AddDealForm(List<string>? availableStatuses = null, string? defaultStatus = null)
@@ -139,29 +143,41 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                // Load properties
+                // Build a set of property IDs that are already used by active deals
+                var usedPropertyIds = new HashSet<int>(
+                    _viewModel.Deals
+                        .Where(d => d.IsActive && d.PropertyId.HasValue)
+                        .Select(d => d.PropertyId!.Value)
+                );
+
+                // Build a set of contact IDs that are already used by active deals
+                var usedContactIds = new HashSet<int>(
+                    _viewModel.Deals
+                        .Where(d => d.IsActive && d.ContactId.HasValue)
+                        .Select(d => d.ContactId!.Value)
+                );
+
+                // Load properties excluding those already used in active deals
                 cmbProperty.Items.Clear();
                 cmbProperty.Items.Add("(No Property)");
-
-                if (_viewModel.Properties != null)
+                _filteredProperties = _viewModel.Properties
+                    .Where(p => !usedPropertyIds.Contains(p.Id))
+                    .ToList();
+                foreach (var property in _filteredProperties)
                 {
-                    foreach (var property in _viewModel.Properties)
-                    {
-                        cmbProperty.Items.Add($"{property.Title} - {property.Address}");
-                    }
+                    cmbProperty.Items.Add($"{property.Title} - {property.Address}");
                 }
                 cmbProperty.SelectedIndex = 0;
 
-                // Load contacts
+                // Load contacts excluding those already used in active deals
                 cmbContact.Items.Clear();
                 cmbContact.Items.Add("(No Contact)");
-
-                if (_viewModel.Contacts != null)
+                _filteredContacts = _viewModel.Contacts
+                    .Where(c => !usedContactIds.Contains(c.Id))
+                    .ToList();
+                foreach (var contact in _filteredContacts)
                 {
-                    foreach (var contact in _viewModel.Contacts)
-                    {
-                        cmbContact.Items.Add($"{contact.FullName} - {contact.Email}");
-                    }
+                    cmbContact.Items.Add($"{contact.FullName} - {contact.Email}");
                 }
                 cmbContact.SelectedIndex = 0;
             }
@@ -180,14 +196,14 @@ namespace RealEstateCRMWinForms.Views
                 Property? selectedProperty = null;
                 Contact? selectedContact = null;
 
-                if (cmbProperty.SelectedIndex > 0 && _viewModel.Properties.Count >= cmbProperty.SelectedIndex)
+                if (cmbProperty.SelectedIndex > 0 && _filteredProperties.Count >= cmbProperty.SelectedIndex)
                 {
-                    selectedProperty = _viewModel.Properties[cmbProperty.SelectedIndex - 1];
+                    selectedProperty = _filteredProperties[cmbProperty.SelectedIndex - 1];
                 }
 
-                if (cmbContact.SelectedIndex > 0 && _viewModel.Contacts.Count >= cmbContact.SelectedIndex)
+                if (cmbContact.SelectedIndex > 0 && _filteredContacts.Count >= cmbContact.SelectedIndex)
                 {
-                    selectedContact = _viewModel.Contacts[cmbContact.SelectedIndex - 1];
+                    selectedContact = _filteredContacts[cmbContact.SelectedIndex - 1];
                 }
 
                 // Validation - at least one must be selected
