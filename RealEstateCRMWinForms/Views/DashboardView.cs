@@ -83,13 +83,24 @@ namespace RealEstateCRMWinForms.Views
             {
                 // Initialize all analytics components
                 InitializeKPICards();
+                // Ensure Projected Revenue KPI exists
+                CreateKPICard(projectedRevenueCard, "₱", "Projected Revenue", "₱0", "Sum of closed deal commissions", Color.FromArgb(99, 102, 241));
                 InitializeCharts();
 
                 InitializeTotalCounts();
+                // keep System Overview layout tidy
+                CenterTotalCountsLayout();
+                var contentPanel = totalCountsCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("content_"));
+                if (contentPanel != null)
+                {
+                    contentPanel.Resize -= (s, args) => CenterTotalCountsLayout();
+                    contentPanel.Resize += (s, args) => CenterTotalCountsLayout();
+                }
                 InitializeAnalyticsCards();
 
                 // Load analytics data
                 LoadAnalyticsData();
+                UpdateProjectedRevenueCard();
 
                 // Update last updated timestamp
                 UpdateLastUpdatedTime();
@@ -169,21 +180,81 @@ namespace RealEstateCRMWinForms.Views
             card.Controls.AddRange(new Control[] { iconLabel, titleLabel, valueLabel, descLabel });
         }
 
+        private void UpdateProjectedRevenueCard()
+        {
+            try
+            {
+                _dealViewModel.LoadDeals();
+                decimal total = 0m;
+                var closed = _dealViewModel.Deals.Where(d => string.Equals(d.Status, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (closed.Count > 0)
+                {
+                    var userVm = new UserViewModel();
+                    userVm.LoadUsers();
+                    foreach (var d in closed)
+                    {
+                        if (d.Value.HasValue && d.Value.Value > 0)
+                        {
+                            total += d.Value.Value;
+                            continue;
+                        }
+                        decimal price = d.Property?.Price ?? 0m;
+                        decimal percent = 0.05m;
+                        if (!string.IsNullOrWhiteSpace(d.CreatedBy))
+                        {
+                            var u = userVm.Users.FirstOrDefault(u => string.Equals(u.FullName, d.CreatedBy, StringComparison.OrdinalIgnoreCase));
+                            if (u != null && u.Role == Models.UserRole.Broker) percent = 0.10m;
+                        }
+                        total += Math.Round(price * percent, 2);
+                    }
+                }
+                var label = projectedRevenueCard?.Controls.Find($"value_{projectedRevenueCard.Name}", true).FirstOrDefault() as Label;
+                if (label != null)
+                {
+                    label.Text = $"₱{total:N0}";
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating Projected Revenue: {ex.Message}");
+            }
+        }
+
         private void InitializeCharts()
         {
             try
             {
                 // Sales Chart Card
                 CreateChartCard(salesChartCard, "Monthly Sales", "Track sales performance over time");
+                if (salesChartCard != null)
+                {
+                    salesChartCard.Resize -= (s, e) => LoadSalesChart();
+                    salesChartCard.Resize += (s, e) => LoadSalesChart();
+                }
 
                 // Property Status Chart Card  
                 CreateChartCard(propertyStatusChartCard, "Property Status", "Distribution of property statuses");
+                if (propertyStatusChartCard != null)
+                {
+                    propertyStatusChartCard.Resize -= (s, e) => LoadPropertyStatusChart();
+                    propertyStatusChartCard.Resize += (s, e) => LoadPropertyStatusChart();
+                }
 
                 // Lead Conversion Chart Card
                 CreateChartCard(leadConversionChartCard, "Lead Conversion", "Lead conversion funnel");
+                if (leadConversionChartCard != null)
+                {
+                    leadConversionChartCard.Resize -= (s, e) => LoadLeadConversionChart();
+                    leadConversionChartCard.Resize += (s, e) => LoadLeadConversionChart();
+                }
 
                 // Average Client Salary Chart Card
                 CreateChartCard(avgSalaryChartCard, "Average Client Salary (Last 12 months)", "Monthly average - clients only");
+                if (avgSalaryChartCard != null)
+                {
+                    avgSalaryChartCard.Resize -= (s, e) => LoadAverageSalaryChart();
+                    avgSalaryChartCard.Resize += (s, e) => LoadAverageSalaryChart();
+                }
 
                 // Preferred Property Type by Occupation Card
                 CreateOccupationPreferenceCard();
@@ -200,13 +271,32 @@ namespace RealEstateCRMWinForms.Views
 
             card.Controls.Clear();
 
+            // Header uses Dock=Top, content fills remaining space to avoid clipping
+            var headerPanel = new Panel
+            {
+                Height = 64,
+                Dock = DockStyle.Top,
+                BackColor = Color.Transparent
+            };
+
+            var headerFlow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoSize = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(20, 12, 20, 0),
+                Margin = new Padding(0)
+            };
+
             var titleLabel = new Label
             {
                 Text = title,
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
-                Location = new Point(20, 15),
-                AutoSize = true
+                AutoSize = true,
+                Margin = new Padding(0, 0, 0, 0)
             };
 
             var descLabel = new Label
@@ -214,21 +304,33 @@ namespace RealEstateCRMWinForms.Views
                 Text = description,
                 Font = new Font("Segoe UI", 10F),
                 ForeColor = Color.FromArgb(107, 114, 128),
-                Location = new Point(20, 40),
-                AutoSize = true
+                AutoSize = true,
+                Margin = new Padding(0, 2, 0, 8)
             };
 
-            // Placeholder for chart content
+            headerFlow.Controls.Add(titleLabel);
+            headerFlow.Controls.Add(descLabel);
+            headerPanel.Controls.Add(headerFlow);
+
+            var contentPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.Transparent,
+                Padding = new Padding(20, 8, 20, 16)
+            };
+
+            // Chart area fills content panel ensuring full visibility
             var chartArea = new Panel
             {
                 BackColor = Color.FromArgb(249, 250, 251),
-                Location = new Point(20, 70),
-                Size = new Size(card.Width - 40, card.Height - 90),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                Dock = DockStyle.Fill,
                 Name = $"chartArea_{card.Name}"
             };
+            contentPanel.Controls.Add(chartArea);
 
-            card.Controls.AddRange(new Control[] { titleLabel, descLabel, chartArea });
+            // Add Fill first, then Top so Fill sits below header
+            card.Controls.Add(contentPanel);
+            card.Controls.Add(headerPanel);
         }
 
         private void CreateOccupationPreferenceCard()
@@ -236,13 +338,22 @@ namespace RealEstateCRMWinForms.Views
             if (occupationPreferenceCard == null) return;
             occupationPreferenceCard.Controls.Clear();
 
+            // Left information panel (title, filter, hint) - Fixed width with proper separation
+            var infoPanel = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 300, // Reduced width to provide more space for chart
+                BackColor = Color.White,
+                Padding = new Padding(20, 12, 10, 12) // Reduced right padding
+            };
+
             var titleLabel = new Label
             {
-                Text = "Preferred Property Type by Occupation",
+                Text = "Property Type by Occupation",
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
-                Location = new Point(20, 15),
-                AutoSize = true
+                AutoSize = true,
+                Location = new Point(0, 0)
             };
 
             var lblSelect = new Label
@@ -250,14 +361,14 @@ namespace RealEstateCRMWinForms.Views
                 Text = "Select Occupation",
                 Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(75, 85, 99),
-                Location = new Point(20, 45),
-                AutoSize = true
+                AutoSize = true,
+                Location = new Point(0, 34)
             };
 
             cmbOccupation = new ComboBox
             {
-                Location = new Point(20, 65),
-                Size = new Size(320, 24),
+                Location = new Point(0, 56),
+                Size = new Size(260, 24), // Adjusted width to fit within the panel
                 Font = new Font("Segoe UI", 9F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
@@ -268,8 +379,9 @@ namespace RealEstateCRMWinForms.Views
                 Text = "Counts derived from Deals with matched Contact and Property, grouped by type.",
                 Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(107, 114, 128),
-                Location = new Point(20, 95),
-                AutoSize = true
+                AutoSize = true,
+                MaximumSize = new Size(260, 0), // Adjusted to fit within panel
+                Location = new Point(0, 90)
             };
 
             // Populate occupations
@@ -293,18 +405,43 @@ namespace RealEstateCRMWinForms.Views
                 cmbOccupation.Enabled = false;
             }
 
-            // Chart area on right
+            // Add a separator panel between info and chart
+            var separatorPanel = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 20, // 20px separation
+                BackColor = Color.White
+            };
+
+            // Right chart host panel - now properly separated
+            var chartHost = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(10, 8, 20, 8) // Adjusted padding
+            };
+
             var chartArea = new Panel
             {
                 Name = "chartArea_occupationPreference",
                 BackColor = Color.FromArgb(249, 250, 251),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
-                Location = new Point(370, 20),
-                Size = new Size(occupationPreferenceCard.Width - 390, occupationPreferenceCard.Height - 40)
+                Dock = DockStyle.Fill
             };
 
-            occupationPreferenceCard.Controls.AddRange(new Control[] { titleLabel, lblSelect, cmbOccupation, hintLabel, chartArea });
+            chartHost.Controls.Add(chartArea);
 
+            // Add controls to info panel
+            infoPanel.Controls.Add(hintLabel);
+            infoPanel.Controls.Add(cmbOccupation);
+            infoPanel.Controls.Add(lblSelect);
+            infoPanel.Controls.Add(titleLabel);
+
+            // Add panels in correct order: Fill first, then Left panels
+            occupationPreferenceCard.Controls.Add(chartHost);      // Fill - added first
+            occupationPreferenceCard.Controls.Add(separatorPanel); // Left separator
+            occupationPreferenceCard.Controls.Add(infoPanel);      // Left info panel
+
+            // Handle resize events
             occupationPreferenceCard.Resize -= OccupationPreferenceCard_Resize;
             occupationPreferenceCard.Resize += OccupationPreferenceCard_Resize;
 
@@ -313,18 +450,17 @@ namespace RealEstateCRMWinForms.Views
 
         private void OccupationPreferenceCard_Resize(object? sender, EventArgs e)
         {
-            var chartArea = occupationPreferenceCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name == "chartArea_occupationPreference");
-            if (chartArea != null && occupationPreferenceCard != null)
-            {
-                chartArea.Location = new Point(370, 20);
-                chartArea.Size = new Size(occupationPreferenceCard.Width - 390, occupationPreferenceCard.Height - 40);
-                RenderOccupationPreferenceChart();
-            }
+            // With docking, only need to re-render to adjust bar sizes
+            RenderOccupationPreferenceChart();
         }
 
         private void RenderOccupationPreferenceChart()
         {
-            var chartArea = occupationPreferenceCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name == "chartArea_occupationPreference");
+            var chartArea = occupationPreferenceCard?
+                .Controls
+                .Find("chartArea_occupationPreference", true)
+                .OfType<Panel>()
+                .FirstOrDefault();
             if (chartArea == null) return;
 
             chartArea.Controls.Clear();
@@ -333,13 +469,15 @@ namespace RealEstateCRMWinForms.Views
                 ? cmbOccupation.SelectedItem.ToString()
                 : null;
 
-            var deals = _dealViewModel.Deals
+            // Build data sets: allDeals (for consistent axis) and deals (filtered for bars)
+            var allDeals = _dealViewModel.Deals
                 .Where(d => d.IsActive && d.Contact != null && d.Property != null && d.Contact!.IsActive)
                 .ToList();
 
+            var deals = allDeals;
             if (!string.IsNullOrWhiteSpace(occ) && occ != "All")
             {
-                deals = deals
+                deals = allDeals
                     .Where(d => string.Equals(d.Contact!.Occupation, occ, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
@@ -354,17 +492,28 @@ namespace RealEstateCRMWinForms.Views
                 counts[type]++;
             }
 
-            // chart layout
-            int leftPad = 60;
+            // Compute global counts (across all occupations) to keep a consistent Y-axis
+            var globalCounts = categories.ToDictionary(c => c, c => 0);
+            foreach (var d in allDeals)
+            {
+                var type = d.Property!.PropertyType?.Trim();
+                if (string.IsNullOrWhiteSpace(type)) type = "Other";
+                if (!categories.Contains(type)) type = "Other";
+                globalCounts[type]++;
+            }
+
+            // Chart layout - adjusted for better spacing
+            int leftPad = 60; // Reduced left padding since we have proper separation now
             int bottomPad = 40;
             int topPad = 20;
             int width = Math.Max(10, chartArea.Width - leftPad - 20);
             int height = Math.Max(10, chartArea.Height - topPad - bottomPad);
             int gap = 18;
             int barW = Math.Max(10, (width - gap * (categories.Length + 1)) / categories.Length);
-            int max = Math.Max(1, counts.Values.Max());
+            // Use global maximum for consistent axis across occupation selections
+            int max = Math.Max(1, globalCounts.Values.Max());
 
-            // grid
+            // Grid lines
             var gridColor = Color.FromArgb(229, 231, 235);
             for (int i = 0; i <= 5; i++)
             {
@@ -375,6 +524,7 @@ namespace RealEstateCRMWinForms.Views
                 chartArea.Controls.AddRange(new Control[] { grid, yLabel });
             }
 
+            // Draw bars
             for (int i = 0; i < categories.Length; i++)
             {
                 string cat = categories[i];
@@ -431,40 +581,58 @@ namespace RealEstateCRMWinForms.Views
 
             card.Controls.Clear();
 
+            // Header layout: icon + title, no absolute positions (prevents clipping)
             var headerPanel = new Panel
             {
-                Height = 50,
+                Height = 56,
                 Dock = DockStyle.Top,
                 BackColor = Color.Transparent
+            };
+
+            var headerFlow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoSize = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(20, 12, 20, 12),
+                Margin = new Padding(0)
             };
 
             var iconLabel = new Label
             {
                 Text = icon,
-                Font = new Font("Segoe UI", 16F),
-                Location = new Point(20, 15),
-                AutoSize = true
+                Font = new Font("Segoe UI Emoji", 18F, FontStyle.Regular, GraphicsUnit.Point),
+                AutoSize = true,
+                Margin = new Padding(0, 0, 8, 0)
             };
 
             var titleLabel = new Label
             {
                 Text = title,
-                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = Color.FromArgb(17, 24, 39),
-                Location = new Point(50, 15),
-                AutoSize = true
+                AutoSize = true,
+                Margin = new Padding(0)
             };
+
+            headerFlow.Controls.Add(iconLabel);
+            headerFlow.Controls.Add(titleLabel);
+            headerPanel.Controls.Add(headerFlow);
 
             var contentPanel = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.Transparent,
-                Padding = new Padding(20),
+                Padding = new Padding(20, 28, 20, 20),
                 Name = $"content_{card.Name}"
             };
 
-            headerPanel.Controls.AddRange(new Control[] { iconLabel, titleLabel });
-            card.Controls.AddRange(new Control[] { headerPanel, contentPanel });
+            // Important: add Fill first, then Top so the Fill area
+            // is measured below the header and won't render underneath it.
+            card.Controls.Add(contentPanel);
+            card.Controls.Add(headerPanel);
         }
 
         private void LoadAnalyticsData()
@@ -475,6 +643,8 @@ namespace RealEstateCRMWinForms.Views
                 LoadChartData();
 
                 LoadTotalCounts();
+                RebuildTotalCountsUniform();
+                CenterTotalCountsLayout();
                 LoadAnalyticsContent();
             }
             catch (Exception ex)
@@ -544,7 +714,11 @@ namespace RealEstateCRMWinForms.Views
 
         private void LoadSalesChart()
         {
-            var chartArea = salesChartCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("chartArea_"));
+            var chartArea = salesChartCard?
+                .Controls
+                .Find($"chartArea_{salesChartCard.Name}", true)
+                .OfType<Panel>()
+                .FirstOrDefault();
             if (chartArea == null) return;
 
             chartArea.Controls.Clear();
@@ -595,7 +769,11 @@ namespace RealEstateCRMWinForms.Views
 
         private void LoadPropertyStatusChart()
         {
-            var chartArea = propertyStatusChartCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("chartArea_"));
+            var chartArea = propertyStatusChartCard?
+                .Controls
+                .Find($"chartArea_{propertyStatusChartCard.Name}", true)
+                .OfType<Panel>()
+                .FirstOrDefault();
             if (chartArea == null) return;
 
             chartArea.Controls.Clear();
@@ -644,7 +822,11 @@ namespace RealEstateCRMWinForms.Views
 
         private void LoadLeadConversionChart()
         {
-            var chartArea = leadConversionChartCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("chartArea_"));
+            var chartArea = leadConversionChartCard?
+                .Controls
+                .Find($"chartArea_{leadConversionChartCard.Name}", true)
+                .OfType<Panel>()
+                .FirstOrDefault();
             if (chartArea == null) return;
 
             chartArea.Controls.Clear();
@@ -695,7 +877,11 @@ namespace RealEstateCRMWinForms.Views
 
         private void LoadAverageSalaryChart()
         {
-            var chartArea = avgSalaryChartCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("chartArea_"));
+            var chartArea = avgSalaryChartCard?
+                .Controls
+                .Find($"chartArea_{avgSalaryChartCard.Name}", true)
+                .OfType<Panel>()
+                .FirstOrDefault();
             if (chartArea == null) return;
 
             chartArea.Controls.Clear();
@@ -1102,6 +1288,148 @@ namespace RealEstateCRMWinForms.Views
         private void totalCountsCard_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        // Rebuild System Overview counts using a uniform grid and stacked layout
+        private void RebuildTotalCountsUniform()
+        {
+            var contentPanel = totalCountsCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("content_"));
+            if (contentPanel == null) return;
+
+            contentPanel.Controls.Clear();
+            // Slightly tighter top padding so labels don't get clipped in fixed-height cards
+            contentPanel.Padding = new Padding(20, 22, 20, 20);
+
+            // Use Segoe MDL2 Assets for consistent glyphs across Windows
+            var mdl2 = "Segoe MDL2 Assets";
+            var totals = new (string Icon, string Label, int Count, Color Color, string FontFamily)[]
+            {
+                ("\uE80F", "Total Properties", _propertyViewModel.Properties.Count(p => p.IsActive), Color.FromArgb(59,130,246), mdl2), // Home
+                ("\uE77B", "Total Leads", _leadViewModel.Leads.Count(l => l.IsActive), Color.FromArgb(16,185,129), mdl2),             // Contact
+                ("\uE716", "Total Contacts", _contactViewModel.Contacts.Count(c => c.IsActive), Color.FromArgb(245,158,11), mdl2),     // People
+                ("\uE821", "Total Deals", _dealViewModel.Deals.Count(d => d.IsActive), Color.FromArgb(139,92,246), mdl2)               // Briefcase
+            };
+
+            var grid = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = totals.Length,
+                RowCount = 1,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
+            };
+            for (int i = 0; i < totals.Length; i++)
+                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / totals.Length));
+            grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+            for (int i = 0; i < totals.Length; i++)
+            {
+                var (icon, label, count, color, fontFamily) = totals[i];
+
+                // Inner vertical stack (auto-sized)
+                var stack = new TableLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    ColumnCount = 1,
+                    RowCount = 3,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(0),
+                    Padding = new Padding(0)
+                };
+                stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+                stack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                stack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                stack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+                var iconLabel = new Label
+                {
+                    Text = icon,
+                    // Slightly smaller to fit within card height
+                    Font = new Font(fontFamily, 22f, FontStyle.Regular, GraphicsUnit.Point),
+                    AutoSize = true,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Margin = new Padding(0, 8, 0, 4)
+                };
+                var countLabel = new Label
+                {
+                    Text = count.ToString(),
+                    // Slightly smaller to avoid cut-off
+                    Font = new Font("Segoe UI", 22f, FontStyle.Bold, GraphicsUnit.Point),
+                    ForeColor = color,
+                    AutoSize = true,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Margin = new Padding(0, 0, 0, 2)
+                };
+                var textLabel = new Label
+                {
+                    Text = label,
+                    Font = new Font("Segoe UI", 12f, FontStyle.Regular, GraphicsUnit.Point),
+                    ForeColor = Color.FromArgb(75, 85, 99),
+                    AutoSize = true,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    // Reduce bottom margin to keep text inside card
+                    Margin = new Padding(0, 0, 0, 6)
+                };
+
+                stack.Controls.Add(iconLabel, 0, 0);
+                stack.Controls.Add(countLabel, 0, 1);
+                stack.Controls.Add(textLabel, 0, 2);
+
+                // Host panel that fills the cell and centers the stack both horizontally and vertically
+                var cellHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0), Padding = new Padding(0) };
+                cellHost.Controls.Add(stack);
+
+                void CenterInCell()
+                {
+                    var pref = stack.PreferredSize;
+                    var x = Math.Max(0, (cellHost.Width - pref.Width) / 2);
+                    var y = Math.Max(0, (cellHost.Height - pref.Height) / 2);
+                    stack.Location = new Point(x, y);
+                }
+                cellHost.Resize += (s, e) => CenterInCell();
+                // Initial center
+                cellHost.HandleCreated += (s, e) => CenterInCell();
+
+                grid.Controls.Add(cellHost, i, 0);
+            }
+
+            contentPanel.Controls.Add(grid);
+        }
+        // Keeps the counts in "System Overview" vertically stacked and centered to avoid overlap
+        private void CenterTotalCountsLayout()
+        {
+            var contentPanel = totalCountsCard?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("content_"));
+            if (contentPanel == null) return;
+
+            foreach (var itemPanel in contentPanel.Controls.OfType<Panel>())
+            {
+                var labels = itemPanel.Controls.OfType<Label>().ToList();
+                if (labels.Count == 0)
+                {
+                    // Also support a nested layout container
+                    var inner = itemPanel.Controls.OfType<Control>().FirstOrDefault();
+                    if (inner != null)
+                    {
+                        labels = inner.Controls.OfType<Label>().ToList();
+                    }
+                }
+                if (labels.Count == 0) continue;
+
+                int y = 12;
+                foreach (var lbl in labels)
+                {
+                    if (lbl == labels.First())
+                        lbl.Font = new Font("Segoe UI Emoji", lbl.Font.Size, lbl.Font.Style);
+
+                    var pref = lbl.GetPreferredSize(new Size(int.MaxValue, int.MaxValue));
+                    lbl.AutoSize = true;
+                    lbl.TextAlign = ContentAlignment.MiddleCenter;
+                    lbl.Location = new Point(Math.Max(0, (itemPanel.Width - pref.Width) / 2), y);
+                    y += pref.Height + 8;
+                }
+            }
         }
     }
 }

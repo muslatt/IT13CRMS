@@ -29,8 +29,8 @@ namespace RealEstateCRMWinForms.Views
             try
             {
                 _viewModel = new DealViewModel();
-                _availableStatuses = availableStatuses ?? new List<string> { "New", "Offer Made", "Negotiation", "Contract Draft" };
-                _defaultStatus = defaultStatus ?? "New";
+                _availableStatuses = availableStatuses ?? new List<string> { BoardViewModel.NewBoardName, "Offer Made", "Negotiation", "Contract Draft" };
+                _defaultStatus = string.IsNullOrWhiteSpace(defaultStatus) ? BoardViewModel.NewBoardName : defaultStatus;
                 InitializeComponent();
                 LoadComboBoxData();
             }

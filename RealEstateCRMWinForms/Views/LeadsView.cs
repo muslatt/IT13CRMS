@@ -1,4 +1,4 @@
-﻿// RealEstateCRMWinForms\Views\LeadsView.cs
+// RealEstateCRMWinForms\Views\LeadsView.cs
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
 using RealEstateCRMWinForms.Controls;
@@ -21,6 +21,12 @@ namespace RealEstateCRMWinForms.Views
         private BindingSource _bindingSource;
         private ContextMenuStrip _contextMenu;
 
+        private const int PageSize = 10;
+        private int _currentPage = 1;
+        private int _totalPages = 1;
+        private List<Lead> _currentLeads = new();
+        private bool _isDataInitialized;
+
         public LeadsView()
         {
             _viewModel = new LeadViewModel();
@@ -41,8 +47,8 @@ namespace RealEstateCRMWinForms.Views
 
             // Allow editing only for Type column (dropdown functionality)
             dataGridViewLeads.EnableHeadersVisualStyles = false;
-            // Changed from Fill to None to prevent column shrinking and enable horizontal scrolling
-            dataGridViewLeads.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            // Fill available width to avoid empty space on the right
+            dataGridViewLeads.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridViewLeads.RowHeadersVisible = false;
             dataGridViewLeads.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridViewLeads.MultiSelect = false;
@@ -93,6 +99,7 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewLeads.CellValueChanged += DataGridViewLeads_CellValueChanged;
             dataGridViewLeads.CurrentCellDirtyStateChanged += DataGridViewLeads_CurrentCellDirtyStateChanged;
             dataGridViewLeads.CellBeginEdit += DataGridViewLeads_CellBeginEdit;
+            dataGridViewLeads.EditingControlShowing += DataGridViewLeads_EditingControlShowing;
             dataGridViewLeads.DataError += DataGridViewLeads_DataError;
         }
 
@@ -114,29 +121,33 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                // Test database connection first
+                _isDataInitialized = false;
+
                 if (!_viewModel.TestConnection())
                 {
-                    // Show a user-friendly message without blocking the UI
                     ShowDatabaseConnectionInfo();
                     return;
                 }
 
-                // Create columns in the desired order
                 CreateGridColumns();
-
-                _bindingSource.DataSource = _viewModel.Leads;
                 dataGridViewLeads.DataSource = _bindingSource;
-                if (sortComboBox != null)
+
+                if (sortComboBox != null && sortComboBox.Items.Count > 0)
+                {
                     sortComboBox.SelectedIndex = 0;
+                }
+
+                ApplyFilterAndSort(true);
+                _isDataInitialized = true;
+                UpdatePaginationControls();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error initializing LeadsView data: {ex.Message}");
-                // Fallback to basic initialization if custom columns fail
                 InitializeBasicColumns();
             }
         }
+
 
         private void ShowDatabaseConnectionInfo()
         {
@@ -208,6 +219,8 @@ namespace RealEstateCRMWinForms.Views
                     Padding = new Padding(8, 4, 8, 4)
                 }
             };
+            nameColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            nameColumn.FillWeight = 180f;
             dataGridViewLeads.Columns.Add(nameColumn);
 
             // Type column with dropdown functionality - UPDATED
@@ -224,9 +237,11 @@ namespace RealEstateCRMWinForms.Views
             };
             
             // Add dropdown items - only "Contact" for conversion functionality
-            typeColumn.Items.AddRange(new string[] { "Contact" });
+            // Include known types so existing values display correctly
+            typeColumn.Items.AddRange(new string[] { "Lead", "Contact", "Buyer", "Owner", "Renter" });
             typeColumn.DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing; // Show dropdown arrow only on edit
             
+            typeColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             dataGridViewLeads.Columns.Add(typeColumn);
 
             // NOTE: Removed Status, Source, Last Contacted, and Actions columns per request.
@@ -248,10 +263,12 @@ namespace RealEstateCRMWinForms.Views
                     Padding = new Padding(8, 4, 8, 4)
                 }
             };
+            agentColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            agentColumn.FillWeight = 140f;
             dataGridViewLeads.Columns.Add(agentColumn);
 
             // Additional columns for detailed view (can be toggled)
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            var emailColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Email",
                 HeaderText = "Email",
@@ -259,9 +276,12 @@ namespace RealEstateCRMWinForms.Views
                 Width = 200,
                 ReadOnly = true, // Email column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
+            };
+            emailColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            emailColumn.FillWeight = 180f;
+            dataGridViewLeads.Columns.Add(emailColumn);
 
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            var phoneColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Phone",
                 HeaderText = "Phone",
@@ -269,10 +289,12 @@ namespace RealEstateCRMWinForms.Views
                 Width = 140,
                 ReadOnly = true, // Phone column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
+            };
+            phoneColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            dataGridViewLeads.Columns.Add(phoneColumn);
 
             // New: Occupation column
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            var occupationColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Occupation",
                 HeaderText = "Occupation",
@@ -280,10 +302,13 @@ namespace RealEstateCRMWinForms.Views
                 Width = 160,
                 ReadOnly = true, // Occupation column should not be editable
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
+            };
+            occupationColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            occupationColumn.FillWeight = 140f;
+            dataGridViewLeads.Columns.Add(occupationColumn);
 
             // New: Salary column
-            dataGridViewLeads.Columns.Add(new DataGridViewTextBoxColumn
+            var salaryColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Salary",
                 HeaderText = "Salary",
@@ -296,7 +321,9 @@ namespace RealEstateCRMWinForms.Views
                     Alignment = DataGridViewContentAlignment.MiddleRight,
                     // We'll format the salary in CellFormatting handler for currency display
                 }
-            });
+            };
+            salaryColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            dataGridViewLeads.Columns.Add(salaryColumn);
         }
 
         // NEW EVENT HANDLERS FOR DROPDOWN FUNCTIONALITY
@@ -312,18 +339,17 @@ namespace RealEstateCRMWinForms.Views
             // Get the current lead and its type
             if (e.RowIndex >= 0 && dataGridViewLeads.Rows[e.RowIndex].DataBoundItem is Lead lead)
             {
-                var typeColumn = dataGridViewLeads.Columns[e.ColumnIndex] as DataGridViewComboBoxColumn;
-                if (typeColumn != null)
+                if (dataGridViewLeads.Rows[e.RowIndex].Cells[e.ColumnIndex] is DataGridViewComboBoxCell typeCell)
                 {
-                    // Clear existing items
-                    typeColumn.Items.Clear();
-                    
-                    // Always only show "Contact" option since we want to convert leads to contacts only
-                    typeColumn.Items.Add("Contact");
+                    typeCell.Items.Clear();
+                    typeCell.Items.Add(lead.Type);
+                    if (!string.Equals(lead.Type, "Contact", StringComparison.OrdinalIgnoreCase))
+                    {
+                        typeCell.Items.Add("Contact");
+                    }
                 }
             }
         }
-
         private void DataGridViewLeads_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
         {
             // Commit changes immediately when dropdown selection changes
@@ -549,41 +575,157 @@ namespace RealEstateCRMWinForms.Views
 
         private void ApplyFilter()
         {
-            var query = searchBox?.Text?.Trim() ?? string.Empty;
-
-            if (string.IsNullOrEmpty(query))
-            {
-                _bindingSource.DataSource = _viewModel.Leads;
-            }
-            else
-            {
-                var filtered = _viewModel.Leads.Where(l =>
-                    (l.FullName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (l.Email?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (l.Phone?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (l.Occupation?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (l.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
-
-                _bindingSource.DataSource = new BindingList<Lead>(filtered);
-            }
+            ApplyFilterAndSort(true);
         }
 
         private void ApplySort()
         {
-            var selectedSort = sortComboBox?.SelectedItem as string;
-            List<Lead> sortedLeads;
-
-            var currentData = (_bindingSource.DataSource as BindingList<Lead>)?.ToList() ?? _viewModel.Leads.ToList();
-
-            sortedLeads = selectedSort switch
+            if (!_isDataInitialized)
             {
-                "Oldest to Newest" => currentData.OrderBy(l => l.CreatedAt).ToList(),
-                "Name A-Z" => currentData.OrderBy(l => l.FullName).ToList(),
-                "Name Z-A" => currentData.OrderByDescending(l => l.FullName).ToList(),
-                _ => currentData.OrderByDescending(l => l.CreatedAt).ToList()
-            };
+                return;
+            }
 
-            _bindingSource.DataSource = new BindingList<Lead>(sortedLeads);
+            ApplyFilterAndSort(true);
+        }
+        private void ApplyFilterAndSort(bool resetPage)
+        {
+            var query = searchBox?.Text?.Trim() ?? string.Empty;
+            IEnumerable<Lead> data = _viewModel.Leads;
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                data = data.Where(l =>
+                    (l.FullName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (l.Email?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (l.Phone?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (l.Occupation?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (l.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            var filtered = data.ToList();
+            var sorted = SortLeads(filtered, sortComboBox?.SelectedItem as string);
+
+            SetCurrentLeads(sorted, resetPage);
+        }
+
+        private static List<Lead> SortLeads(List<Lead> leads, string? sortOption)
+        {
+            return (sortOption ?? "Newest to Oldest") switch
+            {
+                "Oldest to Newest" => leads.OrderBy(l => l.CreatedAt).ToList(),
+                "Name A-Z" => leads.OrderBy(l => l.FullName ?? string.Empty).ToList(),
+                "Name Z-A" => leads.OrderByDescending(l => l.FullName ?? string.Empty).ToList(),
+                _ => leads.OrderByDescending(l => l.CreatedAt).ToList()
+            };
+        }
+
+        private void SetCurrentLeads(IEnumerable<Lead> leads, bool resetPage)
+        {
+            _currentLeads = leads?.ToList() ?? new List<Lead>();
+
+            if (_currentLeads.Count == 0)
+            {
+                _currentPage = 1;
+            }
+            else if (resetPage || _currentPage < 1)
+            {
+                _currentPage = 1;
+            }
+            else if (_currentPage > _totalPages)
+            {
+                _currentPage = _totalPages;
+            }
+
+            ApplyPagination();
+        }
+
+        private void ApplyPagination()
+        {
+            var wasVisible = dataGridViewLeads.Visible;
+            dataGridViewLeads.Visible = false;
+            dataGridViewLeads.SuspendLayout();
+            dataGridViewLeads.SuspendDrawing();
+            try
+            {
+                if (_currentLeads.Count == 0)
+                {
+                    _totalPages = 1;
+                    _bindingSource.DataSource = new BindingList<Lead>();
+                }
+                else
+                {
+                    _totalPages = (int)Math.Ceiling(_currentLeads.Count / (double)PageSize);
+                    if (_currentPage > _totalPages)
+                    {
+                        _currentPage = _totalPages;
+                    }
+
+                    var pageLeads = _currentLeads
+                        .Skip((_currentPage - 1) * PageSize)
+                        .Take(PageSize)
+                        .ToList();
+
+                    _bindingSource.DataSource = new BindingList<Lead>(pageLeads);
+
+                    // Reset scroll to top if rows exist
+                    try { if (dataGridViewLeads.Rows.Count > 0) dataGridViewLeads.FirstDisplayedScrollingRowIndex = 0; } catch { }
+                }
+
+                dataGridViewLeads.PerformLayout();
+                dataGridViewLeads.Invalidate(true);
+                dataGridViewLeads.Update();
+            }
+            finally
+            {
+                dataGridViewLeads.ResumeLayout(true);
+                dataGridViewLeads.ResumeDrawing();
+                dataGridViewLeads.Visible = wasVisible;
+                this.Invalidate(true);
+                this.Update();
+                try { Application.DoEvents(); } catch { }
+            }
+
+            UpdatePaginationControls();
+        }
+
+        private void UpdatePaginationControls()
+        {
+            var totalItems = _currentLeads.Count;
+            if (totalItems == 0)
+            {
+                lblLeadPageInfo.Text = "No leads to display";
+            }
+            else
+            {
+                var start = ((_currentPage - 1) * PageSize) + 1;
+                var end = Math.Min(start + PageSize - 1, totalItems);
+                lblLeadPageInfo.Text = $"Showing {start}–{end} of {totalItems}";
+            }
+
+            btnPrevLeadPage.Enabled = _currentPage > 1;
+            btnNextLeadPage.Enabled = _currentPage < _totalPages;
+        }
+
+        private void BtnPrevLeadPage_Click(object? sender, EventArgs e)
+        {
+            if (_currentPage <= 1)
+            {
+                return;
+            }
+
+            _currentPage--;
+            ApplyPagination();
+        }
+
+        private void BtnNextLeadPage_Click(object? sender, EventArgs e)
+        {
+            if (_currentPage >= _totalPages)
+            {
+                return;
+            }
+
+            _currentPage++;
+            ApplyPagination();
         }
 
         private void BtnAddLead_Click(object? sender, EventArgs e)
@@ -746,18 +888,88 @@ namespace RealEstateCRMWinForms.Views
 
         }
 
+        private void DataGridViewLeads_EditingControlShowing(object? sender, DataGridViewEditingControlShowingEventArgs e)
+        {
+            if (dataGridViewLeads.CurrentCell?.OwningColumn?.Name != "Type")
+            {
+                if (e.Control is ComboBox comboReset)
+                {
+                    comboReset.SelectionChangeCommitted -= DataGridViewLeads_TypeComboBox_SelectionChangeCommitted;
+                    comboReset.KeyPress -= DataGridViewLeads_TypeComboBox_KeyPress;
+                    comboReset.Tag = null;
+                }
+                return;
+            }
+
+            if (e.Control is ComboBox combo)
+            {
+                combo.SelectionChangeCommitted -= DataGridViewLeads_TypeComboBox_SelectionChangeCommitted;
+                combo.KeyPress -= DataGridViewLeads_TypeComboBox_KeyPress;
+
+                var lead = dataGridViewLeads.CurrentCell?.OwningRow?.DataBoundItem as Lead;
+                var currentType = lead?.Type ?? dataGridViewLeads.CurrentCell?.Value?.ToString() ?? string.Empty;
+
+                combo.DropDownStyle = ComboBoxStyle.DropDownList;
+                combo.Items.Clear();
+
+                if (!string.IsNullOrEmpty(currentType))
+                {
+                    combo.Items.Add(currentType);
+                }
+
+                if (!string.Equals(currentType, "Contact", StringComparison.OrdinalIgnoreCase))
+                {
+                    combo.Items.Add("Contact");
+                }
+
+                combo.SelectedItem = currentType;
+                combo.Tag = currentType;
+
+                combo.SelectionChangeCommitted += DataGridViewLeads_TypeComboBox_SelectionChangeCommitted;
+                combo.KeyPress += DataGridViewLeads_TypeComboBox_KeyPress;
+            }
+        }
+
+        private void DataGridViewLeads_TypeComboBox_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        private void DataGridViewLeads_TypeComboBox_SelectionChangeCommitted(object? sender, EventArgs e)
+        {
+            if (sender is ComboBox combo && combo.Tag is string currentType)
+            {
+                if (combo.SelectedItem is string selected && string.Equals(selected, currentType, StringComparison.OrdinalIgnoreCase))
+                {
+                    combo.SelectedItem = currentType;
+                }
+            }
+        }
         private void DataGridViewLeads_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            if (e.Context == DataGridViewDataErrorContexts.Formatting || 
+            if (e.Context == DataGridViewDataErrorContexts.Formatting ||
                 e.Context == DataGridViewDataErrorContexts.Display)
             {
+                e.ThrowException = false;
                 e.Cancel = true; // Suppress the error dialog
-                // Optionally set a default value
+
                 if (dataGridViewLeads.Columns[e.ColumnIndex].Name == "Type")
                 {
-                    dataGridViewLeads.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = "Contact";
+                    var lead = dataGridViewLeads.Rows[e.RowIndex].DataBoundItem as Lead;
+                    var fallbackType = lead?.Type ?? dataGridViewLeads.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString() ?? "Lead";
+                    dataGridViewLeads.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = fallbackType;
                 }
             }
         }
     }
 }
+
+
+
+
+
+
+
+
+
+

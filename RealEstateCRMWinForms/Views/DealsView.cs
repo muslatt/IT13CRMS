@@ -2,8 +2,12 @@
 using RealEstateCRMWinForms.Controls;
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
+using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
+using RealEstateCRMWinForms.Utils;
+using RealEstateCRMWinForms.Services;
 
 namespace RealEstateCRMWinForms.Views
 {
@@ -18,6 +22,9 @@ namespace RealEstateCRMWinForms.Views
         private Panel _scrollableContainer;
         private Button btnAddDeal;
         private Button btnAddBoard;
+        private ToolTip _toolTip;
+        private PendingAssignmentsView _pendingView;
+        private Panel _pendingHost;
         private List<Board> _boards;
         private const int BOARD_WIDTH = 300;
         private const int BOARD_MARGIN = 10;
@@ -29,6 +36,13 @@ namespace RealEstateCRMWinForms.Views
             
             try
             {
+                _toolTip = new ToolTip
+                {
+                    ShowAlways = true,
+                    InitialDelay = 200,
+                    ReshowDelay = 100,
+                    AutoPopDelay = 4000
+                };
                 InitializeDefaultBoards();
                 LoadBoards();
                 InitializeDealBoard();
@@ -55,7 +69,10 @@ namespace RealEstateCRMWinForms.Views
         private void LoadBoards()
         {
             _boardViewModel.LoadBoards();
-            _boards = _boardViewModel.Boards.ToList();
+            _boards = _boardViewModel.Boards
+                .OrderBy(b => b.Order)
+                .ThenBy(b => b.CreatedAt)
+                .ToList();
             _statusColors = new Dictionary<string, Color>();
             
             foreach (var board in _boards)
@@ -122,6 +139,8 @@ namespace RealEstateCRMWinForms.Views
                 AutoScroll = true,
                 Padding = new Padding(15, 15, 15, 15)
             };
+            // Reduce flicker in scrollable host
+            Utils.ControlExtensions.EnableDoubleBuffering(_scrollableContainer);
 
             // Board panel using FlowLayoutPanel for dynamic layout
             _boardPanel = new FlowLayoutPanel
@@ -135,6 +154,7 @@ namespace RealEstateCRMWinForms.Views
                 Margin = new Padding(0),
                 Location = new Point(0, 0)
             };
+            Utils.ControlExtensions.EnableDoubleBuffering(_boardPanel);
 
             _statusPanels = new Dictionary<string, FlowLayoutPanel>();
             _countLabels = new Dictionary<string, Label>();
@@ -142,8 +162,43 @@ namespace RealEstateCRMWinForms.Views
             RefreshBoardLayout();
 
             _scrollableContainer.Controls.Add(_boardPanel);
-            mainContainer.Controls.Add(_scrollableContainer);
-            mainContainer.Controls.Add(headerPanel);
+
+            // If current user is an Agent, show Pending Assignments area and limit actions
+            var user = UserSession.Instance.CurrentUser;
+            if (user != null && user.Role == UserRole.Agent)
+            {
+                // Hide manual add actions for agents
+                btnAddDeal.Visible = false;
+                btnAddBoard.Visible = false;
+
+                _pendingHost = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 380,
+                    BackColor = Color.White
+                };
+                _pendingView = new PendingAssignmentsView
+                {
+                    Dock = DockStyle.Fill
+                };
+                _pendingView.AssignmentAccepted += (s, p) =>
+                {
+                    // After acceptance, refresh the deals board
+                    LoadDeals();
+                };
+                _pendingView.AssignmentDeclined += (s, p) => { /* no-op */ };
+
+                _pendingHost.Controls.Add(_pendingView);
+                mainContainer.Controls.Add(_scrollableContainer);
+                mainContainer.Controls.Add(_pendingHost);
+                mainContainer.Controls.Add(headerPanel);
+            }
+            else
+            {
+                // Default ordering without pending view
+                mainContainer.Controls.Add(_scrollableContainer);
+                mainContainer.Controls.Add(headerPanel);
+            }
             this.Controls.Add(mainContainer);
 
             // Handle resize events
@@ -249,6 +304,82 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(0, 5)
             };
 
+            // Inline editor for the board title
+            var txtTitleEdit = new TextBox
+            {
+                Visible = false,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.Black,
+                BorderStyle = BorderStyle.FixedSingle,
+                Location = new Point(0, 3),
+                Width = 160,
+                Text = board.Name,
+                Tag = board.Id,
+                Name = $"txtTitleEdit_{board.Id}"
+            };
+
+            // Allow inline editing by double-clicking the title
+            lblTitle.DoubleClick += (s, e) =>
+            {
+                txtTitleEdit.Text = lblTitle.Text;
+                txtTitleEdit.Visible = true;
+                lblTitle.Visible = false;
+                txtTitleEdit.Focus();
+                txtTitleEdit.SelectAll();
+            };
+
+            // Commit/cancel inline editing from the editor textbox
+            txtTitleEdit.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    var newName = (txtTitleEdit.Text ?? string.Empty).Trim();
+                    var oldName = board.Name;
+                    if (string.IsNullOrWhiteSpace(newName))
+                    {
+                        MessageBox.Show("Board name cannot be empty.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    if (!string.Equals(newName, oldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (_boards.Any(b => b.Id != board.Id && b.Name.Equals(newName, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            MessageBox.Show($"A board named '{newName}' already exists.", "Duplicate Name", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                        var success = _boardViewModel.RenameBoard(board, newName);
+                        if (!success)
+                        {
+                            MessageBox.Show("Failed to rename board. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                        // Reload entire layout so internal dictionaries (by name) update correctly
+                        LoadBoards();
+                        RefreshBoardLayout();
+                        LoadDeals();
+                    }
+                    txtTitleEdit.Visible = false;
+                    lblTitle.Visible = true;
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.Escape)
+                {
+                    txtTitleEdit.Text = lblTitle.Text;
+                    txtTitleEdit.Visible = false;
+                    lblTitle.Visible = true;
+                    e.Handled = true;
+                }
+            };
+            txtTitleEdit.Leave += (s, e) =>
+            {
+                // Cancel edit on focus loss if still visible
+                if (txtTitleEdit.Visible)
+                {
+                    txtTitleEdit.Visible = false;
+                    lblTitle.Visible = true;
+                }
+            };
+
             var lblCount = new Label
             {
                 Text = "/ 0",
@@ -260,27 +391,125 @@ namespace RealEstateCRMWinForms.Views
 
             _countLabels[board.Name] = lblCount;
 
-            // Delete board button (only show for non-"New" boards)
-            if (board.Name != "New")
+            Button? btnDeleteBoard = null;
+            Button? btnDeleteClosed = null;
+            if (!_boardViewModel.IsSystemBoard(board))
             {
-                var btnDeleteBoard = new Button
+                btnDeleteBoard = new Button
                 {
-                    Text = "�",
-                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                    // MDL2 Delete glyph
+                    Text = "\uE74D",
+                    Font = new Font("Segoe MDL2 Assets", 12F, FontStyle.Regular),
                     BackColor = Color.FromArgb(220, 53, 69),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
-                    Size = new Size(25, 25),
+                    Size = new Size(28, 28),
                     Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                    Location = new Point(headerPanel.Width - 40, 15),
                     Tag = board.Id
                 };
                 btnDeleteBoard.FlatAppearance.BorderSize = 0;
+                btnDeleteBoard.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 40, 55);
+                btnDeleteBoard.FlatAppearance.MouseDownBackColor = Color.FromArgb(180, 35, 50);
                 btnDeleteBoard.Click += BtnDeleteBoard_Click;
+                if (_toolTip != null)
+                {
+                    _toolTip.SetToolTip(btnDeleteBoard, "Delete board");
+                }
                 headerPanel.Controls.Add(btnDeleteBoard);
             }
 
+            // Add a bulk delete button for the Closed/Done system board
+            if (string.Equals(board.Name, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase))
+            {
+                btnDeleteClosed = new Button
+                {
+                    Text = "\uE74D", // MDL2 delete glyph
+                    Font = new Font("Segoe MDL2 Assets", 12F, FontStyle.Regular),
+                    BackColor = Color.FromArgb(220, 53, 69),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Size = new Size(28, 28),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                    Tag = board.Name,
+                    Name = "btnDeleteClosedBulk"
+                };
+                btnDeleteClosed.FlatAppearance.BorderSize = 0;
+                btnDeleteClosed.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 40, 55);
+                btnDeleteClosed.FlatAppearance.MouseDownBackColor = Color.FromArgb(180, 35, 50);
+                btnDeleteClosed.Click += BtnDeleteClosed_Click;
+                if (_toolTip != null)
+                {
+                    _toolTip.SetToolTip(btnDeleteClosed, "Delete all closed deals and properties");
+                }
+                headerPanel.Controls.Add(btnDeleteClosed);
+            }
+
+            var btnRenameBoard = new Button
+            {
+                // MDL2 Edit (pencil) glyph
+                Text = "\uE70F",
+                Font = new Font("Segoe MDL2 Assets", 12F, FontStyle.Regular),
+                BackColor = Color.FromArgb(107, 114, 128),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(28, 28),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Tag = board.Id
+            };
+            btnRenameBoard.FlatAppearance.BorderSize = 0;
+            btnRenameBoard.FlatAppearance.MouseOverBackColor = Color.FromArgb(90, 97, 112);
+            btnRenameBoard.FlatAppearance.MouseDownBackColor = Color.FromArgb(70, 77, 92);
+            btnRenameBoard.Click += BtnRenameBoard_Click;
+            if (_toolTip != null)
+            {
+                _toolTip.SetToolTip(btnRenameBoard, "Rename board");
+            }
+            headerPanel.Controls.Add(btnRenameBoard);
+
+            void PositionHeaderButtons()
+            {
+                const int rightPadding = 10;
+                int topPadding = headerPanel.Padding.Top; // align with header content
+
+                int clientRight = headerPanel.ClientSize.Width - headerPanel.Padding.Right;
+
+                if (btnDeleteClosed != null)
+                {
+                    int deleteClosedX = clientRight - btnDeleteClosed.Width - rightPadding;
+                    btnDeleteClosed.Location = new Point(deleteClosedX, topPadding);
+                }
+
+                int nextLeft = (btnDeleteClosed != null) ? btnDeleteClosed.Left : clientRight;
+
+                if (btnDeleteBoard != null)
+                {
+                    int deleteX = nextLeft - btnDeleteBoard.Width - (btnDeleteClosed != null ? 6 : rightPadding);
+                    btnDeleteBoard.Location = new Point(deleteX, topPadding);
+                }
+
+                int spacing = 6;
+                if (btnDeleteBoard != null)
+                {
+                    int editX = btnDeleteBoard.Left - spacing - btnRenameBoard.Width;
+                    btnRenameBoard.Location = new Point(editX, topPadding);
+                }
+                else
+                {
+                    int editX = nextLeft - btnRenameBoard.Width - rightPadding;
+                    btnRenameBoard.Location = new Point(editX, topPadding);
+                }
+
+                btnRenameBoard.BringToFront();
+                btnDeleteBoard?.BringToFront();
+                btnDeleteClosed?.BringToFront();
+            }
+
+            headerPanel.Resize += (s, e) => PositionHeaderButtons();
+            PositionHeaderButtons();
+
             headerPanel.Controls.AddRange(new Control[] { lblTitle, lblCount });
+
+            headerPanel.Controls.Add(txtTitleEdit);
 
             // Content panel with internal padding
             var columnPanel = new FlowLayoutPanel
@@ -294,6 +523,7 @@ namespace RealEstateCRMWinForms.Views
                 AllowDrop = true,
                 Tag = board.Name
             };
+            Utils.ControlExtensions.EnableDoubleBuffering(columnPanel);
 
             _statusPanels[board.Name] = columnPanel;
 
@@ -327,7 +557,7 @@ namespace RealEstateCRMWinForms.Views
                     {
                         Name = newBoardName,
                         Color = "#ADD8E6",
-                        IsDefault = true,
+                        IsDefault = false,
                         CreatedBy = "User",
                         CreatedAt = DateTime.UtcNow,
                         IsActive = true
@@ -339,7 +569,7 @@ namespace RealEstateCRMWinForms.Views
                         RefreshBoardLayout();
                         LoadDeals();
                         
-                        MessageBox.Show($"Board '{newBoardName}' has been successfully created and set as default!", 
+                        MessageBox.Show($"Board '{newBoardName}' has been successfully created.", 
                             "Board Added", 
                             MessageBoxButtons.OK, 
                             MessageBoxIcon.Information);
@@ -355,6 +585,23 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
+        private void BtnRenameBoard_Click(object? sender, EventArgs e)
+        {
+            if (sender is Button btn && btn.Parent is Panel headerPanel)
+            {
+                var titleLabel = headerPanel.Controls.OfType<Label>().FirstOrDefault(l => l.Font.Bold);
+                var editor = headerPanel.Controls.OfType<TextBox>().FirstOrDefault();
+                if (titleLabel != null && editor != null)
+                {
+                    editor.Text = titleLabel.Text;
+                    editor.Visible = true;
+                    titleLabel.Visible = false;
+                    editor.Focus();
+                    editor.SelectAll();
+                }
+            }
+        }
+
         private void BtnDeleteBoard_Click(object? sender, EventArgs e)
         {
             if (sender is Button btn && btn.Tag is int boardId)
@@ -362,7 +609,7 @@ namespace RealEstateCRMWinForms.Views
                 var board = _boards.FirstOrDefault(b => b.Id == boardId);
                 if (board != null)
                 {
-                    var result = MessageBox.Show($"Are you sure you want to delete the '{board.Name}' board?\n\nAll deals in this board will be moved to 'New'.", 
+                    var result = MessageBox.Show($"Are you sure you want to delete the '{board.Name}' board?\n\nAll deals in this board will be moved to '{BoardViewModel.NewBoardName}'.", 
                         "Delete Board", 
                         MessageBoxButtons.YesNo, 
                         MessageBoxIcon.Warning);
@@ -382,9 +629,9 @@ namespace RealEstateCRMWinForms.Views
                         }
                         else
                         {
-                            MessageBox.Show("Cannot delete the 'New' board as it's required by the system.", 
-                                "Cannot Delete Board", 
-                                MessageBoxButtons.OK, 
+                            MessageBox.Show($"System boards '{BoardViewModel.NewBoardName}' and '{BoardViewModel.ClosedBoardName}' cannot be deleted.",
+                                "Cannot Delete Board",
+                                MessageBoxButtons.OK,
                                 MessageBoxIcon.Warning);
                         }
                     }
@@ -402,15 +649,26 @@ namespace RealEstateCRMWinForms.Views
                     return;
                 }
 
-                // Clear all panels first
+                // Suspend layout/drawing and clear all panels first
+                _boardPanel.SuspendLayout();
                 foreach (var panel in _statusPanels.Values)
                 {
+                    panel.SuspendLayout();
+                    panel.SuspendDrawing();
                     panel.Controls.Clear();
                 }
 
                 // Force reload from database to ensure we have fresh data
                 _dealViewModel.LoadDeals();
                 var deals = _dealViewModel.Deals;
+                // For agents: only show deals they accepted/created
+                var user = UserSession.Instance.CurrentUser;
+                if (user != null && user.Role == UserRole.Agent)
+                {
+                    var agentName = ($"{user.FirstName} {user.LastName}".Trim());
+                    deals = new System.ComponentModel.BindingList<Deal>(
+                        deals.Where(d => string.Equals(d.CreatedBy ?? string.Empty, agentName, StringComparison.OrdinalIgnoreCase)).ToList());
+                }
                 Console.WriteLine($"Loading {deals.Count} deals");
 
                 foreach (var deal in deals)
@@ -432,15 +690,23 @@ namespace RealEstateCRMWinForms.Views
                     else
                     {
                         // Default to "New" if status not found
-                        if (_statusPanels.ContainsKey("New"))
+                        if (_statusPanels.ContainsKey(BoardViewModel.NewBoardName))
                         {
-                            _statusPanels["New"].Controls.Add(card);
-                            Console.WriteLine($"Added deal '{deal.Title}' to 'New' board (status '{deal.Status}' not found)");
+                            _statusPanels[BoardViewModel.NewBoardName].Controls.Add(card);
+                            Console.WriteLine($"Added deal '{deal.Title}' to '{BoardViewModel.NewBoardName}' board (status '{deal.Status}' not found)");
                         }
                     }
                 }
 
                 UpdateColumnCounts();
+
+                // Resume drawing/layout
+                foreach (var panel in _statusPanels.Values)
+                {
+                    panel.ResumeLayout();
+                    panel.ResumeDrawing();
+                }
+                _boardPanel.ResumeLayout();
             }
             catch (Exception ex)
             {
@@ -591,7 +857,7 @@ namespace RealEstateCRMWinForms.Views
                     return;
                 }
 
-                string newStatus = targetPanel.Tag?.ToString() ?? "New";
+                string newStatus = targetPanel.Tag?.ToString() ?? BoardViewModel.NewBoardName;
                 var dealToUpdate = card.GetDeal();
                 string oldStatus = dealToUpdate.Status;
                 
@@ -605,6 +871,51 @@ namespace RealEstateCRMWinForms.Views
 
                 try
                 {
+                    // Brokers cannot move deals whose property is assigned to an Agent
+                    var currentUser = UserSession.Instance.CurrentUser;
+                    if (currentUser != null && currentUser.Role == UserRole.Broker)
+                    {
+                        var assignedAgent = dealToUpdate?.Property?.Agent;
+                        if (!string.IsNullOrWhiteSpace(assignedAgent))
+                        {
+                            MessageBox.Show("This property is assigned to an Agent. Brokers cannot move it between pipelines.",
+                                "Move Restricted",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning);
+                            return;
+                        }
+                    }
+
+                    // If moving to Closed/Done, confirm and compute commission
+                    if (string.Equals(newStatus, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var user = UserSession.Instance.CurrentUser;
+                        decimal percent = (user != null && user.Role == UserRole.Broker) ? 0.10m : 0.05m; // Broker 10%, Agent 5%
+                        decimal price = dealToUpdate?.Property?.Price ?? 0m;
+                        decimal commission = Math.Round(price * percent, 2);
+
+                        var confirm = MessageBox.Show(
+                            $"Close this deal? This will record a {percent * 100:0}% commission of ₱{commission:N2}.",
+                            "Confirm Close",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+                        if (confirm != DialogResult.Yes)
+                        {
+                            return;
+                        }
+
+                        dealToUpdate.Value = commission; // store commission in Value
+                        dealToUpdate.ClosedAt = DateTime.UtcNow;
+
+                        try
+                        {
+                            var who = user?.FullName ?? string.Empty;
+                            var note = $"Closed by {who}, commission {percent * 100:0}% = ₱{commission:N2} on {DateTime.Now:g}";
+                            dealToUpdate.Notes = string.IsNullOrWhiteSpace(dealToUpdate.Notes) ? note : dealToUpdate.Notes + Environment.NewLine + note;
+                        }
+                        catch { }
+                    }
+
                     if (await _dealViewModel.MoveDealToStatusAsync(dealToUpdate, newStatus))
                     {
                         targetPanel.Controls.Add(card);
@@ -627,6 +938,56 @@ namespace RealEstateCRMWinForms.Views
                         panel.AllowDrop = true;
                     }
                 }
+            }
+        }
+
+        private void BtnDeleteClosed_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                var confirm = MessageBox.Show(
+                    "Delete ALL deals in Closed/Done and their properties?\n\nThis will remove closed deals and mark their linked properties as deleted.",
+                    "Delete Closed Deals",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2);
+                if (confirm != DialogResult.Yes) return;
+
+                // Ensure latest data
+                _dealViewModel.LoadDeals();
+                var propertyVm = new PropertyViewModel();
+                propertyVm.LoadProperties();
+
+                var closed = _dealViewModel.Deals
+                    .Where(d => d.IsActive && string.Equals(d.Status, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                int dealsDeleted = 0, propsDeleted = 0;
+                foreach (var deal in closed)
+                {
+                    // Delete linked property (soft delete via ViewModel)
+                    if (deal.PropertyId.HasValue)
+                    {
+                        var prop = propertyVm.GetPropertyById(deal.PropertyId.Value);
+                        if (prop != null)
+                        {
+                            if (propertyVm.DeleteProperty(prop)) propsDeleted++;
+                        }
+                    }
+
+                    if (_dealViewModel.DeleteDeal(deal)) dealsDeleted++;
+                }
+
+                // Refresh UI
+                LoadDeals();
+                MessageBox.Show($"Deleted {dealsDeleted} closed deals and {propsDeleted} properties.",
+                    "Deleted",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error deleting closed items: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -754,3 +1115,4 @@ namespace RealEstateCRMWinForms.Views
         }
     }
 }
+

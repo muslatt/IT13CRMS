@@ -28,7 +28,6 @@
             btnDashboard = new Button();
             panelContent = new Panel();
             dataGridView1 = new DataGridView();
-            btnLoadUsers = new Button();
             lblSectionTitle = new Label();
             headerPanel = new Panel();
             panelUser = new Panel();
@@ -40,6 +39,7 @@
             contentLeftBorder = new Panel();
             contextMenuStripUser = new ContextMenuStrip(components);
             logoutToolStripMenuItem = new ToolStripMenuItem();
+            registerAgentToolStripMenuItem = new ToolStripMenuItem();
             panelSidebar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pbLogo).BeginInit();
             panelContent.SuspendLayout();
@@ -187,7 +187,6 @@
             // 
             panelContent.BackColor = Color.FromArgb(248, 249, 250);
             panelContent.Controls.Add(dataGridView1);
-            panelContent.Controls.Add(btnLoadUsers);
             panelContent.Controls.Add(lblSectionTitle);
             panelContent.Controls.Add(headerPanel);
             panelContent.Controls.Add(contentLeftBorder);
@@ -206,19 +205,6 @@
             dataGridView1.Size = new Size(940, 572);
             dataGridView1.TabIndex = 2;
             // 
-            // btnLoadUsers
-            // 
-            btnLoadUsers.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            btnLoadUsers.BackColor = Color.FromArgb(0, 123, 255);
-            btnLoadUsers.FlatStyle = FlatStyle.Flat;
-            btnLoadUsers.ForeColor = Color.White;
-            btnLoadUsers.Location = new Point(20, 750);
-            btnLoadUsers.Name = "btnLoadUsers";
-            btnLoadUsers.Size = new Size(120, 35);
-            btnLoadUsers.TabIndex = 3;
-            btnLoadUsers.Text = "Load Users";
-            btnLoadUsers.UseVisualStyleBackColor = false;
-            btnLoadUsers.Click += button1_Click;
             // 
             // lblSectionTitle
             // 
@@ -324,21 +310,28 @@
             // 
             // contextMenuStripUser
             // 
-            contextMenuStripUser.Items.AddRange(new ToolStripItem[] { logoutToolStripMenuItem });
+            contextMenuStripUser.Items.AddRange(new ToolStripItem[] { registerAgentToolStripMenuItem, logoutToolStripMenuItem });
             contextMenuStripUser.Name = "contextMenuStripUser";
             contextMenuStripUser.Size = new Size(113, 26);
+            // 
+            // registerAgentToolStripMenuItem
+            // 
+            registerAgentToolStripMenuItem.Name = "registerAgentToolStripMenuItem";
+            registerAgentToolStripMenuItem.Size = new Size(180, 22);
+            registerAgentToolStripMenuItem.Text = "Register Agent...";
+            registerAgentToolStripMenuItem.Click += registerAgentToolStripMenuItem_Click;
             // 
             // logoutToolStripMenuItem
             // 
             logoutToolStripMenuItem.Name = "logoutToolStripMenuItem";
-            logoutToolStripMenuItem.Size = new Size(112, 22);
+            logoutToolStripMenuItem.Size = new Size(180, 22);
             logoutToolStripMenuItem.Text = "Logout";
             logoutToolStripMenuItem.Click += logoutToolStripMenuItem_Click;
             // 
             // MainView
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.WhiteSmoke;
             Controls.Add(panelContent);
             Controls.Add(panelSidebar);
@@ -380,7 +373,8 @@
         private System.Windows.Forms.PictureBox pbAvatar;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripUser;
         private System.Windows.Forms.ToolStripMenuItem logoutToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem registerAgentToolStripMenuItem;
         private System.Windows.Forms.DataGridView dataGridView1;
-        private System.Windows.Forms.Button btnLoadUsers;
+        
     }
 }

@@ -26,17 +26,28 @@ namespace RealEstateCRMWinForms.Views
         {
             var loginView = new LoginView(_authService);
             loginView.LoginSuccess += OnLoginSuccess;
-            loginView.RegisterRequested += OnRegisterRequested;
             SwitchView(loginView);
         }
 
         private void ShowRegisterView()
         {
             var registerView = new RegisterView(_authService);
-            registerView.RegisterSuccess += OnRegisterSuccess;
-            registerView.BackToLoginRequested += OnBackToLoginRequested;
-            registerView.EmailVerificationRequired += OnEmailVerificationRequired;
+            // When opened from Broker menu, return to Main after completing
+            registerView.RegisterSuccess += (s, e) => ReturnToMainAfterRegister();
+            registerView.BackToLoginRequested += (s, e) => ReturnToMainAfterRegister();
+            registerView.EmailVerificationRequired += (s, email) => ReturnToMainAfterRegister(true);
             SwitchView(registerView);
+        }
+
+        private void ReturnToMainAfterRegister(bool showInfo = false)
+        {
+            if (showInfo)
+            {
+                MessageBox.Show("Agent account created. Verification email sent (if configured).", "Success",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            var user = UserSession.Instance.CurrentUser;
+            ShowMainView(user);
         }
 
         private void ShowEmailVerificationView(string email)
@@ -52,14 +63,28 @@ namespace RealEstateCRMWinForms.Views
             _currentUser = user;
             var mainView = new MainView();
             mainView.LogoutRequested += OnLogoutRequested;
+            mainView.RegisterAgentRequested += OnRegisterAgentRequested;
 
             if (_currentUser != null)
             {
                 var fullName = $"{_currentUser.FirstName} {_currentUser.LastName}".Trim();
-                mainView.SetCurrentUser(fullName, ""); // pass role if you add it
+                var roleName = _currentUser.Role == Models.UserRole.Broker ? "Broker" : "Agent";
+                mainView.SetCurrentUser(fullName, roleName);
             }
 
             SwitchView(mainView);
+        }
+
+        private void OnRegisterAgentRequested(object? sender, EventArgs e)
+        {
+            var current = UserSession.Instance.CurrentUser;
+            if (current == null || current.Role != Models.UserRole.Broker)
+            {
+                MessageBox.Show("Only Brokers can register new agents.", "Access Denied",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            ShowRegisterView();
         }
 
         private void SwitchView(UserControl newView)
@@ -122,7 +147,8 @@ namespace RealEstateCRMWinForms.Views
             if (_currentView is MainView mv)
             {
                 var fullName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : string.Empty;
-                mv.SetCurrentUser(fullName, "");
+                var roleName = user != null && user.Role == Models.UserRole.Broker ? "Broker" : (user != null ? "Agent" : string.Empty);
+                mv.SetCurrentUser(fullName, roleName);
             }
         }
 
@@ -131,6 +157,28 @@ namespace RealEstateCRMWinForms.Views
             // unsubscribe to avoid leaks
             UserSession.Instance.CurrentUserChanged -= OnSessionUserChanged;
             base.OnFormClosed(e);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Only prompt on user‑initiated close (title bar X, Alt+F4, etc.)
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                var result = MessageBox.Show(
+                    "Are you sure you want to exit?",
+                    "Confirm Exit",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2);
+
+                if (result != DialogResult.Yes)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
+
+            base.OnFormClosing(e);
         }
     }
 }

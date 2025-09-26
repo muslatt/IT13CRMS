@@ -1,4 +1,4 @@
-namespace RealEstateCRMWinForms.Views
+﻿namespace RealEstateCRMWinForms.Views
 {
     partial class DashboardView
     {
@@ -51,6 +51,7 @@ namespace RealEstateCRMWinForms.Views
             avgDealValueCard = new Panel();
             conversionRateCard = new Panel();
             avgDaysToCloseCard = new Panel();
+            projectedRevenueCard = new Panel();
             headerPanel.SuspendLayout();
             mainPanel.SuspendLayout();
             analyticsPanel.SuspendLayout();
@@ -200,7 +201,7 @@ namespace RealEstateCRMWinForms.Views
             totalCountsPanel.Name = "totalCountsPanel";
             totalCountsPanel.RowCount = 1;
             totalCountsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            totalCountsPanel.Size = new Size(1323, 220);
+            totalCountsPanel.Size = new Size(1323, 280);
             totalCountsPanel.TabIndex = 2;
             // 
             // totalCountsCard
@@ -212,7 +213,7 @@ namespace RealEstateCRMWinForms.Views
             totalCountsCard.Margin = new Padding(12);
             totalCountsCard.Name = "totalCountsCard";
             totalCountsCard.Padding = new Padding(20);
-            totalCountsCard.Size = new Size(1299, 196);
+            totalCountsCard.Size = new Size(1299, 256);
             totalCountsCard.TabIndex = 0;
             totalCountsCard.Paint += totalCountsCard_Paint;
             // 
@@ -229,9 +230,9 @@ namespace RealEstateCRMWinForms.Views
             chartsPanel.Location = new Point(30, 211);
             chartsPanel.Name = "chartsPanel";
             chartsPanel.RowCount = 2;
-            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            chartsPanel.Size = new Size(1323, 259);
+            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 260F));
+            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 260F));
+            chartsPanel.Size = new Size(1323, 544);
             chartsPanel.TabIndex = 1;
             // 
             // salesChartCard
@@ -243,7 +244,8 @@ namespace RealEstateCRMWinForms.Views
             salesChartCard.Margin = new Padding(12);
             salesChartCard.Name = "salesChartCard";
             salesChartCard.Padding = new Padding(20);
-            salesChartCard.Size = new Size(649, 105);
+            salesChartCard.Size = new Size(649, 236);
+            salesChartCard.MinimumSize = new Size(0, 236);
             salesChartCard.TabIndex = 0;
             // 
             // propertyStatusChartCard
@@ -255,7 +257,8 @@ namespace RealEstateCRMWinForms.Views
             propertyStatusChartCard.Margin = new Padding(12);
             propertyStatusChartCard.Name = "propertyStatusChartCard";
             propertyStatusChartCard.Padding = new Padding(20);
-            propertyStatusChartCard.Size = new Size(638, 105);
+            propertyStatusChartCard.Size = new Size(638, 236);
+            propertyStatusChartCard.MinimumSize = new Size(0, 236);
             propertyStatusChartCard.TabIndex = 1;
             // 
             // leadConversionChartCard
@@ -267,7 +270,8 @@ namespace RealEstateCRMWinForms.Views
             leadConversionChartCard.Margin = new Padding(12);
             leadConversionChartCard.Name = "leadConversionChartCard";
             leadConversionChartCard.Padding = new Padding(20);
-            leadConversionChartCard.Size = new Size(649, 106);
+            leadConversionChartCard.Size = new Size(649, 236);
+            leadConversionChartCard.MinimumSize = new Size(0, 236);
             leadConversionChartCard.TabIndex = 2;
             // 
             // avgSalaryChartCard (now full width like System Overview)
@@ -296,19 +300,23 @@ namespace RealEstateCRMWinForms.Views
             // 
             // kpiPanel
             // 
-            kpiPanel.ColumnCount = 4;
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            kpiPanel.ColumnCount = 5;
+            kpiPanel.ColumnStyles.Clear();
+            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             kpiPanel.Controls.Add(totalRevenueCard, 0, 0);
             kpiPanel.Controls.Add(avgDealValueCard, 1, 0);
             kpiPanel.Controls.Add(conversionRateCard, 2, 0);
             kpiPanel.Controls.Add(avgDaysToCloseCard, 3, 0);
+            kpiPanel.Controls.Add(projectedRevenueCard, 4, 0);
             kpiPanel.Dock = DockStyle.Top;
             kpiPanel.Location = new Point(30, 30);
             kpiPanel.Name = "kpiPanel";
             kpiPanel.RowCount = 1;
+            kpiPanel.RowStyles.Clear();
             kpiPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             kpiPanel.Size = new Size(1323, 181);
             kpiPanel.TabIndex = 0;
@@ -360,11 +368,22 @@ namespace RealEstateCRMWinForms.Views
             avgDaysToCloseCard.Padding = new Padding(20);
             avgDaysToCloseCard.Size = new Size(309, 157);
             avgDaysToCloseCard.TabIndex = 3;
+
+            // projectedRevenueCard
+            projectedRevenueCard.BackColor = Color.White;
+            projectedRevenueCard.BorderStyle = BorderStyle.FixedSingle;
+            projectedRevenueCard.Dock = DockStyle.Fill;
+            projectedRevenueCard.Location = new Point(1332, 12);
+            projectedRevenueCard.Margin = new Padding(12);
+            projectedRevenueCard.Name = "projectedRevenueCard";
+            projectedRevenueCard.Padding = new Padding(20);
+            projectedRevenueCard.Size = new Size(306, 157);
+            projectedRevenueCard.TabIndex = 4;
             // 
             // DashboardView
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.FromArgb(249, 250, 251);
             Controls.Add(mainPanel);
             Controls.Add(headerPanel);
@@ -394,6 +413,7 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.Panel avgDealValueCard;
         private System.Windows.Forms.Panel conversionRateCard;
         private System.Windows.Forms.Panel avgDaysToCloseCard;
+        private System.Windows.Forms.Panel projectedRevenueCard;
         
         private System.Windows.Forms.TableLayoutPanel chartsPanel;
         private System.Windows.Forms.Panel salesChartCard;

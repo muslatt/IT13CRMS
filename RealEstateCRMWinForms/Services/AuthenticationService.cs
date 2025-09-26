@@ -24,6 +24,33 @@ namespace RealEstateCRMWinForms.Services
         {
             try
             {
+                // Hard-coded Broker account (temporary)
+                // Email: broker@crm.local, Password: broker123
+                if (string.Equals(email?.Trim(), "broker@crm.local", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(password, "broker123"))
+                {
+                    using var seedContext = DbContextHelper.CreateDbContext();
+                    var persisted = seedContext.Users.FirstOrDefault(u => u.Email == "broker@crm.local");
+                    if (persisted == null)
+                    {
+                        persisted = new User
+                        {
+                            FirstName = "Broker",
+                            LastName = "Admin",
+                            Email = "broker@crm.local",
+                            PasswordHash = HashPassword("broker123"),
+                            CreatedAt = DateTime.Now,
+                            IsActive = true,
+                            IsEmailVerified = true,
+                            Role = UserRole.Broker
+                        };
+                        seedContext.Users.Add(persisted);
+                        seedContext.SaveChanges();
+                    }
+                    UserSession.Instance.CurrentUser = persisted;
+                    return persisted;
+                }
+
                 using var dbContext = DbContextHelper.CreateDbContext();
                 var user = dbContext.Users.FirstOrDefault(u => u.Email == email && u.IsActive);
 
@@ -57,7 +84,10 @@ namespace RealEstateCRMWinForms.Services
                     return false;
                 }
 
-                var verificationToken = GenerateVerificationToken();
+                var createdByBroker = UserSession.Instance.CurrentUser?.Role == UserRole.Broker;
+                var verificationToken = createdByBroker ? null : GenerateVerificationToken();
+                // Determine role: first registered user becomes Broker, others are Agents
+                var isFirstUser = !dbContext.Users.Any();
                 var user = new User
                 {
                     FirstName = firstName,
@@ -66,15 +96,23 @@ namespace RealEstateCRMWinForms.Services
                     PasswordHash = HashPassword(password),
                     CreatedAt = DateTime.Now,
                     IsActive = true,
-                    IsEmailVerified = false,
+                    IsEmailVerified = createdByBroker ? true : false,
                     EmailVerificationToken = verificationToken,
-                    EmailVerificationSentAt = DateTime.Now
+                    EmailVerificationSentAt = createdByBroker ? null : DateTime.Now,
+                    Role = isFirstUser ? UserRole.Broker : UserRole.Agent
                 };
 
                 dbContext.Users.Add(user);
                 dbContext.SaveChanges();
 
-                SendVerificationEmail(email, verificationToken);
+                if (createdByBroker)
+                {
+                    SendWelcomeEmail(email, firstName, lastName);
+                }
+                else if (!string.IsNullOrEmpty(verificationToken))
+                {
+                    SendVerificationEmail(email, verificationToken);
+                }
                 return true;
             }
             catch (Exception)
@@ -156,6 +194,61 @@ namespace RealEstateCRMWinForms.Services
                 
                 // In production, you might want to throw the exception or handle it differently
                 // For now, we'll continue as if the email was sent
+            }
+        }
+
+        private void SendWelcomeEmail(string email, string firstName, string lastName)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_emailSettings.SenderEmail) ||
+                    string.IsNullOrEmpty(_emailSettings.SenderPassword) ||
+                    _emailSettings.SenderEmail == "your-email@gmail.com")
+                {
+                    System.Diagnostics.Debug.WriteLine($"Welcome email (no SMTP) to {email}.");
+                    return;
+                }
+
+                var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
+                {
+                    Port = _emailSettings.SmtpPort,
+                    Credentials = new System.Net.NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
+                    EnableSsl = _emailSettings.EnableSsl,
+                };
+
+                var displayName = ($"{firstName} {lastName}").Trim();
+                var confirmUrl = "https://example.com/welcome"; // Placeholder action button
+                var body = $@"
+                        <html>
+                        <body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                            <div style='background-color: #f8f9fa; padding: 20px; border-radius: 10px;'>
+                                <h2 style='color: #2980b9; text-align: center;'>Welcome to Real Estate CRM!</h2>
+                                <p>Hello {System.Net.WebUtility.HtmlEncode(displayName)},</p>
+                                <p>Your account was created by a Broker and is ready to use.</p>
+                                <div style='text-align: center; margin: 30px 0;'>
+                                    <a href='{confirmUrl}' style='background-color: #2980b9; color: white; padding: 12px 20px; font-size: 16px; border-radius: 5px; font-weight: bold; text-decoration:none;'>Confirm Account</a>
+                                </div>
+                                <p style='color: #666;'>If you did not expect this email, please contact your Broker.</p>
+                                <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>
+                                <p style='color: #999; font-size: 12px;'>Best regards,<br>Real Estate CRM Team</p>
+                            </div>
+                        </body>
+                        </html>";
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
+                    Subject = "Your Real Estate CRM Account",
+                    Body = body,
+                    IsBodyHtml = true
+                };
+                mailMessage.To.Add(email);
+                smtpClient.Send(mailMessage);
+                System.Diagnostics.Debug.WriteLine($"Welcome email sent successfully to {email}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to send welcome email: {ex.Message}");
             }
         }
 

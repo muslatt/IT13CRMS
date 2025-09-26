@@ -1,4 +1,5 @@
-﻿using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.Models;
+using System.Globalization;
 using RealEstateCRMWinForms.Controls;
 using System.Drawing;
 using System.Windows.Forms;
@@ -24,6 +25,7 @@ namespace RealEstateCRMWinForms.Views
         private Label lblTransactionType;
         private Label lblAgent;
         private Label lblDescription;
+        private TableLayoutPanel detailsGrid;
         private Button btnClose;
         private Button btnEdit;
         private bool _propertyWasModified = false;
@@ -44,7 +46,8 @@ namespace RealEstateCRMWinForms.Views
             Font = new Font("Segoe UI", 12F);
 
             // Use ClientSize so controls position relative to client area and avoid chrome clipping
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             ClientSize = new Size(920, 740);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -92,7 +95,7 @@ namespace RealEstateCRMWinForms.Views
                 Size = new Size(ClientSize.Width - 460, 32),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 123, 255),
-                Text = "₱ 0",
+                Text = "? 0",
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
 
@@ -125,7 +128,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(20, 380),
                 Size = new Size(200, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "🛏️ Bedrooms: 0",
+            Text = "?? Bedrooms: 0",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -134,7 +137,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(240, 380),
                 Size = new Size(200, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "🚿 Bathrooms: 0",
+            Text = "?? Bathrooms: 0",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -143,7 +146,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(460, 380),
                 Size = new Size(200, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "📐 Area: 0 sqm",
+            Text = "?? Area: 0 sqm",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -152,7 +155,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(20, 415),
                 Size = new Size(200, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "📏 SQFT: 0",
+            Text = "?? SQFT: 0",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -161,7 +164,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(240, 415),
                 Size = new Size(300, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "💰 Price per SQFT: ₱ 0",
+            Text = "?? Price per SQFT: ? 0",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -170,7 +173,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(20, 450),
                 Size = new Size(200, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "📅 Listed: ",
+            Text = "?? Listed: ",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -179,7 +182,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(240, 450),
                 Size = new Size(200, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "🏠 Type: ",
+            Text = "?? Type: ",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -188,7 +191,7 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(460, 450),
                 Size = new Size(200, 24),
                 Font = new Font("Segoe UI", 12F),
-                Text = "📋 Transaction: ",
+            Text = "?? Transaction: ",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
@@ -200,8 +203,6 @@ namespace RealEstateCRMWinForms.Views
                 Text = "👤 Agent: ",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
-
-            // Description
             var lblDescriptionHeader = new Label
             {
                 Text = "Description",
@@ -261,12 +262,48 @@ namespace RealEstateCRMWinForms.Views
             btnClose.Location = new Point(btnCloseX, btnY);
             btnEdit.Location = new Point(btnEditX, btnY);
 
-            // Add all controls
+            // Build details grid (replaces manual absolute labels)
+            detailsGrid = new TableLayoutPanel
+            {
+                Location = new Point(20, 372),
+                Size = new Size(ClientSize.Width - 40, 120),
+                ColumnCount = 3,
+                RowCount = 3,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            detailsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            detailsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            detailsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+            detailsGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            detailsGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            detailsGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            var infoFont = new Font("Segoe UI", 12F);
+            lblBedrooms = new Label { AutoSize = true, Font = infoFont, Text = "Bedrooms: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblBathrooms = new Label { AutoSize = true, Font = infoFont, Text = "Bathrooms: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblSquareMeters = new Label { AutoSize = true, Font = infoFont, Text = "Area: - sqm", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblSQFT = new Label { AutoSize = true, Font = infoFont, Text = "SQFT: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblPricePerSqft = new Label { AutoSize = true, Font = infoFont, Text = "Price per SQFT: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblListingDate = new Label { AutoSize = true, Font = infoFont, Text = "Listed: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblPropertyType = new Label { AutoSize = true, Font = infoFont, Text = "Type: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblTransactionType = new Label { AutoSize = true, Font = infoFont, Text = "Transaction: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+            lblAgent = new Label { AutoSize = true, Font = infoFont, Text = "Agent: -", Dock = DockStyle.Fill, Margin = new Padding(3, 6, 3, 6) };
+
+            detailsGrid.Controls.Add(lblBedrooms, 0, 0);
+            detailsGrid.Controls.Add(lblBathrooms, 1, 0);
+            detailsGrid.Controls.Add(lblSquareMeters, 2, 0);
+            detailsGrid.Controls.Add(lblSQFT, 0, 1);
+            detailsGrid.Controls.Add(lblPricePerSqft, 1, 1);
+            detailsGrid.Controls.Add(lblListingDate, 2, 1);
+            detailsGrid.Controls.Add(lblPropertyType, 0, 2);
+            detailsGrid.Controls.Add(lblTransactionType, 1, 2);
+            detailsGrid.Controls.Add(lblAgent, 2, 2);
+
+            // Add all controls (use grid instead of individual detail labels)
             Controls.AddRange(new Control[] {
                 pictureBoxMain, lblTitle, lblAddress, lblPrice, lblStatus,
-                lblDetailsHeader, lblBedrooms, lblBathrooms, lblSquareMeters,
-                lblSQFT, lblPricePerSqft, lblListingDate, lblPropertyType,
-                lblTransactionType, lblAgent, lblDescriptionHeader, lblDescription,
+                lblDetailsHeader, detailsGrid,
+                lblDescriptionHeader, lblDescription,
                 btnClose, btnEdit
             });
 
@@ -281,7 +318,7 @@ namespace RealEstateCRMWinForms.Views
             // Basic info
             lblTitle.Text = _property.Title;
             lblAddress.Text = _property.Address;
-            lblPrice.Text = $"₱ {_property.Price:N0}";
+            lblPrice.Text = _property.Price.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-PH"));
             lblStatus.Text = _property.Status;
             
             // Set status color
@@ -290,22 +327,32 @@ namespace RealEstateCRMWinForms.Views
                 : Color.FromArgb(0, 123, 255);
 
             // Property details
-            lblBedrooms.Text = $"🛏️ Bedrooms: {_property.Bedrooms}";
-            lblBathrooms.Text = $"🚿 Bathrooms: {_property.Bathrooms}";
-            lblSquareMeters.Text = $"📐 Area: {_property.SquareMeters} sqm";
+            var bedWord = _property.Bedrooms == 1 ? "Bedroom" : "Bedrooms";
+            var bathWord = _property.Bathrooms == 1 ? "Bathroom" : "Bathrooms";
+            lblBedrooms.Text = $"{bedWord}: {_property.Bedrooms}";
+            lblBathrooms.Text = $"{bathWord}: {_property.Bathrooms}";
+            lblSquareMeters.Text = $"Area: {_property.SquareMeters} sqm";
 
-            // Calculate SQFT and price per SQFT
+            // Calculate SQFT and Price per SQFT
             decimal sqft = _property.SquareMeters * 10.7639m;
-            decimal pricePerSqft = sqft > 0 ? _property.Price / sqft : 0m;
-            lblSQFT.Text = $"📏 SQFT: {sqft:N2}";
-            lblPricePerSqft.Text = $"💰 Price per SQFT: ₱ {pricePerSqft:N2}";
+            if (sqft > 0)
+            {
+                decimal pricePerSqft = _property.Price / sqft;
+                lblSQFT.Text = $"SQFT: {sqft:N2}";
+                lblPricePerSqft.Text = $"Price per SQFT: {pricePerSqft.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-PH"))}";
+            }
+            else
+            {
+                lblSQFT.Text = "SQFT: N/A";
+                lblPricePerSqft.Text = "Price per SQFT: N/A";
+            }
 
-            lblListingDate.Text = $"📅 Listed: {_property.CreatedAt:MMM dd, yyyy}";
+            lblListingDate.Text = $"Listed: {_property.CreatedAt:MMM dd, yyyy}";
 
             // Try to get additional properties via reflection (safe if they don't exist)
-            lblPropertyType.Text = $"🏠 Type: {GetPropertyValue("PropertyType") ?? GetPropertyValue("Type") ?? "Not specified"}";
-            lblTransactionType.Text = $"📋 Transaction: {GetPropertyValue("TransactionType") ?? GetPropertyValue("ListingType") ?? "Not specified"}";
-            lblAgent.Text = $"👤 Agent: {GetPropertyValue("Agent") ?? GetPropertyValue("AgentName") ?? "Not specified"}";
+            lblPropertyType.Text = $"Type: {GetPropertyValue("PropertyType") ?? GetPropertyValue("Type") ?? "Not specified"}";
+            lblTransactionType.Text = $"Transaction: {GetPropertyValue("TransactionType") ?? GetPropertyValue("ListingType") ?? "Not specified"}";
+            lblAgent.Text = $"Agent: {GetPropertyValue("Agent") ?? GetPropertyValue("AgentName") ?? "Not specified"}";
             lblDescription.Text = GetPropertyValue("Description") ?? GetPropertyValue("Notes") ?? "No description available.";
 
             // Load image
@@ -434,3 +481,5 @@ namespace RealEstateCRMWinForms.Views
         }
     }
 }
+
+

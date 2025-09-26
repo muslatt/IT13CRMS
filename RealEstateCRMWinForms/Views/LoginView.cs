@@ -14,6 +14,15 @@ namespace RealEstateCRMWinForms.Views
         {
             InitializeComponent();
             _authService = authService;
+
+            // Hide self-registration on login screen
+            try
+            {
+                // These controls are defined in the Designer partial
+                lblRegisterQuestion.Visible = false;
+                linkRegister.Visible = false;
+            }
+            catch { }
         }
 
         private void btnLogin_Click(object? sender, EventArgs e)

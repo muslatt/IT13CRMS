@@ -1,4 +1,4 @@
-namespace RealEstateCRMWinForms.Views
+﻿namespace RealEstateCRMWinForms.Views
 {
     partial class EmailVerificationView
     {
@@ -109,8 +109,8 @@ namespace RealEstateCRMWinForms.Views
             this.lblBackToLogin.Click += new EventHandler(this.lblBackToLogin_Click);
 
             // EmailVerificationView
-            this.AutoScaleDimensions = new SizeF(7F, 15F);
-            this.AutoScaleMode = AutoScaleMode.Font;
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
+            this.AutoScaleMode = AutoScaleMode.Dpi;
             this.BackColor = Color.White;
             this.Controls.Add(this.lblTitle);
             this.Controls.Add(this.lblEmailAddress);

@@ -47,9 +47,19 @@ namespace RealEstateCRMWinForms.Views
 
             if (success)
             {
-                MessageBox.Show("Account created successfully! Please check your email for a verification code.", "Success",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                EmailVerificationRequired?.Invoke(this, txtRegEmail.Text.Trim());
+                var isBroker = Services.UserSession.Instance.CurrentUser?.Role == Models.UserRole.Broker;
+                if (isBroker)
+                {
+                    MessageBox.Show("Agent account created successfully! A welcome email has been sent.", "Success",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    RegisterSuccess?.Invoke(this, EventArgs.Empty);
+                }
+                else
+                {
+                    MessageBox.Show("Account created successfully! Please check your email for a verification code.", "Success",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    EmailVerificationRequired?.Invoke(this, txtRegEmail.Text.Trim());
+                }
             }
             else
             {

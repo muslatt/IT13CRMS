@@ -1,4 +1,4 @@
-// RealEstateCRMWinForms\Models\Lead.cs
+﻿// RealEstateCRMWinForms\Models\Lead.cs
 using System;
 
 namespace RealEstateCRMWinForms.Models
@@ -9,7 +9,7 @@ namespace RealEstateCRMWinForms.Models
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
-        public string Type { get; set; } = "Renter"; // Only: Renter, Owner, Buyer
+        public string Type { get; set; } = "Lead";
         public string? AvatarPath { get; set; } // optional path to avatar image
         // New fields for Leads list
         public string Occupation { get; set; } = string.Empty;

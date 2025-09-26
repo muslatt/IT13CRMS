@@ -85,14 +85,8 @@ namespace RealEstateCRMWinForms.Views
                 cmbAgent.Items.Clear();
                 cmbAgent.Items.Add("(No Agent)");
 
-                // Load agents from properties - get unique agent names
-                var agents = _propertyViewModel.Properties
-                    .Where(p => p.IsActive && !string.IsNullOrEmpty(p.Agent))
-                    .Select(p => p.Agent)
-                    .Distinct()
-                    .OrderBy(agent => agent)
-                    .ToList();
-
+                // Load agents from Users table (Role = Agent)
+                var agents = Services.AgentDirectory.GetAgentDisplayNames();
                 foreach (var agent in agents)
                 {
                     cmbAgent.Items.Add(agent);
@@ -103,7 +97,7 @@ namespace RealEstateCRMWinForms.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading agents: {ex.Message}");
-                // If loading fails, at least have "No Agent" option
+                // If loading fails, keep "No Agent" option
                 if (cmbAgent.Items.Count == 0)
                 {
                     cmbAgent.Items.Add("(No Agent)");

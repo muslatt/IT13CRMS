@@ -14,6 +14,7 @@ namespace RealEstateCRMWinForms.Models
         public bool IsEmailVerified { get; set; } = false;
         public string? EmailVerificationToken { get; set; }
         public DateTime? EmailVerificationSentAt { get; set; }
+        public UserRole Role { get; set; } = UserRole.Agent;
         
         /// <summary>
         /// Gets the full name of the user (FirstName + LastName)

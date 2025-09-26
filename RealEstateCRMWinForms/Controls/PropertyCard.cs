@@ -1,4 +1,4 @@
-﻿using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.Models;
 using System;
 using System.Drawing;
 using System.IO;
@@ -16,6 +16,11 @@ namespace RealEstateCRMWinForms.Controls
             InitializeComponent();
             SetDefaultImage();
             CreateContextMenu();
+            
+            // Reduce flicker
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            this.UpdateStyles();
             
             // Add click events to make the card clickable
             this.Click += PropertyCard_Click;
@@ -169,6 +174,24 @@ namespace RealEstateCRMWinForms.Controls
         {
             if (_property == null) return;
 
+            try
+            {
+                var user = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
+                // Brokers cannot delete a property if it is assigned to an Agent
+                if (user != null && user.Role == RealEstateCRMWinForms.Models.UserRole.Broker)
+                {
+                    if (!string.IsNullOrWhiteSpace(_property.Agent))
+                    {
+                        MessageBox.Show("This property is assigned to an Agent and cannot be deleted by a Broker.",
+                            "Deletion Restricted",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+            }
+            catch { }
+
             var result = MessageBox.Show(
                 $"Are you sure you want to delete the property '{_property.Title}'?",
                 "Confirm Delete",
@@ -202,7 +225,7 @@ namespace RealEstateCRMWinForms.Controls
             // Title / address / price / status
             lblTitle.Text = _property.Title;
             lblAddress.Text = _property.Address;
-            lblPrice.Text = $"₱ {_property.Price:N0}";
+            lblPrice.Text = _property.Price.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-PH"));
             lblStatus.Text = _property.Status;
 
             // Set status color
@@ -215,11 +238,11 @@ namespace RealEstateCRMWinForms.Controls
 
             // Bed icon
             pbBedIcon.Image?.Dispose();
-            pbBedIcon.Image = CreateEmojiIconBitmap("🛏️", 24, 24);
+            pbBedIcon.Image = CreateEmojiIconBitmap("🛏", 24, 24);
 
             // Bath icon
             pbBathIcon.Image?.Dispose();
-            pbBathIcon.Image = CreateEmojiIconBitmap("🚿", 24, 24);
+            pbBathIcon.Image = CreateEmojiIconBitmap("🛁", 24, 24);
 
             // SQM icon (use a ruler-like emoji)
             pbSqmIcon.Image?.Dispose();
@@ -232,7 +255,7 @@ namespace RealEstateCRMWinForms.Controls
             lblBathValue.Text = _property.Bathrooms.ToString();
             lblBathValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
 
-            lblSqmValue.Text = $"{_property.SquareMeters} sqm";
+            lblSqmValue.Text = _property.SquareMeters > 0 ? $"{_property.SquareMeters} sqm" : "N/A";
             lblSqmValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
 
             // Load property image
@@ -370,3 +393,7 @@ namespace RealEstateCRMWinForms.Controls
         }
     }
 }
+
+
+
+

@@ -21,7 +21,7 @@ namespace RealEstateCRMWinForms.Views
         private ComboBox cmbStatus;
         private ComboBox cmbPropertyType;
         private ComboBox cmbTransactionType;
-        private TextBox txtAgent;
+        private ComboBox cmbAgent;
         private TextBox txtDescription;
         private PictureBox pictureBoxPreview;
         private Button btnSelectImage;
@@ -43,6 +43,39 @@ namespace RealEstateCRMWinForms.Views
         {
             _viewModel = new PropertyViewModel();
             InitializeComponent();
+        }
+
+        private bool AgentHasCapacity(string agentDisplayName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(agentDisplayName)) return true; // no agent assignment
+
+                var dealVm = new DealViewModel();
+                dealVm.LoadDeals();
+                _viewModel.LoadProperties();
+
+                string name = agentDisplayName.Trim();
+                // All properties currently assigned to this agent (active)
+                var assignedProps = _viewModel.Properties
+                    .Where(p => p.IsActive && !string.IsNullOrWhiteSpace(p.Agent) && string.Equals(p.Agent.Trim(), name, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                int activeAssignments = 0;
+                foreach (var p in assignedProps)
+                {
+                    // If there is a closed deal for this property, it no longer blocks capacity
+                    bool hasClosed = dealVm.Deals.Any(d => d.IsActive && d.PropertyId == p.Id && string.Equals(d.Status, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase));
+                    if (!hasClosed) activeAssignments++;
+                }
+
+                return activeAssignments < 3; // max 3 concurrent assignments
+            }
+            catch
+            {
+                // In case of any error, don't block saving
+                return true;
+            }
         }
 
         private void InitializeComponent()
@@ -274,12 +307,18 @@ namespace RealEstateCRMWinForms.Views
                 Font = new Font("Segoe UI", 12F)
             };
 
-            txtAgent = new TextBox
+            cmbAgent = new ComboBox
             {
                 Location = new Point(520, 290),
                 Size = new Size(300, 28),
-                Font = new Font("Segoe UI", 12F)
+                Font = new Font("Segoe UI", 12F),
+                DropDownStyle = ComboBoxStyle.DropDownList
             };
+            // Populate Agents from Users table
+            cmbAgent.Items.Add("(No Agent)");
+            foreach (var name in Services.AgentDirectory.GetAgentDisplayNames())
+                cmbAgent.Items.Add(name);
+            cmbAgent.SelectedIndex = 0;
 
             // Listing Date
             var lblListingDate = new Label
@@ -382,7 +421,7 @@ namespace RealEstateCRMWinForms.Views
                 lblStatus, cmbStatus,
                 lblPropertyType, cmbPropertyType,
                 lblTransactionType, cmbTransactionType,
-                lblAgent, txtAgent,
+                lblAgent, cmbAgent,
                 lblListingDate, dtpListingDate,
                 lblDescription, txtDescription,
                 lblImage, pictureBoxPreview, btnSelectImage,
@@ -477,6 +516,22 @@ namespace RealEstateCRMWinForms.Views
                 return;
             }
 
+            // Determine selected agent before creating the entity (for capacity check)
+            var selectedAgent = cmbAgent.SelectedIndex > 0 ? (cmbAgent.SelectedItem?.ToString() ?? string.Empty) : string.Empty;
+
+            // If assigning to an Agent, enforce capacity: max 3 active allocations until one is closed
+            if (!string.IsNullOrWhiteSpace(selectedAgent))
+            {
+                if (!AgentHasCapacity(selectedAgent))
+                {
+                    MessageBox.Show($"{selectedAgent} has reached the maximum of 3 active property allocations. Assign to another agent or wait until one is closed.",
+                        "Allocation Limit Reached",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
             // Create new property
             var newProperty = new Property
             {
@@ -494,7 +549,7 @@ namespace RealEstateCRMWinForms.Views
             // Try to set commonly named string properties on the Property model via reflection.
             TrySetStringProperty(newProperty, new[] { "PropertyType", "Type" }, cmbPropertyType.SelectedItem?.ToString() ?? "Residential");
             TrySetStringProperty(newProperty, new[] { "TransactionType", "Type", "ListingType", "ListingMode" }, cmbTransactionType.SelectedItem?.ToString() ?? "Buying");
-            TrySetStringProperty(newProperty, new[] { "Agent", "AgentName", "AssignedAgent" }, txtAgent.Text?.Trim() ?? string.Empty);
+            TrySetStringProperty(newProperty, new[] { "Agent", "AgentName", "AssignedAgent" }, selectedAgent);
             TrySetStringProperty(newProperty, new[] { "Description", "Notes", "Details" }, txtDescription.Text?.Trim() ?? string.Empty);
 
             // Save to database first to get the ID

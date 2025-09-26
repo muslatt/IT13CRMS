@@ -1,4 +1,4 @@
-namespace RealEstateCRMWinForms.Views
+﻿namespace RealEstateCRMWinForms.Views
 {
     partial class MainContainerForm
     {
@@ -19,8 +19,8 @@ namespace RealEstateCRMWinForms.Views
             // 
             // MainContainerForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1200, 800);
             this.Name = "MainContainerForm";
             this.Text = "Real Estate CRM";

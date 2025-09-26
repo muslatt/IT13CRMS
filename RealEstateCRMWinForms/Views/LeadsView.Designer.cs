@@ -1,4 +1,4 @@
-﻿// RealEstateCRMWinForms\Views\LeadsView.Designer.cs
+// RealEstateCRMWinForms\Views\LeadsView.Designer.cs
 using System.Windows.Forms;
 using System.Drawing;
 
@@ -41,11 +41,18 @@ namespace RealEstateCRMWinForms.Views
             this.sortComboBox = new System.Windows.Forms.ComboBox();
             this.filterButton = new System.Windows.Forms.Button();
             this.contentPanel = new System.Windows.Forms.Panel();
+            this.paginationPanel = new System.Windows.Forms.Panel();
+            this.leadsPaginationLayout = new System.Windows.Forms.TableLayoutPanel();
+            this.btnPrevLeadPage = new System.Windows.Forms.Button();
+            this.lblLeadPageInfo = new System.Windows.Forms.Label();
+            this.btnNextLeadPage = new System.Windows.Forms.Button();
             this.dataGridViewLeads = new System.Windows.Forms.DataGridView();
             this.searchPanel.SuspendLayout();
             this.searchBoxContainer.SuspendLayout();
             this.rightControlsPanel.SuspendLayout();
             this.contentPanel.SuspendLayout();
+            this.paginationPanel.SuspendLayout();
+            this.leadsPaginationLayout.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewLeads)).BeginInit();
             this.SuspendLayout();
             // 
@@ -94,7 +101,7 @@ namespace RealEstateCRMWinForms.Views
             this.searchIcon.Name = "searchIcon";
             this.searchIcon.Size = new System.Drawing.Size(21, 21);
             this.searchIcon.TabIndex = 1;
-            this.searchIcon.Text = "🔍";
+            this.searchIcon.Text = "??";
             // 
             // rightControlsPanel
             // 
@@ -159,6 +166,7 @@ namespace RealEstateCRMWinForms.Views
             // 
             // contentPanel
             // 
+            this.contentPanel.Controls.Add(this.paginationPanel);
             this.contentPanel.Controls.Add(this.dataGridViewLeads);
             this.contentPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.contentPanel.Location = new System.Drawing.Point(0, 80);
@@ -166,7 +174,81 @@ namespace RealEstateCRMWinForms.Views
             this.contentPanel.Padding = new System.Windows.Forms.Padding(30);
             this.contentPanel.Size = new System.Drawing.Size(1000, 590);
             this.contentPanel.TabIndex = 1;
-            // 
+            //
+            // paginationPanel
+            this.paginationPanel.BackColor = System.Drawing.Color.White;
+            this.paginationPanel.Controls.Add(this.leadsPaginationLayout);
+            this.paginationPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.paginationPanel.Location = new System.Drawing.Point(30, 530);
+            this.paginationPanel.Name = "paginationPanel";
+            this.paginationPanel.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
+            this.paginationPanel.Size = new System.Drawing.Size(940, 40);
+            this.paginationPanel.TabIndex = 2;
+            //
+            // leadsPaginationLayout
+            this.leadsPaginationLayout.ColumnCount = 4;
+            this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.leadsPaginationLayout.Controls.Add(this.lblLeadPageInfo, 1, 0);
+            this.leadsPaginationLayout.Controls.Add(this.btnPrevLeadPage, 2, 0);
+            this.leadsPaginationLayout.Controls.Add(this.btnNextLeadPage, 3, 0);
+            this.leadsPaginationLayout.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.leadsPaginationLayout.Location = new System.Drawing.Point(10, 8);
+            this.leadsPaginationLayout.Name = "leadsPaginationLayout";
+            this.leadsPaginationLayout.RowCount = 1;
+            this.leadsPaginationLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.leadsPaginationLayout.Size = new System.Drawing.Size(920, 24);
+            this.leadsPaginationLayout.TabIndex = 0;
+            //
+            // btnPrevLeadPage
+            this.btnPrevLeadPage.AutoSize = true;
+            this.btnPrevLeadPage.BackColor = System.Drawing.Color.White;
+            this.btnPrevLeadPage.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
+            this.btnPrevLeadPage.FlatAppearance.BorderSize = 1;
+            this.btnPrevLeadPage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnPrevLeadPage.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.btnPrevLeadPage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
+            this.btnPrevLeadPage.Location = new System.Drawing.Point(816, 0);
+            this.btnPrevLeadPage.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
+            this.btnPrevLeadPage.Name = "btnPrevLeadPage";
+            this.btnPrevLeadPage.Size = new System.Drawing.Size(90, 28);
+            this.btnPrevLeadPage.TabIndex = 0;
+            this.btnPrevLeadPage.Text = "Previous";
+            this.btnPrevLeadPage.UseVisualStyleBackColor = false;
+            this.btnPrevLeadPage.Click += new System.EventHandler(this.BtnPrevLeadPage_Click);
+            //
+            // lblLeadPageInfo
+            this.lblLeadPageInfo.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.lblLeadPageInfo.AutoSize = true;
+            this.lblLeadPageInfo.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.lblLeadPageInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
+            this.lblLeadPageInfo.Location = new System.Drawing.Point(720, 2);
+            this.lblLeadPageInfo.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.lblLeadPageInfo.Name = "lblLeadPageInfo";
+            this.lblLeadPageInfo.Size = new System.Drawing.Size(90, 19);
+            this.lblLeadPageInfo.TabIndex = 1;
+            this.lblLeadPageInfo.Text = "Page 1 of 1";
+            this.lblLeadPageInfo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // btnNextLeadPage
+            this.btnNextLeadPage.AutoSize = true;
+            this.btnNextLeadPage.BackColor = System.Drawing.Color.White;
+            this.btnNextLeadPage.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
+            this.btnNextLeadPage.FlatAppearance.BorderSize = 1;
+            this.btnNextLeadPage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnNextLeadPage.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.btnNextLeadPage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
+            this.btnNextLeadPage.Location = new System.Drawing.Point(912, 0);
+            this.btnNextLeadPage.Margin = new System.Windows.Forms.Padding(0);
+            this.btnNextLeadPage.Name = "btnNextLeadPage";
+            this.btnNextLeadPage.Size = new System.Drawing.Size(90, 28);
+            this.btnNextLeadPage.TabIndex = 2;
+            this.btnNextLeadPage.Text = "Next";
+            this.btnNextLeadPage.UseVisualStyleBackColor = false;
+            this.btnNextLeadPage.Click += new System.EventHandler(this.BtnNextLeadPage_Click);
+            //
             // dataGridViewLeads
             // 
             this.dataGridViewLeads.AllowUserToAddRows = false;
@@ -185,8 +267,8 @@ namespace RealEstateCRMWinForms.Views
             // 
             // LeadsView
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(249)))), ((int)(((byte)(250)))), ((int)(((byte)(251)))));
             this.Controls.Add(this.contentPanel);
             this.Controls.Add(this.searchPanel);
@@ -197,6 +279,9 @@ namespace RealEstateCRMWinForms.Views
             this.searchBoxContainer.PerformLayout();
             this.rightControlsPanel.ResumeLayout(false);
             this.contentPanel.ResumeLayout(false);
+            this.paginationPanel.ResumeLayout(false);
+            this.leadsPaginationLayout.ResumeLayout(false);
+            this.leadsPaginationLayout.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewLeads)).EndInit();
             this.ResumeLayout(false);
 
@@ -211,8 +296,17 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.ComboBox sortComboBox;
         private System.Windows.Forms.Button btnAddLead;
         private System.Windows.Forms.Panel contentPanel;
+        private System.Windows.Forms.Panel paginationPanel;
+        private System.Windows.Forms.TableLayoutPanel leadsPaginationLayout;
+        private System.Windows.Forms.Button btnPrevLeadPage;
+        private System.Windows.Forms.Button btnNextLeadPage;
+        private System.Windows.Forms.Label lblLeadPageInfo;
         private System.Windows.Forms.DataGridView dataGridViewLeads;
         private System.Windows.Forms.Panel searchBoxContainer;
         private System.Windows.Forms.Label searchIcon;
     }
 }
+
+
+
+

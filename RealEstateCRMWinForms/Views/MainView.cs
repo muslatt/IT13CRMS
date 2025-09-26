@@ -12,6 +12,7 @@ namespace RealEstateCRMWinForms.Views
     {
         private readonly UserViewModel _viewModel;
         public event EventHandler? LogoutRequested;
+        public event EventHandler? RegisterAgentRequested;
 
         private UserControl? _currentContentView;
 
@@ -33,12 +34,17 @@ namespace RealEstateCRMWinForms.Views
         private readonly Color _accentWarm = Color.FromArgb(255, 159, 67);       // complementary warm accent
         private readonly Color _lightAccent = Color.FromArgb(255, 244, 230);     // subtle warm background for active state
         private readonly Color _hoverAccent = Color.FromArgb(255, 247, 236);     // hover background
+        private bool _isBroker = false;
 
         public MainView()
         {
             InitializeComponent();
             _viewModel = new UserViewModel();
             dataGridView1.DataSource = _viewModel.Users;
+
+            // Hide Settings and Help from the sidebar
+            if (btnSettings != null) btnSettings.Visible = false;
+            if (btnHelp != null) btnHelp.Visible = false;
 
             // increase sizes for a much larger nav
             _sidebarFontPt = 18f;      // "much larger" — adjust as desired (16-22)
@@ -65,7 +71,7 @@ namespace RealEstateCRMWinForms.Views
             SwitchSection("Dashboard");
 
             // default placeholder user (blank avatar)
-            SetCurrentUser("Ron Vergel Luzon", "Broker");
+            SetCurrentUser("", "");
         }
 
         private void PanelSidebar_SizeChanged(object? sender, System.EventArgs e)
@@ -192,6 +198,23 @@ namespace RealEstateCRMWinForms.Views
             panelSidebar.Controls.SetChildIndex(btnCollapseSidebar, 0);
 
             // Tidy bottom items: place Settings and Help anchored to bottom
+            // In this app, we are removing Settings and Help from the sidebar,
+            // so skip creating the bottom panel entirely.
+            bool showBottomItems = false;
+            if (!showBottomItems)
+            {
+                if (panelSidebarBottom != null)
+                {
+                    if (panelSidebar.Controls.Contains(panelSidebarBottom))
+                        panelSidebar.Controls.Remove(panelSidebarBottom);
+                    panelSidebarBottom.Dispose();
+                    panelSidebarBottom = null;
+                }
+
+                // Final layout fixup without bottom items
+                UpdateSidebarLayout();
+                return;
+            }
             if (panelSidebarBottom != null)
             {
                 if (panelSidebar.Controls.Contains(panelSidebarBottom))
@@ -391,6 +414,7 @@ namespace RealEstateCRMWinForms.Views
                 "Contacts" => btnContacts,
                 "Deals" => btnDeals,
                 "Properties" => btnProperties,
+                "Pending Assignments" => btnProperties,
                 _ => null
             };
         }
@@ -534,10 +558,7 @@ namespace RealEstateCRMWinForms.Views
             pbLogo.Size = new Size(196, 100);
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            _viewModel.LoadUsers();
-        }
+        // Removed legacy button1_Click handler (Load Users)
 
         private void btnLogout_Click(object sender, EventArgs e)
         {
@@ -613,7 +634,10 @@ namespace RealEstateCRMWinForms.Views
         {
             // Show "Agency Dashboard" in the small top header when Dashboard is active,
             // otherwise show the section name as-is.
-            lblSectionTitle.Text = section == "Dashboard" ? "Agency Dashboard" : section;
+            // Adjust title if agent views Pending Assignments
+            var effectiveTitle = section;
+            if (section == "Properties" && !_isBroker) effectiveTitle = "Pending Assignments";
+            lblSectionTitle.Text = effectiveTitle == "Dashboard" ? "Agency Dashboard" : effectiveTitle;
 
             // set visual active button and update content
             switch (section)
@@ -637,7 +661,10 @@ namespace RealEstateCRMWinForms.Views
                 case "Properties":
                 default:
                     SetActiveNavButton(btnProperties);
-                    ShowPropertiesView();
+                    if (_isBroker)
+                        ShowPropertiesView();
+                    else
+                        SwitchContentView(new PendingAssignmentsView());
                     break;
             }
         }
@@ -679,9 +706,8 @@ namespace RealEstateCRMWinForms.Views
 
             if (newView != null)
             {
-                // Hide the old grid and button
+                // Hide the old grid
                 dataGridView1.Visible = false;
-                btnLoadUsers.Visible = false;
 
                 // Add new view
                 _currentContentView = newView;
@@ -694,7 +720,6 @@ namespace RealEstateCRMWinForms.Views
             {
                 // Show the old grid for other sections
                 dataGridView1.Visible = true;
-                btnLoadUsers.Visible = true;
             }
         }
 
@@ -702,10 +727,47 @@ namespace RealEstateCRMWinForms.Views
         public void SetCurrentUser(string displayName, string role)
         {
             lblUserName.Text = displayName ?? string.Empty;
-            lblUserRole.Text = role ?? string.Empty;
+            lblUserRole.Text = string.Equals(role, "Broker", System.StringComparison.OrdinalIgnoreCase)
+                ? "Logged in as Broker"
+                : (string.IsNullOrWhiteSpace(role) ? string.Empty : role);
 
             // pbAvatar currently blank; you can set pbAvatar.Image = ... when available
             pbAvatar.Image = null;
+
+            // Apply role-based UI gating
+            ApplyRolePermissions(role);
+        }
+
+        private void ApplyRolePermissions(string role)
+        {
+            _isBroker = string.Equals(role, "Broker", System.StringComparison.OrdinalIgnoreCase);
+
+            // Only Brokers can access certain admin/dev tools
+            // Load Users button removed
+
+            // Example: show Settings for Brokers only (if re-enabled elsewhere)
+            if (btnSettings != null)
+            {
+                btnSettings.Visible = _isBroker;
+                btnSettings.Enabled = _isBroker;
+            }
+
+            if (registerAgentToolStripMenuItem != null)
+            {
+                registerAgentToolStripMenuItem.Visible = _isBroker;
+                registerAgentToolStripMenuItem.Enabled = _isBroker;
+            }
+
+            // Rename Properties button for Agents
+            if (btnProperties != null)
+            {
+                btnProperties.Text = _isBroker ? "Properties" : "Pending Assignments";
+            }
+        }
+
+        private void registerAgentToolStripMenuItem_Click(object? sender, System.EventArgs e)
+        {
+            RegisterAgentRequested?.Invoke(this, System.EventArgs.Empty);
         }
 
         // show context menu when user clicks avatar or caret button

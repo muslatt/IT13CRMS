@@ -1,4 +1,4 @@
-// RealEstateCRMWinForms\ViewModels\LeadViewModel.cs
+﻿// RealEstateCRMWinForms\ViewModels\LeadViewModel.cs
 using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
 using System;
@@ -34,12 +34,9 @@ namespace RealEstateCRMWinForms.ViewModels
                     
                     var leadsFromDb = dbContext.Leads.Where(l => l.IsActive).ToList();
                     
-                    // Get available agents from properties
-                    var availableAgents = dbContext.Properties
-                        .Where(p => p.IsActive && !string.IsNullOrEmpty(p.Agent))
-                        .Select(p => p.Agent)
-                        .Distinct()
-                        .ToList();
+                    // Get available agents from Users table
+                    var availableAgents = RealEstateCRMWinForms.Services.AgentDirectory
+                        .GetAgentDisplayNames();
                     
                     var random = new Random();
                     
@@ -58,7 +55,7 @@ namespace RealEstateCRMWinForms.ViewModels
                         Leads.Add(lead);
                     }
 
-                    // NOTE: removed sample data insertion – the list will remain empty if DB has no leads.
+                    // NOTE: removed sample data insertion â€“ the list will remain empty if DB has no leads.
                 }
             }
             catch (Exception ex)
@@ -82,6 +79,7 @@ namespace RealEstateCRMWinForms.ViewModels
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
                     
+                    lead.Type = "Lead";
                     // The AssignedAgent property is NotMapped, so it won't be saved to DB
                     // but it will be preserved in memory for display
                     dbContext.Leads.Add(lead);
@@ -233,3 +231,7 @@ namespace RealEstateCRMWinForms.ViewModels
         }
     }
 }
+
+
+
+

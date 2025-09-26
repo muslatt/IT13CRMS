@@ -1,9 +1,10 @@
-﻿using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
 using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using System.ComponentModel;
 
 namespace RealEstateCRMWinForms.Controls
 {
@@ -12,15 +13,23 @@ namespace RealEstateCRMWinForms.Controls
         private Deal _deal;
         private Label lblTitle;
         private Label lblDescription;
+        private Label lblClient;
+        private Label lblAssignedAgent;
         private Label lblValue;
         private Panel dragBar; // Colored drag bar at the top
         private PictureBox imgProperty; // Property image placeholder
         private ContextMenuStrip _contextMenu;
+        private ToolStripMenuItem _revertContactMenuItem;
 
         public DealCard()
         {
             InitializeComponent();
             CreateContextMenu();
+            
+            // Reduce flicker for draggable card
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            this.UpdateStyles();
         }
 
         public void SetDeal(Deal deal)
@@ -41,7 +50,7 @@ namespace RealEstateCRMWinForms.Controls
         private void CreateContextMenu()
         {
             _contextMenu = new ContextMenuStrip();
-            
+
             var editMenuItem = new ToolStripMenuItem("Edit Deal")
             {
                 Image = SystemIcons.Application.ToBitmap()
@@ -54,13 +63,26 @@ namespace RealEstateCRMWinForms.Controls
             };
             deleteMenuItem.Click += DeleteMenuItem_Click;
 
-            _contextMenu.Items.AddRange(new ToolStripItem[] { editMenuItem, deleteMenuItem });
-            
+            _revertContactMenuItem = new ToolStripMenuItem("Move Contact back to Leads")
+            {
+                Image = SystemIcons.Question.ToBitmap()
+            };
+            _revertContactMenuItem.Click += ConvertContactToLeadMenuItem_Click;
+
+            _contextMenu.Items.AddRange(new ToolStripItem[]
+            {
+                editMenuItem,
+                deleteMenuItem,
+                new ToolStripSeparator(),
+                _revertContactMenuItem
+            });
+
+            _contextMenu.Opening += ContextMenu_Opening;
+
             // Assign context menu to the card and its child controls
             this.ContextMenuStrip = _contextMenu;
             AssignContextMenuToChildren(this);
         }
-
         private void AssignContextMenuToChildren(Control parent)
         {
             foreach (Control control in parent.Controls)
@@ -73,6 +95,13 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
+        private void ContextMenu_Opening(object? sender, CancelEventArgs e)
+        {
+            if (_revertContactMenuItem != null)
+            {
+                _revertContactMenuItem.Enabled = _deal?.Contact != null;
+            }
+        }
         private void EditMenuItem_Click(object? sender, EventArgs e)
         {
             if (_deal == null) return;
@@ -118,9 +147,63 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
+        private async void ConvertContactToLeadMenuItem_Click(object? sender, EventArgs e)
+        {
+            if (_deal?.Contact == null)
+            {
+                return;
+            }
+
+            var contactName = _deal.Contact.FullName;
+            var confirmation = MessageBox.Show(
+                "Move '" + contactName + "' back to Leads?\n\n" +
+                "This will remove them from the Contacts list and clear them from any active deals.",
+                "Move Contact to Leads",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+
+            if (confirmation != DialogResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+
+                var contactViewModel = new ContactViewModel();
+                bool success = await contactViewModel.MoveContactToLeadAsync(_deal.Contact);
+
+                if (success)
+                {
+                    MessageBox.Show(contactName + " has been moved back to the Leads list.", "Contact Updated",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    _deal.ContactId = null;
+                    _deal.Contact = null;
+
+                    DealUpdated?.Invoke(this, new DealEventArgs(_deal));
+                }
+                else
+                {
+                    MessageBox.Show("Failed to move the contact back to Leads. Please try again.", "Conversion Failed",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error moving contact back to Leads: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
+        }
         private void InitializeComponent()
         {
-            this.Size = new Size(280, 240); // Increased height to accommodate larger image like PropertyCard
+            this.Size = new Size(280, 260); // Slightly taller to fit extra lines
             this.BackColor = Color.White;
             this.BorderStyle = BorderStyle.FixedSingle;
             this.Margin = new Padding(0, 0, 0, 10); // Bottom margin for spacing between cards
@@ -165,10 +248,30 @@ namespace RealEstateCRMWinForms.Controls
                 AutoEllipsis = true
             };
 
+            // Client label
+            lblClient = new Label
+            {
+                Location = new Point(8, 190),
+                Size = new Size(264, 18),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                AutoEllipsis = true
+            };
+
+            // Assigned Agent label
+            lblAssignedAgent = new Label
+            {
+                Location = new Point(8, 208),
+                Size = new Size(264, 18),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                AutoEllipsis = true
+            };
+
             // Value label (positioned at bottom, styled like PropertyCard price)
             lblValue = new Label
             {
-                Location = new Point(8, 195),
+                Location = new Point(8, 228),
                 Size = new Size(264, 25),
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold), // Matching PropertyCard price font
                 ForeColor = Color.FromArgb(33, 37, 41),
@@ -176,7 +279,7 @@ namespace RealEstateCRMWinForms.Controls
             };
 
             this.Controls.AddRange(new Control[] {
-                dragBar, imgProperty, lblTitle, lblDescription, lblValue
+                dragBar, imgProperty, lblTitle, lblDescription, lblClient, lblAssignedAgent, lblValue
             });
 
             // Enable drag functionality on the entire card
@@ -295,6 +398,18 @@ namespace RealEstateCRMWinForms.Controls
             lblTitle.Text = _deal.Title;
             lblDescription.Text = _deal.Description;
             lblValue.Text = _deal.Value.HasValue ? $"₱ {_deal.Value:N0}" : "₱ 0";
+
+            // Client and Assigned Agent context
+            try
+            {
+                var clientName = _deal?.Contact != null ? (_deal.Contact.FullName ?? _deal.Contact.Email ?? string.Empty) : string.Empty;
+                if (lblClient != null) lblClient.Text = string.IsNullOrWhiteSpace(clientName) ? "Client: -" : $"Client: {clientName}";
+
+                var assignedAgent = _deal?.Property?.Agent;
+                if (string.IsNullOrWhiteSpace(assignedAgent)) assignedAgent = _deal?.CreatedBy;
+                if (lblAssignedAgent != null) lblAssignedAgent.Text = string.IsNullOrWhiteSpace(assignedAgent) ? "Assigned Agent: -" : $"Assigned Agent: {assignedAgent}";
+            }
+            catch { }
             
             // Set drag bar color to match board header colors (from DealsView)
             var boardColor = _deal.Status switch
@@ -339,3 +454,8 @@ namespace RealEstateCRMWinForms.Controls
         }
     }
 }
+
+
+
+
+

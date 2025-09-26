@@ -19,6 +19,12 @@ namespace RealEstateCRMWinForms.Views
         private BindingSource _bindingSource;
         private ContextMenuStrip _contextMenu;
 
+        private const int PageSize = 10;
+        private int _currentPage = 1;
+        private int _totalPages = 1;
+        private List<Contact> _currentContacts = new();
+        private bool _isDataInitialized;
+
         public ContactsView()
         {
             _viewModel = new ContactViewModel();
@@ -37,7 +43,7 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewContacts.AutoGenerateColumns = false;
             dataGridViewContacts.Columns.Clear();
 
-            // Make table read-only (no inline editing)
+            // Enable inline editing only for Type dropdown
             dataGridViewContacts.EnableHeadersVisualStyles = false;
             dataGridViewContacts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridViewContacts.RowHeadersVisible = false;
@@ -45,8 +51,8 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewContacts.MultiSelect = false;
             dataGridViewContacts.AllowUserToAddRows = false;
             dataGridViewContacts.AllowUserToDeleteRows = false;
-            dataGridViewContacts.ReadOnly = true;
-            dataGridViewContacts.EditMode = DataGridViewEditMode.EditProgrammatically;
+            dataGridViewContacts.ReadOnly = false;
+            dataGridViewContacts.EditMode = DataGridViewEditMode.EditOnEnter;
 
             // Add border to the table and header
             dataGridViewContacts.BorderStyle = BorderStyle.FixedSingle;
@@ -78,6 +84,9 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewContacts.MouseClick += DataGridViewContacts_MouseClick;
             dataGridViewContacts.CellMouseEnter += DataGridViewContacts_CellMouseEnter;
             dataGridViewContacts.CellMouseLeave += DataGridViewContacts_CellMouseLeave;
+            dataGridViewContacts.CellValueChanged += DataGridViewContacts_CellValueChanged;
+            dataGridViewContacts.CurrentCellDirtyStateChanged += DataGridViewContacts_CurrentCellDirtyStateChanged;
+            dataGridViewContacts.CellBeginEdit += DataGridViewContacts_CellBeginEdit;
         }
 
         private void CreateContextMenu()
@@ -98,6 +107,7 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
+                _isDataInitialized = false;
                 // Test database connection first
                 if (!_viewModel.TestConnection())
                 {
@@ -113,6 +123,10 @@ namespace RealEstateCRMWinForms.Views
                 dataGridViewContacts.DataSource = _bindingSource;
                 if (sortComboBox != null)
                     sortComboBox.SelectedIndex = 0;
+
+                ApplyFilterAndSort(true);
+                _isDataInitialized = true;
+                UpdatePaginationControls();
             }
             catch (Exception ex)
             {
@@ -193,15 +207,22 @@ namespace RealEstateCRMWinForms.Views
             };
             dataGridViewContacts.Columns.Add(nameColumn);
 
-            // 4. Type
-            dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn
+            // 4. Type (dropdown to allow converting to Lead)
+            var typeColumn = new DataGridViewComboBoxColumn
             {
                 DataPropertyName = "Type",
                 HeaderText = "Type",
                 Name = "Type",
-                Width = 100,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
-            });
+                Width = 120,
+                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False },
+                DropDownWidth = 120,
+                MaxDropDownItems = 5,
+                FlatStyle = FlatStyle.Flat,
+                DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing
+            };
+            // Include common types to render existing values properly
+            typeColumn.Items.AddRange(new string[] { "Contact", "Lead", "Buyer", "Owner", "Renter" });
+            dataGridViewContacts.Columns.Add(typeColumn);
 
             // 6. Agent with Avatar (using custom ImageText column)
             var agentColumn = new DataGridViewImageTextColumn
@@ -291,42 +312,17 @@ namespace RealEstateCRMWinForms.Views
 
         private void ApplyFilter()
         {
-            var query = searchBox?.Text?.Trim() ?? string.Empty;
-            
-            if (string.IsNullOrEmpty(query))
-            {
-                _bindingSource.DataSource = _viewModel.Contacts;
-            }
-            else
-            {
-                var filtered = _viewModel.Contacts.Where(c =>
-                    (c.FullName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (c.Email?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (c.Phone?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (c.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (c.Occupation?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
-                ).ToList();
-
-                _bindingSource.DataSource = new BindingList<Contact>(filtered);
-            }
+            ApplyFilterAndSort(true);
         }
 
         private void ApplySort()
         {
-            var selectedSort = sortComboBox?.SelectedItem as string;
-            List<Contact> sortedContacts;
-
-            var currentData = (_bindingSource.DataSource as BindingList<Contact>)?.ToList() ?? _viewModel.Contacts.ToList();
-
-            sortedContacts = selectedSort switch
+            if (!_isDataInitialized)
             {
-                "Oldest to Newest" => currentData.OrderBy(c => c.CreatedAt).ToList(),
-                "Name A-Z" => currentData.OrderBy(c => c.FullName).ToList(),
-                "Name Z-A" => currentData.OrderByDescending(c => c.FullName).ToList(),
-                _ => currentData.OrderByDescending(c => c.CreatedAt).ToList()
-            };
+                return;
+            }
 
-            _bindingSource.DataSource = new BindingList<Contact>(sortedContacts);
+            ApplyFilterAndSort(true);
         }
 
         private void BtnAddContact_Click(object? sender, EventArgs e)
@@ -456,6 +452,131 @@ namespace RealEstateCRMWinForms.Views
             // Handle any button clicks if needed
         }
 
+        // NEW: Only allow editing of the Type column and offer conversion to Lead
+        private void DataGridViewContacts_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            // Only allow editing of the Type column
+            if (dataGridViewContacts.Columns[e.ColumnIndex].Name != "Type")
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            // Dynamically restrict dropdown options
+            if (dataGridViewContacts.Rows[e.RowIndex].DataBoundItem is Contact contact &&
+                dataGridViewContacts.Rows[e.RowIndex].Cells[e.ColumnIndex] is DataGridViewComboBoxCell typeCell)
+            {
+                typeCell.Items.Clear();
+                // Always include the current type so it displays correctly
+                typeCell.Items.Add(contact.Type);
+                // Offer conversion to Lead if not already a Lead
+                if (!string.Equals(contact.Type, "Lead", StringComparison.OrdinalIgnoreCase))
+                {
+                    typeCell.Items.Add("Lead");
+                }
+            }
+        }
+
+        private void DataGridViewContacts_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+        {
+            // Commit dropdown changes immediately
+            if (dataGridViewContacts.IsCurrentCellDirty && dataGridViewContacts.CurrentCell?.OwningColumn?.Name == "Type")
+            {
+                dataGridViewContacts.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        private async void DataGridViewContacts_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            if (dataGridViewContacts.Columns[e.ColumnIndex].Name != "Type") return;
+
+            var contact = dataGridViewContacts.Rows[e.RowIndex].DataBoundItem as Contact;
+            if (contact == null) return;
+
+            var newValue = dataGridViewContacts.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
+            var originalType = contact.Type;
+
+            if (string.Equals(newValue, "Lead", StringComparison.OrdinalIgnoreCase))
+            {
+                await HandleContactToLeadConversion(contact, e.RowIndex, originalType);
+            }
+            else
+            {
+                // Revert any other inline changes (we only support conversion to Lead here)
+                // Ensure the cell still exists and the row refers to the same contact
+                if (e.RowIndex < dataGridViewContacts.Rows.Count && dataGridViewContacts.Rows[e.RowIndex].DataBoundItem == contact)
+                {
+                    dataGridViewContacts.Rows[e.RowIndex].Cells["Type"].Value = originalType;
+                }
+            }
+        }
+
+        private async System.Threading.Tasks.Task HandleContactToLeadConversion(Contact contact, int rowIndex, string originalType)
+        {
+            var contactName = contact.FullName;
+            var confirmation = MessageBox.Show(
+                "Move '" + contactName + "' to Leads?\n\n" +
+                "This will remove them from the Contacts list.",
+                "Move Contact to Leads",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+
+            if (confirmation != DialogResult.Yes)
+            {
+                // Revert selection
+                if (rowIndex < dataGridViewContacts.Rows.Count && dataGridViewContacts.Rows[rowIndex].DataBoundItem == contact)
+                {
+                    dataGridViewContacts.Rows[rowIndex].Cells["Type"].Value = originalType;
+                }
+                return;
+            }
+
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+                bool success = await _viewModel.MoveContactToLeadAsync(contact);
+
+                if (success)
+                {
+                    // Remove from current page and refresh pagination
+                    ApplyFilterAndSort(true);
+                    MessageBox.Show(contactName + " has been moved to the Leads list.", "Contact Updated",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    // Revert the dropdown selection on failure
+                    if (rowIndex < dataGridViewContacts.Rows.Count && dataGridViewContacts.Rows[rowIndex].DataBoundItem == contact)
+                    {
+                        dataGridViewContacts.Rows[rowIndex].Cells["Type"].Value = originalType;
+                    }
+                    MessageBox.Show("Failed to move the contact to Leads. Please try again.", "Conversion Failed",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Error during conversion: " + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                // Revert selection
+                if (rowIndex < dataGridViewContacts.Rows.Count && dataGridViewContacts.Rows[rowIndex].DataBoundItem == contact)
+                {
+                    dataGridViewContacts.Rows[rowIndex].Cells["Type"].Value = originalType;
+                }
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
+        }
+
         private void DataGridViewContacts_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
@@ -498,6 +619,148 @@ namespace RealEstateCRMWinForms.Views
                 return $"0{digits.Substring(0, 3)} {digits.Substring(3, 3)} {digits.Substring(6)}";
             
             return phoneNumber; // Return original if no match
+        }
+
+        // Pagination + filtering/sorting
+        private void ApplyFilterAndSort(bool resetPage)
+        {
+            var query = searchBox?.Text?.Trim() ?? string.Empty;
+            IEnumerable<Contact> data = _viewModel.Contacts;
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                data = data.Where(c =>
+                    (c.FullName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Email?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Phone?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Occupation?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            var filtered = data.ToList();
+            var sorted = SortContacts(filtered, sortComboBox?.SelectedItem as string);
+
+            SetCurrentContacts(sorted, resetPage);
+        }
+
+        private static List<Contact> SortContacts(List<Contact> contacts, string? sortOption)
+        {
+            return (sortOption ?? "Newest to Oldest") switch
+            {
+                "Oldest to Newest" => contacts.OrderBy(c => c.CreatedAt).ToList(),
+                "Name A-Z" => contacts.OrderBy(c => c.FullName ?? string.Empty).ToList(),
+                "Name Z-A" => contacts.OrderByDescending(c => c.FullName ?? string.Empty).ToList(),
+                _ => contacts.OrderByDescending(c => c.CreatedAt).ToList()
+            };
+        }
+
+        private void SetCurrentContacts(IEnumerable<Contact> contacts, bool resetPage)
+        {
+            _currentContacts = contacts?.ToList() ?? new List<Contact>();
+
+            if (_currentContacts.Count == 0)
+            {
+                _currentPage = 1;
+            }
+            else if (resetPage || _currentPage < 1)
+            {
+                _currentPage = 1;
+            }
+            else if (_currentPage > _totalPages)
+            {
+                _currentPage = _totalPages;
+            }
+
+            ApplyPagination();
+        }
+
+        private void ApplyPagination()
+        {
+            var wasVisible = dataGridViewContacts.Visible;
+            dataGridViewContacts.Visible = false;
+            dataGridViewContacts.SuspendLayout();
+            dataGridViewContacts.SuspendDrawing();
+            try
+            {
+                if (_currentContacts.Count == 0)
+                {
+                    _totalPages = 1;
+                    _bindingSource.DataSource = new BindingList<Contact>();
+                }
+                else
+                {
+                    _totalPages = (int)Math.Ceiling(_currentContacts.Count / (double)PageSize);
+                    if (_currentPage > _totalPages)
+                    {
+                        _currentPage = _totalPages;
+                    }
+
+                    var pageContacts = _currentContacts
+                        .Skip((_currentPage - 1) * PageSize)
+                        .Take(PageSize)
+                        .ToList();
+
+                    _bindingSource.DataSource = new BindingList<Contact>(pageContacts);
+
+                    // Reset scroll to top if rows exist
+                    try { if (dataGridViewContacts.Rows.Count > 0) dataGridViewContacts.FirstDisplayedScrollingRowIndex = 0; } catch { }
+                }
+
+                dataGridViewContacts.PerformLayout();
+                dataGridViewContacts.Invalidate(true);
+                dataGridViewContacts.Update();
+            }
+            finally
+            {
+                dataGridViewContacts.ResumeLayout(true);
+                dataGridViewContacts.ResumeDrawing();
+                dataGridViewContacts.Visible = wasVisible;
+                this.Invalidate(true);
+                this.Update();
+                try { Application.DoEvents(); } catch { }
+            }
+
+            UpdatePaginationControls();
+        }
+
+        private void UpdatePaginationControls()
+        {
+            var totalItems = _currentContacts.Count;
+            if (totalItems == 0)
+            {
+                lblContactPageInfo.Text = "No contacts to display";
+            }
+            else
+            {
+                var start = ((_currentPage - 1) * PageSize) + 1;
+                var end = Math.Min(start + PageSize - 1, totalItems);
+                lblContactPageInfo.Text = $"Showing {start}–{end} of {totalItems}";
+            }
+
+            btnPrevContactPage.Enabled = _currentPage > 1;
+            btnNextContactPage.Enabled = _currentPage < _totalPages;
+        }
+
+        private void BtnPrevContactPage_Click(object? sender, EventArgs e)
+        {
+            if (_currentPage <= 1)
+            {
+                return;
+            }
+
+            _currentPage--;
+            ApplyPagination();
+        }
+
+        private void BtnNextContactPage_Click(object? sender, EventArgs e)
+        {
+            if (_currentPage >= _totalPages)
+            {
+                return;
+            }
+
+            _currentPage++;
+            ApplyPagination();
         }
     }
 }
