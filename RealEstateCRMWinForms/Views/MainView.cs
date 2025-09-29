@@ -704,11 +704,10 @@ namespace RealEstateCRMWinForms.Views
             {
                 section = "Dashboard";
             }
-            // Show "Agency Dashboard" in the small top header when Dashboard is active,
-            // otherwise show the section name as-is.
-            // Title logic: Dashboard uses "Agency Dashboard", others use section name
+            // Update the small top header. For Dashboard we no longer show "Agency Dashboard";
+            // leave it blank instead. Other sections continue to use their section name.
             var effectiveTitle = section;
-            lblSectionTitle.Text = effectiveTitle == "Dashboard" ? "Agency Dashboard" : effectiveTitle;
+            lblSectionTitle.Text = effectiveTitle == "Dashboard" ? string.Empty : effectiveTitle;
 
             // set visual active button and update content
             switch (section)
