@@ -229,8 +229,16 @@ namespace RealEstateCRMWinForms.ViewModels
                         existingDeal.ContactId = deal.ContactId;
                         existingDeal.Status = deal.Status; // This is crucial for board tracking
                         existingDeal.Notes = deal.Notes;
+                        // Track who owns/accepted the deal
+                        existingDeal.CreatedBy = deal.CreatedBy;
                         existingDeal.UpdatedAt = DateTime.UtcNow;
                         existingDeal.IsActive = deal.IsActive;
+
+                        // If a property is linked and an agent has accepted, stamp the property with the agent name
+                        if (existingDeal.Property != null && !string.IsNullOrWhiteSpace(existingDeal.CreatedBy))
+                        {
+                            existingDeal.Property.Agent = existingDeal.CreatedBy;
+                        }
 
                         dbContext.SaveChanges();
                         

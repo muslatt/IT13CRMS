@@ -1,12 +1,14 @@
 using RealEstateCRMWinForms.Models;
-using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 
 namespace RealEstateCRMWinForms.Services
 {
     public class EmailNotificationService
     {
-        private readonly EmailSettings _emailSettings;
+        private readonly MailjetSettings _mailjet;
 
         public EmailNotificationService()
         {
@@ -15,10 +17,16 @@ namespace RealEstateCRMWinForms.Services
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-            _emailSettings = configuration.GetSection("EmailSettings").Get<EmailSettings>() ?? new EmailSettings();
+            _mailjet = configuration.GetSection("Mailjet").Get<MailjetSettings>() ?? new MailjetSettings();
         }
 
-        public async Task SendLeadToContactNotificationAsync(Contact contact)
+        // Public helper to send arbitrary emails (used by Contact dialog)
+        public Task SendCustomEmailAsync(string toEmail, string subject, string body)
+        {
+            return SendEmailAsync(toEmail, subject, body);
+        }
+
+        public async Task SendLeadToContactNotificationAsync(RealEstateCRMWinForms.Models.Contact contact)
         {
             try
             {
@@ -145,33 +153,40 @@ namespace RealEstateCRMWinForms.Services
         {
             try
             {
-                // Skip email sending if configuration is not properly set
-                if (string.IsNullOrEmpty(_emailSettings.SenderEmail) || 
-                    string.IsNullOrEmpty(_emailSettings.SenderPassword) ||
-                    _emailSettings.SenderEmail == "your-email@gmail.com")
+                if (string.IsNullOrWhiteSpace(_mailjet.ApiKey) || string.IsNullOrWhiteSpace(_mailjet.SecretKey) || string.IsNullOrWhiteSpace(_mailjet.SenderEmail))
                 {
-                    System.Diagnostics.Debug.WriteLine($"Email configuration not set. Would send to {toEmail}: {subject}");
+                    System.Diagnostics.Debug.WriteLine($"Mailjet config missing. Would send to {toEmail}: {subject}");
                     return;
                 }
 
-                using var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
-                {
-                    Port = _emailSettings.SmtpPort,
-                    Credentials = new System.Net.NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
-                    EnableSsl = _emailSettings.EnableSsl,
-                };
+                var fromEmail = _mailjet.SenderEmail;
+                var fromName = string.IsNullOrWhiteSpace(_mailjet.SenderName) ? "Real Estate CRM" : _mailjet.SenderName;
 
-                using var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
-                    Subject = subject,
-                    Body = body,
-                    IsBodyHtml = true
-                };
+                using var http = new HttpClient();
+                var auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_mailjet.ApiKey}:{_mailjet.SecretKey}"));
+                http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
 
-                mailMessage.To.Add(toEmail);
-                await smtpClient.SendMailAsync(mailMessage);
-                System.Diagnostics.Debug.WriteLine($"Email sent successfully to {toEmail}");
+                var payload = new
+                {
+                    Messages = new[]
+                    {
+                        new
+                        {
+                            From = new { Email = fromEmail, Name = fromName },
+                            To = new[] { new { Email = toEmail, Name = "" } },
+                            Subject = subject ?? string.Empty,
+                            HTMLPart = body ?? string.Empty
+                        }
+                    }
+                };
+                var json = JsonSerializer.Serialize(payload);
+                var resp = await http.PostAsync("https://api.mailjet.com/v3.1/send", new StringContent(json, Encoding.UTF8, "application/json"));
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var err = await resp.Content.ReadAsStringAsync();
+                    throw new Exception($"Mailjet send failed: {(int)resp.StatusCode} {resp.ReasonPhrase} {err}");
+                }
+                System.Diagnostics.Debug.WriteLine($"Mailjet: email sent to {toEmail}");
             }
             catch (Exception ex)
             {

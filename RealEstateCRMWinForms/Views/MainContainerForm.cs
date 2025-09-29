@@ -26,6 +26,7 @@ namespace RealEstateCRMWinForms.Views
         {
             var loginView = new LoginView(_authService);
             loginView.LoginSuccess += OnLoginSuccess;
+            loginView.EmailVerificationRequested += (s, email) => ShowEmailVerificationView(email);
             SwitchView(loginView);
         }
 
@@ -35,7 +36,8 @@ namespace RealEstateCRMWinForms.Views
             // When opened from Broker menu, return to Main after completing
             registerView.RegisterSuccess += (s, e) => ReturnToMainAfterRegister();
             registerView.BackToLoginRequested += (s, e) => ReturnToMainAfterRegister();
-            registerView.EmailVerificationRequired += (s, email) => ReturnToMainAfterRegister(true);
+            // For non-broker self-registration, go to verification screen
+            registerView.EmailVerificationRequired += (s, email) => ShowEmailVerificationView(email);
             SwitchView(registerView);
         }
 

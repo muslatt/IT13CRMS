@@ -64,7 +64,11 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 _context.Properties.Add(property);
                 _context.SaveChanges();
-                LoadProperties(); // Refresh the list and notify
+                // Instead of reloading, add to local list
+                Properties.Add(property);
+                OnPropertyChanged(nameof(Properties));
+                // Notify global listeners (Dashboard subscribes to this)
+                PropertiesUpdated?.Invoke(this, EventArgs.Empty);
                 return true;
             }
             catch (Exception ex)
@@ -84,7 +88,16 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     _context.Entry(property).CurrentValues.SetValues(propertyToUpdate);
                     _context.SaveChanges();
-                    LoadProperties(); // Refresh the list and notify
+                    // Instead of reloading, update local list
+                    var existing = Properties.FirstOrDefault(p => p.Id == propertyToUpdate.Id);
+                    if (existing != null)
+                    {
+                        var index = Properties.IndexOf(existing);
+                        Properties[index] = propertyToUpdate;
+                        OnPropertyChanged(nameof(Properties));
+                        // Notify global listeners
+                        PropertiesUpdated?.Invoke(this, EventArgs.Empty);
+                    }
                     return true;
                 }
                 return false;
@@ -107,7 +120,15 @@ namespace RealEstateCRMWinForms.ViewModels
                     // Soft delete: set IsActive to false instead of removing
                     property.IsActive = false;
                     _context.SaveChanges();
-                    LoadProperties(); // Refresh the list and notify
+                    // Instead of reloading, remove from local list
+                    var existing = Properties.FirstOrDefault(p => p.Id == propertyToDelete.Id);
+                    if (existing != null)
+                    {
+                        Properties.Remove(existing);
+                        OnPropertyChanged(nameof(Properties));
+                        // Notify global listeners
+                        PropertiesUpdated?.Invoke(this, EventArgs.Empty);
+                    }
                     return true;
                 }
                 return false;

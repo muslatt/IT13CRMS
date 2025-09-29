@@ -1,5 +1,6 @@
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
+using RealEstateCRMWinForms.Services;
 using System;
 using System.Drawing;
 using System.Linq;
@@ -92,7 +93,39 @@ namespace RealEstateCRMWinForms.Views
                     cmbAgent.Items.Add(agent);
                 }
 
-                cmbAgent.SelectedIndex = 0;
+                // Auto-set based on current user
+                var currentUser = UserSession.Instance.CurrentUser;
+                if (currentUser != null)
+                {
+                    if (currentUser.Role == UserRole.Broker)
+                    {
+                        cmbAgent.Items.Add("Broker");
+                        cmbAgent.Text = "Broker";
+                    }
+                    else if (currentUser.Role == UserRole.Agent)
+                    {
+                        var agentName = currentUser.FullName;
+                        var index = cmbAgent.Items.IndexOf(agentName);
+                        if (index >= 0)
+                        {
+                            cmbAgent.SelectedIndex = index;
+                        }
+                        else
+                        {
+                            // If not in list, add and select
+                            cmbAgent.Items.Add(agentName);
+                            cmbAgent.Text = agentName;
+                        }
+                    }
+                    else
+                    {
+                        cmbAgent.SelectedIndex = 0; // (No Agent)
+                    }
+                }
+                else
+                {
+                    cmbAgent.SelectedIndex = 0;
+                }
             }
             catch (Exception ex)
             {

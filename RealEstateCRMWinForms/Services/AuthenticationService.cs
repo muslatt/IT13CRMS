@@ -2,23 +2,28 @@ using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
 using System.Security.Cryptography;
 using System.Text;
-using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
 
 namespace RealEstateCRMWinForms.Services
 {
     public class AuthenticationService
     {
-        private readonly EmailSettings _emailSettings;
-
-        public AuthenticationService()
+        public AuthenticationService() { }
+        public bool IsEmailInUse(string email)
         {
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-
-            _emailSettings = configuration.GetSection("EmailSettings").Get<EmailSettings>() ?? new EmailSettings();
+            try
+            {
+                using var db = DbContextHelper.CreateDbContext();
+                email = (email ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(email)) return false;
+                return db.Users.Any(u => u.Email == email);
+            }
+            catch
+            {
+                // Be conservative; treat as in-use if we cannot verify
+                return true;
+            }
         }
         public User? Authenticate(string email, string password)
         {
@@ -29,26 +34,40 @@ namespace RealEstateCRMWinForms.Services
                 if (string.Equals(email?.Trim(), "broker@crm.local", StringComparison.OrdinalIgnoreCase)
                     && string.Equals(password, "broker123"))
                 {
-                    using var seedContext = DbContextHelper.CreateDbContext();
-                    var persisted = seedContext.Users.FirstOrDefault(u => u.Email == "broker@crm.local");
-                    if (persisted == null)
+                    // Set session immediately so broker can log in even if DB is unavailable
+                    var brokerUser = new User
                     {
-                        persisted = new User
+                        FirstName = "Broker",
+                        LastName = "Admin",
+                        Email = "broker@crm.local",
+                        PasswordHash = HashPassword("broker123"),
+                        CreatedAt = DateTime.Now,
+                        IsActive = true,
+                        IsEmailVerified = true,
+                        Role = UserRole.Broker
+                    };
+                    UserSession.Instance.CurrentUser = brokerUser;
+
+                    // Best-effort: persist to DB if possible, but do not fail login if DB is down
+                    try
+                    {
+                        using var seedContext = DbContextHelper.CreateDbContext();
+                        var persisted = seedContext.Users.FirstOrDefault(u => u.Email == "broker@crm.local");
+                        if (persisted == null)
                         {
-                            FirstName = "Broker",
-                            LastName = "Admin",
-                            Email = "broker@crm.local",
-                            PasswordHash = HashPassword("broker123"),
-                            CreatedAt = DateTime.Now,
-                            IsActive = true,
-                            IsEmailVerified = true,
-                            Role = UserRole.Broker
-                        };
-                        seedContext.Users.Add(persisted);
-                        seedContext.SaveChanges();
+                            seedContext.Users.Add(brokerUser);
+                            seedContext.SaveChanges();
+                        }
+                        else
+                        {
+                            // Replace session with persisted entity for consistency
+                            brokerUser = persisted;
+                            UserSession.Instance.CurrentUser = brokerUser;
+                        }
                     }
-                    UserSession.Instance.CurrentUser = persisted;
-                    return persisted;
+                    catch { /* ignore persistence errors */ }
+
+                    return brokerUser;
                 }
 
                 using var dbContext = DbContextHelper.CreateDbContext();
@@ -75,6 +94,12 @@ namespace RealEstateCRMWinForms.Services
 
         public bool Register(string firstName, string lastName, string email, string password)
         {
+            // Backwards-compatible wrapper that uses the async implementation
+            return RegisterAsync(firstName, lastName, email, password).GetAwaiter().GetResult();
+        }
+
+        public async Task<bool> RegisterAsync(string firstName, string lastName, string email, string password)
+        {
             try
             {
                 using var dbContext = DbContextHelper.CreateDbContext();
@@ -85,9 +110,8 @@ namespace RealEstateCRMWinForms.Services
                 }
 
                 var createdByBroker = UserSession.Instance.CurrentUser?.Role == UserRole.Broker;
-                var verificationToken = createdByBroker ? null : GenerateVerificationToken();
-                // Determine role: first registered user becomes Broker, others are Agents
                 var isFirstUser = !dbContext.Users.Any();
+
                 var user = new User
                 {
                     FirstName = firstName,
@@ -96,8 +120,8 @@ namespace RealEstateCRMWinForms.Services
                     PasswordHash = HashPassword(password),
                     CreatedAt = DateTime.Now,
                     IsActive = true,
-                    IsEmailVerified = createdByBroker ? true : false,
-                    EmailVerificationToken = verificationToken,
+                    IsEmailVerified = createdByBroker,
+                    EmailVerificationToken = createdByBroker ? null : GenerateVerificationToken(),
                     EmailVerificationSentAt = createdByBroker ? null : DateTime.Now,
                     Role = isFirstUser ? UserRole.Broker : UserRole.Agent
                 };
@@ -107,12 +131,18 @@ namespace RealEstateCRMWinForms.Services
 
                 if (createdByBroker)
                 {
-                    SendWelcomeEmail(email, firstName, lastName);
+                    // Send a welcome button email and credentials immediately
+                    await SendWelcomeEmailAsync(email, firstName, lastName);
+                    await SendCredentialsEmailAsync(email, password);
                 }
-                else if (!string.IsNullOrEmpty(verificationToken))
+                else
                 {
-                    SendVerificationEmail(email, verificationToken);
+                    if (!string.IsNullOrEmpty(user.EmailVerificationToken))
+                    {
+                        await SendVerificationEmailAsync(email, user.EmailVerificationToken);
+                    }
                 }
+
                 return true;
             }
             catch (Exception)
@@ -139,31 +169,12 @@ namespace RealEstateCRMWinForms.Services
             return Guid.NewGuid().ToString().Replace("-", "").Substring(0, 6).ToUpper();
         }
 
-        private void SendVerificationEmail(string email, string token)
+        private async Task SendVerificationEmailAsync(string email, string token)
         {
             try
             {
-                // Skip email sending if configuration is not properly set
-                if (string.IsNullOrEmpty(_emailSettings.SenderEmail) || 
-                    string.IsNullOrEmpty(_emailSettings.SenderPassword) ||
-                    _emailSettings.SenderEmail == "your-email@gmail.com")
-                {
-                    System.Diagnostics.Debug.WriteLine($"Email configuration not set. Verification code for {email}: {token}");
-                    return;
-                }
-
-                var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
-                {
-                    Port = _emailSettings.SmtpPort,
-                    Credentials = new System.Net.NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
-                    EnableSsl = _emailSettings.EnableSsl,
-                };
-
-                var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
-                    Subject = "Email Verification - Real Estate CRM",
-                    Body = $@"
+                var subject = "Email Verification - Real Estate CRM";
+                var bodyHtml = $@"
                         <html>
                         <body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                             <div style='background-color: #f8f9fa; padding: 20px; border-radius: 10px;'>
@@ -178,13 +189,11 @@ namespace RealEstateCRMWinForms.Services
                                 <p style='color: #999; font-size: 12px;'>Best regards,<br>Real Estate CRM Team</p>
                             </div>
                         </body>
-                        </html>",
-                    IsBodyHtml = true
-                };
+                        </html>";
 
-                mailMessage.To.Add(email);
-                smtpClient.Send(mailMessage);
-                System.Diagnostics.Debug.WriteLine($"Verification email sent successfully to {email}");
+                var mail = new EmailNotificationService();
+                await mail.SendCustomEmailAsync(email, subject, bodyHtml);
+                System.Diagnostics.Debug.WriteLine($"Verification email sent via provider to {email}");
             }
             catch (Exception ex)
             {
@@ -197,25 +206,10 @@ namespace RealEstateCRMWinForms.Services
             }
         }
 
-        private void SendWelcomeEmail(string email, string firstName, string lastName)
+        private async Task SendWelcomeEmailAsync(string email, string firstName, string lastName)
         {
             try
             {
-                if (string.IsNullOrEmpty(_emailSettings.SenderEmail) ||
-                    string.IsNullOrEmpty(_emailSettings.SenderPassword) ||
-                    _emailSettings.SenderEmail == "your-email@gmail.com")
-                {
-                    System.Diagnostics.Debug.WriteLine($"Welcome email (no SMTP) to {email}.");
-                    return;
-                }
-
-                var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
-                {
-                    Port = _emailSettings.SmtpPort,
-                    Credentials = new System.Net.NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
-                    EnableSsl = _emailSettings.EnableSsl,
-                };
-
                 var displayName = ($"{firstName} {lastName}").Trim();
                 var confirmUrl = "https://example.com/welcome"; // Placeholder action button
                 var body = $@"
@@ -234,17 +228,9 @@ namespace RealEstateCRMWinForms.Services
                             </div>
                         </body>
                         </html>";
-
-                var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
-                    Subject = "Your Real Estate CRM Account",
-                    Body = body,
-                    IsBodyHtml = true
-                };
-                mailMessage.To.Add(email);
-                smtpClient.Send(mailMessage);
-                System.Diagnostics.Debug.WriteLine($"Welcome email sent successfully to {email}");
+                var mail = new EmailNotificationService();
+                await mail.SendCustomEmailAsync(email, "Your Real Estate CRM Account", body);
+                System.Diagnostics.Debug.WriteLine($"Welcome email sent via provider to {email}");
             }
             catch (Exception ex)
             {
@@ -272,6 +258,24 @@ namespace RealEstateCRMWinForms.Services
                     user.EmailVerificationToken = null;
                     user.EmailVerificationSentAt = null;
                     dbContext.SaveChanges();
+
+                    // If this user was created by a Broker, we may have stored the password to send now
+                    if (!string.IsNullOrEmpty(user.PendingPasswordEncrypted))
+                    {
+                        var plain = CredentialProtector.Unprotect(user.PendingPasswordEncrypted);
+                        if (!string.IsNullOrWhiteSpace(plain))
+                        {
+                            try
+                            {
+                                SendCredentialsEmailAsync(user.Email, plain);
+                            }
+                            catch { /* log if needed */ }
+                        }
+
+                        // Clear the pending credential regardless
+                        user.PendingPasswordEncrypted = null;
+                        dbContext.SaveChanges();
+                    }
                     return true;
                 }
                 return false;
@@ -279,6 +283,37 @@ namespace RealEstateCRMWinForms.Services
             catch (Exception)
             {
                 return false;
+            }
+        }
+
+        private async Task SendCredentialsEmailAsync(string email, string password)
+        {
+            try
+            {
+                var subject = "Your Real Estate CRM Credentials";
+                var body = $@"
+                    <html>
+                    <body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                        <div style='background-color: #f8f9fa; padding: 20px; border-radius: 10px;'>
+                            <h2 style='color: #2980b9; text-align: center;'>Welcome Aboard!</h2>
+                            <p>Your email has been verified successfully. Here are your login credentials:</p>
+                            <div style='background-color: #ffffff; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef;'>
+                                <p><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(email)}</p>
+                                <p><strong>Password:</strong> {System.Net.WebUtility.HtmlEncode(password)}</p>
+                            </div>
+                            <p style='margin-top: 16px;'>For security, consider changing your password after you first log in.</p>
+                            <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>
+                            <p style='color: #999; font-size: 12px;'>Best regards,<br>Real Estate CRM Team</p>
+                        </div>
+                    </body>
+                    </html>";
+                var mail = new EmailNotificationService();
+                await mail.SendCustomEmailAsync(email, subject, body);
+                System.Diagnostics.Debug.WriteLine($"Credentials email sent to {email}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to send credentials email: {ex.Message}");
             }
         }
 
@@ -297,7 +332,7 @@ namespace RealEstateCRMWinForms.Services
                     user.EmailVerificationSentAt = DateTime.Now;
                     
                     dbContext.SaveChanges();
-                    SendVerificationEmail(email, newToken);
+                    SendVerificationEmailAsync(email, newToken);
                     return true;
                 }
                 return false;
@@ -314,6 +349,83 @@ namespace RealEstateCRMWinForms.Services
             {
                 using var dbContext = DbContextHelper.CreateDbContext();
                 return dbContext.Users.Any(u => u.Email == email && !u.IsEmailVerified && u.IsActive);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public bool UpdateCredentials(int userId, string newEmail, string? newPassword)
+        {
+            try
+            {
+                using var dbContext = DbContextHelper.CreateDbContext();
+                var user = dbContext.Users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+                if (user == null) return false;
+
+                newEmail = (newEmail ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(newEmail)) return false;
+
+                if (!string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    var exists = dbContext.Users.Any(u => u.Email == newEmail && u.Id != userId);
+                    if (exists) return false;
+                    user.Email = newEmail;
+                }
+
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    if (newPassword.Length < 6) return false;
+                    user.PasswordHash = HashPassword(newPassword);
+                }
+
+                dbContext.SaveChanges();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Updates credentials and, when a password change is requested, requires the current password to match.
+        /// Email changes do not require the current password.
+        /// </summary>
+        public bool UpdateCredentialsRequiringCurrentPassword(int userId, string newEmail, string? newPassword, string? currentPassword)
+        {
+            try
+            {
+                using var dbContext = DbContextHelper.CreateDbContext();
+                var user = dbContext.Users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+                if (user == null) return false;
+
+                newEmail = (newEmail ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(newEmail)) return false;
+
+                // If changing password, verify current
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    if (string.IsNullOrWhiteSpace(currentPassword)) return false;
+                    if (!VerifyPassword(currentPassword, user.PasswordHash)) return false;
+                    if (newPassword.Length < 6) return false;
+                }
+
+                if (!string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    var exists = dbContext.Users.Any(u => u.Email == newEmail && u.Id != userId);
+                    if (exists) return false;
+                    user.Email = newEmail;
+                }
+
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    user.PasswordHash = HashPassword(newPassword);
+                }
+
+                dbContext.SaveChanges();
+                return true;
             }
             catch (Exception)
             {

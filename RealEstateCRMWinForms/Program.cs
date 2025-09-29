@@ -1,5 +1,7 @@
-﻿using System.Windows.Forms;
+using System.Windows.Forms;
 using RealEstateCRMWinForms.Views;
+using RealEstateCRMWinForms.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace RealEstateCRMWinForms
 {
@@ -16,6 +18,26 @@ namespace RealEstateCRMWinForms
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            // Ensure DB is created and up to date
+            try
+            {
+                using var ctx = DbContextHelper.CreateDbContext();
+                ctx.Database.Migrate();
+
+                // Self-heal missing columns that older databases may lack (EnsureCreated -> Migrate switch cases)
+                try
+                {
+                    ctx.Database.ExecuteSqlRaw(@"IF COL_LENGTH('Users','PendingPasswordEncrypted') IS NULL 
+ALTER TABLE [Users] ADD [PendingPasswordEncrypted] NVARCHAR(MAX) NULL;");
+                }
+                catch { /* ignore */ }
+            }
+            catch
+            {
+                // Ignore at startup; UI will still load and surface issues later
+            }
+
             Application.Run(new MainContainerForm());
         }
     }

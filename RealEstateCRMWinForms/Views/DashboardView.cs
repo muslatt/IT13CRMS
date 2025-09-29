@@ -16,6 +16,14 @@ namespace RealEstateCRMWinForms.Views
 
         // Filter control for the occupation card
         private ComboBox? cmbOccupation;
+        // Date range controls for average salary chart
+        private DateTimePicker? dtpAvgSalaryStart;
+        private DateTimePicker? dtpAvgSalaryEnd;
+        private Button? btnAvgSalaryApply;
+
+        // Currently selected range for avg salary chart (inclusive)
+        private DateTime _avgSalaryRangeStart = new DateTime(2024, 9, 1);
+        private DateTime _avgSalaryRangeEnd = new DateTime(2025, 9, 30);
 
         public DashboardView()
         {
@@ -248,12 +256,18 @@ namespace RealEstateCRMWinForms.Views
                     leadConversionChartCard.Resize += (s, e) => LoadLeadConversionChart();
                 }
 
-                // Average Client Salary Chart Card
-                CreateChartCard(avgSalaryChartCard, "Average Client Salary (Last 12 months)", "Monthly average - clients only");
+                // Average Client Salary Chart Card - INCREASED HEIGHT AND IMPROVED LAYOUT
+                CreateChartCard(avgSalaryChartCard, "Average Client Salary", "Monthly average - clients only");
                 if (avgSalaryChartCard != null)
                 {
+                    // Increase height significantly to accommodate date controls and prevent overlapping
+                    avgSalaryChartCard.Height = Math.Max(avgSalaryChartCard.Height, 400);
+
                     avgSalaryChartCard.Resize -= (s, e) => LoadAverageSalaryChart();
                     avgSalaryChartCard.Resize += (s, e) => LoadAverageSalaryChart();
+
+                    // Add date pickers and apply button to header for this card
+                    AddAvgSalaryDateControls(avgSalaryChartCard);
                 }
 
                 // Preferred Property Type by Occupation Card
@@ -271,10 +285,12 @@ namespace RealEstateCRMWinForms.Views
 
             card.Controls.Clear();
 
-            // Header uses Dock=Top, content fills remaining space to avoid clipping
+            // Increased header height to accommodate date controls for salary chart
+            int headerHeight = card == avgSalaryChartCard ? 100 : 64;
+
             var headerPanel = new Panel
             {
-                Height = 64,
+                Height = headerHeight,
                 Dock = DockStyle.Top,
                 BackColor = Color.Transparent
             };
@@ -446,6 +462,137 @@ namespace RealEstateCRMWinForms.Views
             occupationPreferenceCard.Resize += OccupationPreferenceCard_Resize;
 
             RenderOccupationPreferenceChart();
+        }
+
+        private void AddAvgSalaryDateControls(Panel card)
+        {
+            if (card == null) return;
+
+            try
+            {
+                var header = card.Controls.OfType<Panel>().FirstOrDefault(p => p.Dock == DockStyle.Top);
+                if (header == null) return;
+
+                // Create a dedicated panel for date controls to prevent overlapping
+                var dateControlsPanel = new Panel
+                {
+                    Height = 35,
+                    Dock = DockStyle.Bottom,
+                    BackColor = Color.Transparent,
+                    Padding = new Padding(20, 5, 20, 5)
+                };
+
+                // Create controls with proper sizing
+                dtpAvgSalaryStart = new DateTimePicker
+                {
+                    Format = DateTimePickerFormat.Custom,
+                    CustomFormat = "MMM yyyy",
+                    ShowUpDown = true,
+                    Width = 100,
+                    Height = 25
+                };
+
+                dtpAvgSalaryEnd = new DateTimePicker
+                {
+                    Format = DateTimePickerFormat.Custom,
+                    CustomFormat = "MMM yyyy",
+                    ShowUpDown = true,
+                    Width = 100,
+                    Height = 25
+                };
+
+                btnAvgSalaryApply = new Button
+                {
+                    Text = "Apply",
+                    Width = 70,
+                    Height = 25,
+                    BackColor = Color.FromArgb(59, 130, 246),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F)
+                };
+                btnAvgSalaryApply.FlatAppearance.BorderSize = 0;
+
+                // Default values
+                dtpAvgSalaryEnd.Value = DateTime.UtcNow.Date;
+                dtpAvgSalaryStart.Value = dtpAvgSalaryEnd.Value.AddMonths(-11);
+                _avgSalaryRangeStart = new DateTime(dtpAvgSalaryStart.Value.Year, dtpAvgSalaryStart.Value.Month, 1);
+                var end = dtpAvgSalaryEnd.Value;
+                _avgSalaryRangeEnd = new DateTime(end.Year, end.Month, DateTime.DaysInMonth(end.Year, end.Month));
+
+                btnAvgSalaryApply.Click -= BtnAvgSalaryApply_Click;
+                btnAvgSalaryApply.Click += BtnAvgSalaryApply_Click;
+
+                // Create labels and arrange controls horizontally
+                var startLabel = new Label
+                {
+                    Text = "Start:",
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9F),
+                    ForeColor = Color.FromArgb(75, 85, 99),
+                    Location = new Point(0, 8)
+                };
+
+                var endLabel = new Label
+                {
+                    Text = "End:",
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9F),
+                    ForeColor = Color.FromArgb(75, 85, 99),
+                    Location = new Point(140, 8)
+                };
+
+                // Position controls to prevent overlapping
+                dtpAvgSalaryStart.Location = new Point(35, 5);
+                dtpAvgSalaryEnd.Location = new Point(170, 5);
+                btnAvgSalaryApply.Location = new Point(280, 5);
+
+                // Add all controls to the date controls panel
+                dateControlsPanel.Controls.AddRange(new Control[]
+                {
+                    startLabel,
+                    dtpAvgSalaryStart,
+                    endLabel,
+                    dtpAvgSalaryEnd,
+                    btnAvgSalaryApply
+                });
+
+                // Add the date controls panel to the header
+                header.Controls.Add(dateControlsPanel);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error adding avg salary date controls: {ex.Message}");
+            }
+        }
+
+        private void BtnAvgSalaryApply_Click(object? sender, EventArgs e)
+        {
+            if (dtpAvgSalaryStart == null || dtpAvgSalaryEnd == null) return;
+
+            // Normalize to month start and end
+            var start = new DateTime(dtpAvgSalaryStart.Value.Year, dtpAvgSalaryStart.Value.Month, 1);
+            var endTmp = dtpAvgSalaryEnd.Value;
+            var end = new DateTime(endTmp.Year, endTmp.Month, DateTime.DaysInMonth(endTmp.Year, endTmp.Month));
+
+            // Validate range (max 12 months)
+            var months = ((end.Year - start.Year) * 12) + end.Month - start.Month + 1;
+            if (months <= 0)
+            {
+                MessageBox.Show("End month must be the same or after the start month.", "Invalid range", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (months > 12)
+            {
+                MessageBox.Show("Please select a range of at most 12 months.", "Range too large", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _avgSalaryRangeStart = start;
+            _avgSalaryRangeEnd = end;
+
+            // Reload chart
+            LoadAverageSalaryChart();
         }
 
         private void OccupationPreferenceCard_Resize(object? sender, EventArgs e)
@@ -885,15 +1032,14 @@ namespace RealEstateCRMWinForms.Views
             if (chartArea == null) return;
 
             chartArea.Controls.Clear();
-
-            // Fixed range: September 2024 through September 2025 (inclusive)
-            var startDate = new DateTime(2024, 9, 1);
-            var endDateInclusive = new DateTime(2025, 9, 30);
+            // Use currently selected range (inclusive)
+            var startDate = _avgSalaryRangeStart;
+            var endDateInclusive = _avgSalaryRangeEnd;
             var monthsCount = ((endDateInclusive.Year - startDate.Year) * 12 + endDateInclusive.Month - startDate.Month) + 1;
+            if (monthsCount <= 0) return;
 
-            // Get monthly average salary data for the fixed range
+            // Get monthly average salary data for the selected range
             var monthlySalaryData = new List<(DateTime Month, decimal AverageSalary)>();
-
             for (int i = 0; i < monthsCount; i++)
             {
                 var monthDate = startDate.AddMonths(i);
@@ -927,9 +1073,9 @@ namespace RealEstateCRMWinForms.Views
             int ticks = 5; // number of grid segments
             var axisMax = GetNiceAxisMax(targetMax, ticks);
 
-            // Create line chart representation
+            // Create line chart representation with improved spacing
             var chartWidth = chartArea.Width - 80;
-            var chartHeight = chartArea.Height - 60;
+            var chartHeight = chartArea.Height - 80; // Increased bottom margin to prevent label cutoff
             var pointWidth = chartWidth / Math.Max(monthlySalaryData.Count - 1, 1);
 
             // Draw grid lines and Y-axis labels based on dynamic axisMax
@@ -995,7 +1141,7 @@ namespace RealEstateCRMWinForms.Views
                     }
                 }
 
-                // X-axis labels (month names)
+                // X-axis labels (month names) - improved positioning
                 if (i % 2 == 0) // Show every other month to avoid crowding
                 {
                     var monthLabel = new Label
@@ -1004,7 +1150,7 @@ namespace RealEstateCRMWinForms.Views
                         Font = new Font("Segoe UI", 7F),
                         ForeColor = Color.FromArgb(107, 114, 128),
                         AutoSize = true,
-                        Location = new Point(x - 20, chartHeight + 35)
+                        Location = new Point(x - 20, chartHeight + 45) // Improved positioning
                     };
                     chartArea.Controls.Add(monthLabel);
                 }
@@ -1013,7 +1159,7 @@ namespace RealEstateCRMWinForms.Views
                 previousPoint = point;
             }
 
-            // Add legend
+            // Add legend with improved positioning
             var legendPanel = new Panel
             {
                 BackColor = Color.White,

@@ -8,6 +8,7 @@ namespace RealEstateCRMWinForms.Views
     {
         private readonly AuthenticationService _authService;
         public event EventHandler? LoginSuccess;
+        public event EventHandler<string>? EmailVerificationRequested;
         public event EventHandler? RegisterRequested;
 
         public LoginView(AuthenticationService authService)
@@ -15,14 +16,32 @@ namespace RealEstateCRMWinForms.Views
             InitializeComponent();
             _authService = authService;
 
+            // Enable optimized double buffering
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint |
+                          ControlStyles.UserPaint |
+                          ControlStyles.OptimizedDoubleBuffer, true);
+            this.UpdateStyles();
+
             // Hide self-registration on login screen
             try
             {
-                // These controls are defined in the Designer partial
                 lblRegisterQuestion.Visible = false;
                 linkRegister.Visible = false;
             }
             catch { }
+        }
+
+        // Prevent flicker by skipping default background erase
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            if (this.BackgroundImage != null)
+            {
+                e.Graphics.DrawImage(this.BackgroundImage, this.ClientRectangle);
+            }
+            else
+            {
+                base.OnPaintBackground(e);
+            }
         }
 
         private void btnLogin_Click(object? sender, EventArgs e)
@@ -45,13 +64,12 @@ namespace RealEstateCRMWinForms.Views
             }
             else
             {
-                // Check if user exists but email is not verified
                 var unverifiedUser = _authService.CheckUnverifiedUser(txtEmail.Text.Trim());
                 if (unverifiedUser)
                 {
-                    var result = MessageBox.Show("Your email address has not been verified yet. Would you like to resend the verification code?", 
+                    var result = MessageBox.Show("Your email address has not been verified yet. Would you like to resend the verification code?",
                         "Email Not Verified", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                    
+
                     if (result == DialogResult.Yes)
                     {
                         if (_authService.ResendVerificationCode(txtEmail.Text.Trim()))
@@ -64,6 +82,8 @@ namespace RealEstateCRMWinForms.Views
                             MessageBox.Show("Failed to send verification code. Please try again.", "Send Failed",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
+
+                        EmailVerificationRequested?.Invoke(this, txtEmail.Text.Trim());
                     }
                 }
                 else
@@ -84,7 +104,6 @@ namespace RealEstateCRMWinForms.Views
 
         private void pnlMain_Paint(object sender, PaintEventArgs e)
         {
-
         }
     }
 }

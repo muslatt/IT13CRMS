@@ -25,6 +25,9 @@ namespace RealEstateCRMWinForms.Views
         private ToolTip _toolTip;
         private PendingAssignmentsView _pendingView;
         private Panel _pendingHost;
+        private PendingAssignmentsView _pendingViewBroker;
+        private Panel _pendingHostBroker;
+        private Button btnTogglePending;
         private List<Board> _boards;
         private const int BOARD_WIDTH = 300;
         private const int BOARD_MARGIN = 10;
@@ -131,6 +134,22 @@ namespace RealEstateCRMWinForms.Views
 
             headerPanel.Controls.AddRange(new Control[] { btnAddBoard, btnAddDeal });
 
+            // Toggle Pending Assignments (Broker)
+            btnTogglePending = new Button
+            {
+                Text = "Pending Assignments",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(0, 123, 255),
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(180, 35),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                Location = new Point(20, 12)
+            };
+            btnTogglePending.FlatAppearance.BorderSize = 1;
+            btnTogglePending.FlatAppearance.BorderColor = Color.FromArgb(0, 123, 255);
+            btnTogglePending.Click += (s, e) => ToggleBrokerPendingView();
+
             // Scrollable container for horizontal scrolling
             _scrollableContainer = new Panel
             {
@@ -170,27 +189,11 @@ namespace RealEstateCRMWinForms.Views
                 // Hide manual add actions for agents
                 btnAddDeal.Visible = false;
                 btnAddBoard.Visible = false;
+                // hide broker-only toggle
+                btnTogglePending.Visible = false;
 
-                _pendingHost = new Panel
-                {
-                    Dock = DockStyle.Top,
-                    Height = 380,
-                    BackColor = Color.White
-                };
-                _pendingView = new PendingAssignmentsView
-                {
-                    Dock = DockStyle.Fill
-                };
-                _pendingView.AssignmentAccepted += (s, p) =>
-                {
-                    // After acceptance, refresh the deals board
-                    LoadDeals();
-                };
-                _pendingView.AssignmentDeclined += (s, p) => { /* no-op */ };
-
-                _pendingHost.Controls.Add(_pendingView);
+                // Agents: show only the pipeline (no pending section here)
                 mainContainer.Controls.Add(_scrollableContainer);
-                mainContainer.Controls.Add(_pendingHost);
                 mainContainer.Controls.Add(headerPanel);
             }
             else
@@ -198,6 +201,20 @@ namespace RealEstateCRMWinForms.Views
                 // Default ordering without pending view
                 mainContainer.Controls.Add(_scrollableContainer);
                 mainContainer.Controls.Add(headerPanel);
+                // Add broker toggle into header
+                headerPanel.Controls.Add(btnTogglePending);
+                // Prepare broker pending host (hidden by default)
+                _pendingHostBroker = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.White,
+                    Visible = false
+                };
+                _pendingViewBroker = new PendingAssignmentsView(true) { Dock = DockStyle.Fill };
+                _pendingViewBroker.AssignmentAccepted += (s, d) => { LoadDeals(); };
+                _pendingViewBroker.AssignmentDeclined += (s, d) => { LoadDeals(); };
+                _pendingHostBroker.Controls.Add(_pendingViewBroker);
+                mainContainer.Controls.Add(_pendingHostBroker);
             }
             this.Controls.Add(mainContainer);
 
@@ -217,6 +234,22 @@ namespace RealEstateCRMWinForms.Views
             if (_isInitialized)
             {
                 UpdateBoardHeights();
+            }
+        }
+
+        private void ToggleBrokerPendingView()
+        {
+            if (_pendingHostBroker == null) return;
+            bool showingPending = _pendingHostBroker.Visible;
+            _pendingHostBroker.Visible = !showingPending;
+            _scrollableContainer.Visible = showingPending; // toggle
+            btnAddDeal.Visible = showingPending; // hide add while viewing pending
+            btnAddBoard.Visible = showingPending;
+            btnTogglePending.Text = showingPending ? "Pending Assignments" : "Back to Pipeline";
+            if (!showingPending)
+            {
+                // refresh pending list
+                _pendingViewBroker?.GetType().GetMethod("LoadAssignments", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(_pendingViewBroker, null);
             }
         }
 
@@ -669,9 +702,12 @@ namespace RealEstateCRMWinForms.Views
                     deals = new System.ComponentModel.BindingList<Deal>(
                         deals.Where(d => string.Equals(d.CreatedBy ?? string.Empty, agentName, StringComparison.OrdinalIgnoreCase)).ToList());
                 }
-                Console.WriteLine($"Loading {deals.Count} deals");
+                // Exclude pending-assignment deals from the pipeline boards
+                var filteredDeals = deals.Where(d => string.IsNullOrWhiteSpace(d.Notes) || !d.Notes.Contains("[ASSIGN:"))
+                                         .ToList();
+                Console.WriteLine($"Loading {filteredDeals.Count} deals");
 
-                foreach (var deal in deals)
+                foreach (var deal in filteredDeals)
                 {
                     var card = new DealCard();
                     card.SetDeal(deal);

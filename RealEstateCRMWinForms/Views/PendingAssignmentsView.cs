@@ -11,17 +11,19 @@ namespace RealEstateCRMWinForms.Views
 {
     public partial class PendingAssignmentsView : UserControl
     {
-        private readonly PropertyViewModel _propertyViewModel;
         private readonly DealViewModel _dealViewModel;
         private FlowLayoutPanel _flow;
         private Label _lblHeader;
-        public event EventHandler<Property>? AssignmentAccepted;
-        public event EventHandler<Property>? AssignmentDeclined;
+        public event EventHandler<Deal>? AssignmentAccepted;
+        public event EventHandler<Deal>? AssignmentDeclined;
 
-        public PendingAssignmentsView()
+        private readonly bool _brokerMode;
+        private const string AssignMarkerPrefix = "[ASSIGN:";
+
+        public PendingAssignmentsView(bool brokerMode = false)
         {
-            _propertyViewModel = new PropertyViewModel();
             _dealViewModel = new DealViewModel();
+            _brokerMode = brokerMode;
             BuildUi();
             LoadAssignments();
         }
@@ -33,7 +35,7 @@ namespace RealEstateCRMWinForms.Views
 
             _lblHeader = new Label
             {
-                Text = "Your Pending Assignments",
+                Text = _brokerMode ? "Pending Assignments" : "Your Pending Assignments",
                 Font = new Font("Segoe UI", 16f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(33, 37, 41),
                 Dock = DockStyle.Top,
@@ -59,30 +61,36 @@ namespace RealEstateCRMWinForms.Views
         {
             var user = UserSession.Instance.CurrentUser;
             var agentName = (user != null) ? ($"{user.FirstName} {user.LastName}".Trim()) : string.Empty;
-            var agentEmail = user?.Email ?? string.Empty;
 
             _flow.SuspendLayout();
             try
             {
                 _flow.Controls.Clear();
-                // Refresh in-memory collections
-                _propertyViewModel.LoadProperties();
+                // Refresh deals
                 _dealViewModel.LoadDeals();
 
-                // Use existing Property.Agent string to identify assignments
-                var assignments = _propertyViewModel.Properties
-                    .Where(p => p.IsActive)
-                    .Where(p =>
-                        (!string.IsNullOrWhiteSpace(p.Agent) &&
-                         (p.Agent.Equals(agentName, System.StringComparison.OrdinalIgnoreCase) ||
-                          p.Agent.Contains(user?.FirstName ?? string.Empty, System.StringComparison.OrdinalIgnoreCase) ||
-                          p.Agent.Contains(user?.LastName ?? string.Empty, System.StringComparison.OrdinalIgnoreCase) ||
-                          p.Agent.Contains(agentEmail, System.StringComparison.OrdinalIgnoreCase))))
-                    // Exclude properties that already have an active deal (means accepted)
-                    .Where(p => !_dealViewModel.Deals.Any(d => d.IsActive && d.PropertyId == p.Id))
-                    .OrderByDescending(p => p.CreatedAt)
-                    .ToList();
+                IEnumerable<Deal> pending;
+                if (_brokerMode)
+                {
+                    // For brokers: show all active deals that have an assignment marker remaining
+                    pending = _dealViewModel.Deals
+                        .Where(d => d.IsActive)
+                        .Where(d => !string.IsNullOrWhiteSpace(d.Notes) && d.Notes.Contains(AssignMarkerPrefix))
+                        .OrderByDescending(d => d.CreatedAt)
+                        .ToList();
+                }
+                else
+                {
+                    // For agents: only assignments tagged with their name
+                    pending = _dealViewModel.Deals
+                        .Where(d => d.IsActive)
+                        .Where(d => !string.IsNullOrWhiteSpace(d.Notes) && d.Notes.Contains(AssignMarkerPrefix))
+                        .Where(d => d.Notes!.IndexOf($"{AssignMarkerPrefix}{agentName}]", StringComparison.OrdinalIgnoreCase) >= 0)
+                        .OrderByDescending(d => d.CreatedAt)
+                        .ToList();
+                }
 
+                var assignments = pending.ToList();
                 if (assignments.Count == 0)
                 {
                     var empty = new Label
@@ -97,9 +105,9 @@ namespace RealEstateCRMWinForms.Views
                     return;
                 }
 
-                foreach (var p in assignments)
+                foreach (var d in assignments)
                 {
-                    var cardContainer = BuildAssignmentItem(p);
+                    var cardContainer = BuildAssignmentItem(d);
                     _flow.Controls.Add(cardContainer);
                 }
             }
@@ -109,7 +117,7 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private Control BuildAssignmentItem(Property property)
+        private Control BuildAssignmentItem(Deal deal)
         {
             var wrapper = new Panel
             {
@@ -120,8 +128,19 @@ namespace RealEstateCRMWinForms.Views
                 Padding = new Padding(0)
             };
 
-            var card = new PropertyCard { Dock = DockStyle.Top, Height = 260 };
-            card.SetProperty(property);
+            // Build a simple summary panel for deal (property + contact + assigned agent)
+            var summary = new Panel { Dock = DockStyle.Top, Height = 260, BackColor = Color.White };
+            var lblTitle = new Label { Text = deal.Property?.Title ?? deal.Title, Font = new Font("Segoe UI", 11f, FontStyle.Bold), AutoSize = false, Height = 24, Dock = DockStyle.Top };
+            var lblAddr = new Label { Text = deal.Property?.Address ?? "", Font = new Font("Segoe UI", 9.5f), AutoSize = false, Height = 22, Dock = DockStyle.Top, ForeColor = Color.DimGray };
+            var lblClient = new Label { Text = deal.Contact != null ? $"Client: {deal.Contact.FullName}" : "Client: -", Font = new Font("Segoe UI", 10f), AutoSize = false, Height = 22, Dock = DockStyle.Top };
+            var assigned = ExtractAssignedAgent(deal.Notes);
+            var lblAgent = new Label { Text = !string.IsNullOrWhiteSpace(assigned) ? $"Assigned: {assigned}" : "Assigned:", Font = new Font("Segoe UI", 10f), AutoSize = false, Height = 22, Dock = DockStyle.Top };
+            var lblPrice = new Label { Text = deal.Property?.Price != null ? $"Price: {deal.Property.Price:C0}" : "", Font = new Font("Segoe UI", 10f, FontStyle.Bold), AutoSize = false, Height = 24, Dock = DockStyle.Top, ForeColor = Color.FromArgb(0,123,255) };
+            summary.Controls.Add(lblPrice);
+            summary.Controls.Add(lblAgent);
+            summary.Controls.Add(lblClient);
+            summary.Controls.Add(lblAddr);
+            summary.Controls.Add(lblTitle);
 
             var actions = new Panel
             {
@@ -131,63 +150,82 @@ namespace RealEstateCRMWinForms.Views
                 Padding = new Padding(8)
             };
 
-            var btnAccept = new Button
+            if (_brokerMode)
             {
-                Text = "Accept",
-                BackColor = Color.FromArgb(34, 197, 94),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Height = 36,
-                Width = 100
-            };
-            btnAccept.FlatAppearance.BorderSize = 0;
-            btnAccept.Click += async (s, e) => await AcceptAssignmentAsync(property);
-
-            var btnDecline = new Button
+                // Brokers just view; no accept/decline buttons
+                actions.Visible = false;
+                actions.Height = 0;
+            }
+            else
             {
-                Text = "Decline",
-                BackColor = Color.FromArgb(239, 68, 68),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Height = 36,
-                Width = 100,
-                Left = 110
-            };
-            btnDecline.FlatAppearance.BorderSize = 0;
-            btnDecline.Click += async (s, e) => await DeclineAssignmentAsync(property);
+                var btnAccept = new Button
+                {
+                    Text = "Accept",
+                    BackColor = Color.FromArgb(34, 197, 94),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Height = 36,
+                    Width = 100
+                };
+                btnAccept.FlatAppearance.BorderSize = 0;
+                btnAccept.Click += async (s, e) => await AcceptAssignmentAsync(deal);
 
-            actions.Controls.Add(btnDecline);
-            actions.Controls.Add(btnAccept);
+                var btnDecline = new Button
+                {
+                    Text = "Decline",
+                    BackColor = Color.FromArgb(239, 68, 68),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Height = 36,
+                    Width = 100,
+                    Left = 110
+                };
+                btnDecline.FlatAppearance.BorderSize = 0;
+                btnDecline.Click += async (s, e) => await DeclineAssignmentAsync(deal);
+
+                actions.Controls.Add(btnDecline);
+                actions.Controls.Add(btnAccept);
+            }
 
             wrapper.Controls.Add(actions);
-            wrapper.Controls.Add(card);
+            wrapper.Controls.Add(summary);
             return wrapper;
         }
 
-        private async Task AcceptAssignmentAsync(Property property)
+        private string ExtractAssignedAgent(string? notes)
+        {
+            if (string.IsNullOrWhiteSpace(notes)) return string.Empty;
+            var idx = notes.IndexOf(AssignMarkerPrefix, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0) return string.Empty;
+            var end = notes.IndexOf(']', idx);
+            if (end < 0) return string.Empty;
+            var inside = notes.Substring(idx + AssignMarkerPrefix.Length, end - (idx + AssignMarkerPrefix.Length));
+            return inside.Trim();
+        }
+
+        private async Task AcceptAssignmentAsync(Deal deal)
         {
             var user = UserSession.Instance.CurrentUser;
             var agentName = ($"{user?.FirstName} {user?.LastName}".Trim());
             try
             {
-                var deal = new Deal
+                // Remove assignment marker and set CreatedBy to agent
+                if (!string.IsNullOrWhiteSpace(deal.Notes))
                 {
-                    Title = string.IsNullOrWhiteSpace(property.Title) ? $"Deal for Property #{property.Id}" : property.Title,
-                    Description = $"Auto-created from assignment for {agentName}",
-                    PropertyId = property.Id,
-                    ContactId = null,
-                    Value = property.Price,
-                    Status = BoardViewModel.NewBoardName,
-                    CreatedBy = agentName,
-                    IsActive = true
-                };
+                    var assigned = ExtractAssignedAgent(deal.Notes);
+                    if (!string.IsNullOrWhiteSpace(assigned))
+                    {
+                        deal.Notes = deal.Notes.Replace($"{AssignMarkerPrefix}{assigned}]", string.Empty);
+                    }
+                }
+                deal.CreatedBy = agentName;
 
-                var ok = await _dealViewModel.AddDealAsync(deal);
+                var ok = await _dealViewModel.UpdateDealAsync(deal);
                 if (ok)
                 {
                     LoadAssignments();
-                    AssignmentAccepted?.Invoke(this, property);
-                    MessageBox.Show("Assignment accepted. Deal created in New pipeline.", "Accepted",
+                    AssignmentAccepted?.Invoke(this, deal);
+                    MessageBox.Show("Assignment accepted and moved to your pipeline.", "Accepted",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
@@ -203,7 +241,7 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private async Task DeclineAssignmentAsync(Property property)
+        private async Task DeclineAssignmentAsync(Deal deal)
         {
             try
             {
@@ -215,11 +253,12 @@ namespace RealEstateCRMWinForms.Views
                     MessageBoxDefaultButton.Button2);
                 if (confirm != DialogResult.Yes) return;
 
-                property.Agent = string.Empty;
-                if (_propertyViewModel.UpdateProperty(property))
+                // Soft delete the pending deal
+                if (_dealViewModel.DeleteDeal(deal))
                 {
                     LoadAssignments();
-                    AssignmentDeclined?.Invoke(this, property);
+                    AssignmentDeclined?.Invoke(this, deal);
+                    MessageBox.Show("Assignment declined.", "Declined", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {

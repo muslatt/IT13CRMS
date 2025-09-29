@@ -11,7 +11,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Threading.Tasks;
-using Timer = System.Windows.Forms.Timer; 
+using Timer = System.Windows.Forms.Timer;
 
 namespace RealEstateCRMWinForms.Views
 {
@@ -19,13 +19,24 @@ namespace RealEstateCRMWinForms.Views
     {
         private readonly LeadViewModel _viewModel;
         private BindingSource _bindingSource;
-        private ContextMenuStrip _contextMenu;
+        private ContextMenuStrip _contextMenu = new();
 
         private const int PageSize = 10;
         private int _currentPage = 1;
         private int _totalPages = 1;
         private List<Lead> _currentLeads = new();
         private bool _isDataInitialized;
+
+        // NEW: hover tracking for smooth highlight
+        private int _hoverRow = -1;
+
+        // NEW: enable hidden double-buffering on DataGridView
+        private static void EnableDoubleBuffer(DataGridView dgv)
+        {
+            var prop = typeof(DataGridView).GetProperty("DoubleBuffered",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            prop?.SetValue(dgv, true, null);
+        }
 
         public LeadsView()
         {
@@ -94,13 +105,24 @@ namespace RealEstateCRMWinForms.Views
             dataGridViewLeads.CellContentClick += DataGridViewLeads_CellContentClick;
             dataGridViewLeads.CellFormatting += DataGridViewLeads_CellFormatting;
             dataGridViewLeads.MouseClick += DataGridViewLeads_MouseClick;
-            dataGridViewLeads.CellMouseEnter += DataGridViewLeads_CellMouseEnter;
-            dataGridViewLeads.CellMouseLeave += DataGridViewLeads_CellMouseLeave;
+
+            // REMOVED: per-cell enter/leave handlers that forced repaint on every mouse move
+            // dataGridViewLeads.CellMouseEnter += DataGridViewLeads_CellMouseEnter;
+            // dataGridViewLeads.CellMouseLeave += DataGridViewLeads_CellMouseLeave;
+
             dataGridViewLeads.CellValueChanged += DataGridViewLeads_CellValueChanged;
             dataGridViewLeads.CurrentCellDirtyStateChanged += DataGridViewLeads_CurrentCellDirtyStateChanged;
             dataGridViewLeads.CellBeginEdit += DataGridViewLeads_CellBeginEdit;
             dataGridViewLeads.EditingControlShowing += DataGridViewLeads_EditingControlShowing;
             dataGridViewLeads.DataError += DataGridViewLeads_DataError;
+            dataGridViewLeads.CellDoubleClick += DataGridViewLeads_CellDoubleClick;
+
+            // NEW: lightweight hover + custom painting
+            dataGridViewLeads.CellMouseMove += DataGridViewLeads_CellMouseMove;
+            dataGridViewLeads.RowPrePaint += DataGridViewLeads_RowPrePaint;
+
+            // NEW: double buffer to reduce flicker
+            EnableDoubleBuffer(dataGridViewLeads);
         }
 
         private void CreateContextMenu()
@@ -147,7 +169,6 @@ namespace RealEstateCRMWinForms.Views
                 InitializeBasicColumns();
             }
         }
-
 
         private void ShowDatabaseConnectionInfo()
         {
@@ -235,12 +256,12 @@ namespace RealEstateCRMWinForms.Views
                 MaxDropDownItems = 5,
                 FlatStyle = FlatStyle.Flat
             };
-            
+
             // Add dropdown items - only "Contact" for conversion functionality
             // Include known types so existing values display correctly
             typeColumn.Items.AddRange(new string[] { "Lead", "Contact", "Buyer", "Owner", "Renter" });
             typeColumn.DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing; // Show dropdown arrow only on edit
-            
+
             typeColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             dataGridViewLeads.Columns.Add(typeColumn);
 
@@ -267,14 +288,13 @@ namespace RealEstateCRMWinForms.Views
             agentColumn.FillWeight = 140f;
             dataGridViewLeads.Columns.Add(agentColumn);
 
-            // Additional columns for detailed view (can be toggled)
             var emailColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Email",
                 HeaderText = "Email",
                 Name = "Email",
                 Width = 200,
-                ReadOnly = true, // Email column should not be editable
+                ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             };
             emailColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
@@ -287,39 +307,36 @@ namespace RealEstateCRMWinForms.Views
                 HeaderText = "Phone",
                 Name = "Phone",
                 Width = 140,
-                ReadOnly = true, // Phone column should not be editable
+                ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             };
             phoneColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             dataGridViewLeads.Columns.Add(phoneColumn);
 
-            // New: Occupation column
             var occupationColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Occupation",
                 HeaderText = "Occupation",
                 Name = "Occupation",
                 Width = 160,
-                ReadOnly = true, // Occupation column should not be editable
+                ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.False }
             };
             occupationColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             occupationColumn.FillWeight = 140f;
             dataGridViewLeads.Columns.Add(occupationColumn);
 
-            // New: Salary column
             var salaryColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Salary",
                 HeaderText = "Salary",
                 Name = "Salary",
                 Width = 120,
-                ReadOnly = true, // Salary column should not be editable
+                ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     WrapMode = DataGridViewTriState.False,
                     Alignment = DataGridViewContentAlignment.MiddleRight,
-                    // We'll format the salary in CellFormatting handler for currency display
                 }
             };
             salaryColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
@@ -350,6 +367,7 @@ namespace RealEstateCRMWinForms.Views
                 }
             }
         }
+
         private void DataGridViewLeads_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
         {
             // Commit changes immediately when dropdown selection changes
@@ -388,8 +406,7 @@ namespace RealEstateCRMWinForms.Views
                                 var originalColor = dataGridViewLeads.Rows[e.RowIndex].DefaultCellStyle.BackColor;
                                 dataGridViewLeads.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.LightGreen;
 
-                            
-                                var timer = new Timer(); // NOW THIS WILL WORK CORRECTLY
+                                var timer = new Timer();
                                 timer.Interval = 1500;
                                 timer.Tick += (s, args) =>
                                 {
@@ -439,21 +456,16 @@ namespace RealEstateCRMWinForms.Views
                 {
                     // Show processing indicator
                     this.Cursor = Cursors.WaitCursor;
-                    
+
                     try
                     {
-                        // Use the existing MoveLeadToContactAsync method from LeadViewModel
-                        // This method should:
-                        // 1. Create a new Contact with the lead's data
-                        // 2. Set the lead's IsActive to false (soft delete)
-                        // 3. Remove the lead from the local collection
                         bool conversionSuccess = await _viewModel.MoveLeadToContactAsync(lead);
-                        
+
                         if (conversionSuccess)
                         {
                             // Refresh the leads view to remove the converted lead
                             RefreshLeadsView();
-                            
+
                             // Show success message
                             MessageBox.Show(
                                 $"'{lead.FullName}' has been successfully converted to a Contact!\n\n" +
@@ -465,13 +477,12 @@ namespace RealEstateCRMWinForms.Views
                         else
                         {
                             // Conversion failed, revert the dropdown selection
-                            // Check if row still exists before accessing it
                             if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
                             {
                                 dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
                             }
                             lead.Type = originalType;
-                            
+
                             MessageBox.Show(
                                 "Failed to convert lead to contact. The database operation was not successful.\n\n" +
                                 "Please check your database connection and try again.",
@@ -482,14 +493,12 @@ namespace RealEstateCRMWinForms.Views
                     }
                     catch (Exception conversionEx)
                     {
-                        // Handle any exceptions during conversion
-                        // Check if row still exists before accessing it
                         if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
                         {
                             dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
                         }
                         lead.Type = originalType;
-                        
+
                         MessageBox.Show(
                             $"An error occurred during conversion:\n{conversionEx.Message}\n\n" +
                             "The lead type has been reverted to its original value.",
@@ -505,7 +514,6 @@ namespace RealEstateCRMWinForms.Views
                 else
                 {
                     // User cancelled, revert the dropdown selection
-                    // Check if row still exists before accessing it
                     if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
                     {
                         dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
@@ -520,9 +528,8 @@ namespace RealEstateCRMWinForms.Views
                     "Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                
+
                 // Revert the dropdown selection on error
-                // Check if row still exists before accessing it
                 if (rowIndex < dataGridViewLeads.Rows.Count && dataGridViewLeads.Rows[rowIndex].DataBoundItem == lead)
                 {
                     dataGridViewLeads.Rows[rowIndex].Cells["Type"].Value = originalType;
@@ -552,7 +559,7 @@ namespace RealEstateCRMWinForms.Views
                 }
                 else
                 {
-                    // If it's not parseable leave as-is
+                    // leave as-is
                 }
             }
         }
@@ -587,6 +594,7 @@ namespace RealEstateCRMWinForms.Views
 
             ApplyFilterAndSort(true);
         }
+
         private void ApplyFilterAndSort(bool resetPage)
         {
             var query = searchBox?.Text?.Trim() ?? string.Empty;
@@ -644,7 +652,7 @@ namespace RealEstateCRMWinForms.Views
             var wasVisible = dataGridViewLeads.Visible;
             dataGridViewLeads.Visible = false;
             dataGridViewLeads.SuspendLayout();
-            dataGridViewLeads.SuspendDrawing();
+            dataGridViewLeads.SuspendDrawing(); // assuming you have these extensions
             try
             {
                 if (_currentLeads.Count == 0)
@@ -670,19 +678,13 @@ namespace RealEstateCRMWinForms.Views
                     // Reset scroll to top if rows exist
                     try { if (dataGridViewLeads.Rows.Count > 0) dataGridViewLeads.FirstDisplayedScrollingRowIndex = 0; } catch { }
                 }
-
-                dataGridViewLeads.PerformLayout();
-                dataGridViewLeads.Invalidate(true);
-                dataGridViewLeads.Update();
             }
             finally
             {
                 dataGridViewLeads.ResumeLayout(true);
-                dataGridViewLeads.ResumeDrawing();
+                dataGridViewLeads.ResumeDrawing(); // assuming you have these extensions
                 dataGridViewLeads.Visible = wasVisible;
-                this.Invalidate(true);
-                this.Update();
-                try { Application.DoEvents(); } catch { }
+                dataGridViewLeads.Refresh(); // minimal, avoids excess invalidation
             }
 
             UpdatePaginationControls();
@@ -736,7 +738,6 @@ namespace RealEstateCRMWinForms.Views
                 if (_viewModel.AddLead(addLeadForm.CreatedLead))
                 {
                     RefreshLeadsView();
-                    // Show confirmation message
                     MessageBox.Show($"Lead '{addLeadForm.CreatedLead.FullName}' has been successfully added!",
                         "Lead Added",
                         MessageBoxButtons.OK,
@@ -807,7 +808,6 @@ namespace RealEstateCRMWinForms.Views
                     if (_viewModel.UpdateLead(lead))
                     {
                         RefreshLeadsView();
-                        // Show confirmation message
                         MessageBox.Show($"Lead '{lead.FullName}' has been successfully updated!",
                             "Lead Updated",
                             MessageBoxButtons.OK,
@@ -829,7 +829,6 @@ namespace RealEstateCRMWinForms.Views
                     if (_viewModel.DeleteLead(lead))
                     {
                         RefreshLeadsView();
-                        // Show confirmation message
                         MessageBox.Show($"Lead '{lead.FullName}' has been successfully deleted!",
                             "Lead Deleted",
                             MessageBoxButtons.OK,
@@ -839,6 +838,37 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
+        // NEW: lightweight hover tracking
+        private void DataGridViewLeads_CellMouseMove(object? sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.RowIndex == _hoverRow) return;
+
+            int old = _hoverRow;
+            _hoverRow = e.RowIndex;
+
+            if (old >= 0 && old < dataGridViewLeads.Rows.Count) dataGridViewLeads.InvalidateRow(old);
+            if (_hoverRow >= 0 && _hoverRow < dataGridViewLeads.Rows.Count) dataGridViewLeads.InvalidateRow(_hoverRow);
+        }
+
+        // NEW: custom row background painting to avoid per-cell style churn
+        private void DataGridViewLeads_RowPrePaint(object? sender, DataGridViewRowPrePaintEventArgs e)
+        {
+            var row = dataGridViewLeads.Rows[e.RowIndex];
+            bool isHover = e.RowIndex == _hoverRow && !row.Selected;
+
+            var hover = UIStyles.RowHoverColor;
+            var alt = dataGridViewLeads.AlternatingRowsDefaultCellStyle.BackColor;
+            var norm = Color.White;
+            var back = isHover ? hover : (e.RowIndex % 2 == 1 ? alt : norm);
+
+            using (var b = new SolidBrush(back))
+                e.Graphics.FillRectangle(b, e.RowBounds);
+
+            e.PaintCells(e.ClipBounds, DataGridViewPaintParts.All & ~DataGridViewPaintParts.Background);
+            e.Handled = true;
+        }
+
+        // Old hover handlers kept but no longer wired.
         private void DataGridViewLeads_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
@@ -858,7 +888,6 @@ namespace RealEstateCRMWinForms.Views
                 var row = dataGridViewLeads.Rows[e.RowIndex];
                 if (!row.Selected)
                 {
-                    // Reset to alternating row color or default
                     row.DefaultCellStyle.BackColor = (e.RowIndex % 2 == 1)
                         ? dataGridViewLeads.AlternatingRowsDefaultCellStyle.BackColor
                         : Color.White;
@@ -945,6 +974,7 @@ namespace RealEstateCRMWinForms.Views
                 }
             }
         }
+
         private void DataGridViewLeads_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
             if (e.Context == DataGridViewDataErrorContexts.Formatting ||
@@ -961,15 +991,25 @@ namespace RealEstateCRMWinForms.Views
                 }
             }
         }
+
+        private void DataGridViewLeads_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= dataGridViewLeads.Rows.Count) return;
+            var lead = dataGridViewLeads.Rows[e.RowIndex].DataBoundItem as Lead;
+            if (lead == null) return;
+
+            var editForm = new EditLeadForm(lead);
+            if (editForm.ShowDialog() == DialogResult.OK)
+            {
+                if (_viewModel.UpdateLead(lead))
+                {
+                    RefreshLeadsView();
+                    MessageBox.Show($"Lead '{lead.FullName}' has been successfully updated!",
+                        "Lead Updated",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+            }
+        }
     }
 }
-
-
-
-
-
-
-
-
-
-

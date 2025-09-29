@@ -17,7 +17,7 @@ namespace RealEstateCRMWinForms.Views
             _authService = authService;
         }
 
-        private void btnRegister_Click(object? sender, EventArgs e)
+        private async void btnRegister_Click(object? sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtRegFirstName.Text) ||
                 string.IsNullOrWhiteSpace(txtRegLastName.Text) ||
@@ -36,10 +36,19 @@ namespace RealEstateCRMWinForms.Views
                 return;
             }
 
+            // Pre-check: specific error if email already in use
+            var emailToUse = txtRegEmail.Text.Trim();
+            if (_authService.IsEmailInUse(emailToUse))
+            {
+                MessageBox.Show("That email is already in use. Please use a different email.", "Email In Use",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             btnRegister.Enabled = false;
             btnRegister.Text = "Creating Account...";
 
-            var success = _authService.Register(
+            var success = await _authService.RegisterAsync(
                 txtRegFirstName.Text.Trim(),
                 txtRegLastName.Text.Trim(),
                 txtRegEmail.Text.Trim(),
@@ -50,7 +59,7 @@ namespace RealEstateCRMWinForms.Views
                 var isBroker = Services.UserSession.Instance.CurrentUser?.Role == Models.UserRole.Broker;
                 if (isBroker)
                 {
-                    MessageBox.Show("Agent account created successfully! A welcome email has been sent.", "Success",
+                    MessageBox.Show("Agent account created successfully! A welcome email has been sent to the agent.", "Success",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     RegisterSuccess?.Invoke(this, EventArgs.Empty);
                 }
@@ -63,7 +72,7 @@ namespace RealEstateCRMWinForms.Views
             }
             else
             {
-                MessageBox.Show("Failed to create account. Email may already be in use.", "Registration Failed",
+                MessageBox.Show("Failed to create account. Please try again.", "Registration Failed",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 

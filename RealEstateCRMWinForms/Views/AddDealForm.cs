@@ -15,6 +15,7 @@ namespace RealEstateCRMWinForms.Views
         private string _defaultStatus;
         private ComboBox cmbProperty;
         private ComboBox cmbContact;
+        private ComboBox cmbAgent;
         private Button btnSave;
         private Button btnCancel;
 
@@ -88,6 +89,23 @@ namespace RealEstateCRMWinForms.Views
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
 
+            // Agent
+            var lblAgent = new Label
+            {
+                Text = "Agent:",
+                Location = new Point(20, 110),
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            cmbAgent = new ComboBox
+            {
+                Location = new Point(130, 110),
+                Size = new Size(280, 28),
+                Font = new Font("Segoe UI", 12F),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+
             // Buttons
             btnCancel = new Button
             {
@@ -117,6 +135,7 @@ namespace RealEstateCRMWinForms.Views
             Controls.AddRange(new Control[] {
                 lblProperty, cmbProperty,
                 lblContact, cmbContact,
+                lblAgent, cmbAgent,
                 btnCancel, btnSave
             });
 
@@ -124,7 +143,7 @@ namespace RealEstateCRMWinForms.Views
             int dropdownRight = cmbProperty.Location.X + cmbProperty.Width;
             int spacing = 10; // horizontal spacing between buttons
             int gapAboveButtons = 40; // vertical gap from Contact dropdown
-            int buttonsY = cmbContact.Location.Y + cmbContact.Height + gapAboveButtons;
+            int buttonsY = cmbAgent.Location.Y + cmbAgent.Height + gapAboveButtons;
 
             // Place Save button so its right edge aligns with dropdown right edge
             btnSave.Location = new Point(dropdownRight - btnSave.Width, buttonsY);
@@ -180,6 +199,15 @@ namespace RealEstateCRMWinForms.Views
                     cmbContact.Items.Add($"{contact.FullName} - {contact.Email}");
                 }
                 cmbContact.SelectedIndex = 0;
+
+                // Load agents
+                cmbAgent.Items.Clear();
+                cmbAgent.Items.Add("(No Agent)");
+                foreach (var name in Services.AgentDirectory.GetAgentDisplayNames())
+                {
+                    cmbAgent.Items.Add(name);
+                }
+                cmbAgent.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
@@ -252,6 +280,24 @@ namespace RealEstateCRMWinForms.Views
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true
                 };
+
+                // If an agent is selected, mark this deal as a pending assignment to that agent
+                if (cmbAgent.SelectedIndex > 0)
+                {
+                    var agentName = cmbAgent.SelectedItem?.ToString() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(agentName))
+                    {
+                        var marker = $"[ASSIGN:{agentName}]";
+                        CreatedDeal.Notes = string.IsNullOrWhiteSpace(CreatedDeal.Notes) ? marker : ($"{CreatedDeal.Notes} {marker}");
+                    }
+                }
+
+                // Set CreatedBy to current user (Broker) if available
+                var user = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
+                if (user != null)
+                {
+                    CreatedDeal.CreatedBy = ($"{user.FirstName} {user.LastName}").Trim();
+                }
 
                 DialogResult = DialogResult.OK;
                 Close();

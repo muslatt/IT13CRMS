@@ -1,4 +1,3 @@
-         
 using RealEstateCRMWinForms.Controls;
 using RealEstateCRMWinForms.ViewModels;
 using System.Drawing;
@@ -59,7 +58,6 @@ namespace RealEstateCRMWinForms.Views
             if (addPropertyForm.ShowDialog() == DialogResult.OK)
             {
                 // Refresh the properties list
-                _viewModel.LoadProperties();
                 LoadProperties();
             }
         }
@@ -67,13 +65,12 @@ namespace RealEstateCRMWinForms.Views
         private void LoadProperties()
         {
             _currentProperties = _viewModel.Properties?.ToList() ?? new List<Property>();
-            ApplyFilterAndSort(resetPage: true);
+            ApplyFilterAndSort(resetPage: false);
         }
 
         private void Card_PropertyUpdated(object? sender, PropertyEventArgs e)
         {
             // Refresh the properties list to reflect any changes
-            _viewModel.LoadProperties();
             LoadProperties();
         }
 
@@ -88,7 +85,6 @@ namespace RealEstateCRMWinForms.Views
                 card.Dispose();
 
                 // Optionally refresh the entire list to ensure consistency
-                _viewModel.LoadProperties();
                 LoadProperties();
             }
         }
@@ -107,21 +103,18 @@ namespace RealEstateCRMWinForms.Views
         {
             // Suspend drawing and layout to avoid flicker while we rebuild the list
             flowLayoutPanel.SuspendLayout();
-            flowLayoutPanel.SuspendDrawing();
             try
             {
                 // Clear existing cards and dispose them properly
-                foreach (Control control in flowLayoutPanel.Controls)
+                var cardsToRemove = flowLayoutPanel.Controls.OfType<PropertyCard>().ToList();
+                foreach (var card in cardsToRemove)
                 {
-                    if (control is PropertyCard card)
-                    {
-                        // Unsubscribe from events to prevent memory leaks
-                        card.PropertyUpdated -= Card_PropertyUpdated;
-                        card.PropertyDeleted -= Card_PropertyDeleted;
-                        card.Dispose();
-                    }
+                    // Unsubscribe from events to prevent memory leaks
+                    card.PropertyUpdated -= Card_PropertyUpdated;
+                    card.PropertyDeleted -= Card_PropertyDeleted;
+                    flowLayoutPanel.Controls.Remove(card);
+                    card.Dispose();
                 }
-                flowLayoutPanel.Controls.Clear();
 
                 // Reset scroll position to the top for each page change
                 try
@@ -138,43 +131,48 @@ namespace RealEstateCRMWinForms.Views
                 }
 
                 _totalPages = (int)Math.Ceiling(_currentProperties.Count / (double)PageSize);
-                if (_currentPage > _totalPages) _currentPage = _totalPages;
+                if (_currentPage > _totalPages) _currentPage = 1;
 
                 var pageItems = _currentProperties
                     .Skip((_currentPage - 1) * PageSize)
                     .Take(PageSize)
                     .ToList();
 
+                // Create cards one by one and ensure they're properly initialized
                 foreach (var property in pageItems)
                 {
+                    // Create a completely fresh card
                     var card = new PropertyCard
                     {
                         Margin = new Padding(10)
                     };
 
-                    // Set the property data BEFORE subscribing to events
+                    // CRITICAL: Set property IMMEDIATELY after creation, before any other operations
                     card.SetProperty(property);
 
-                    // Force the card to refresh its display
+                    // Force immediate visual update
                     card.Refresh();
-                    card.Invalidate();
+                    Application.DoEvents(); // Process any pending UI updates
 
-                    // Subscribe to property events AFTER setting the property
+                    // Subscribe to events AFTER the card is fully set up
                     card.PropertyUpdated += Card_PropertyUpdated;
                     card.PropertyDeleted += Card_PropertyDeleted;
 
+                    // Add to the flow panel
                     flowLayoutPanel.Controls.Add(card);
+
+                    // Final refresh after adding to container
+                    card.Invalidate(true);
+                    card.Update();
                 }
 
-                // Force the flow layout panel to refresh
-                flowLayoutPanel.Refresh();
-                flowLayoutPanel.Invalidate();
+                // Force complete refresh of the container
                 flowLayoutPanel.PerformLayout();
+                flowLayoutPanel.Refresh();
             }
             finally
             {
                 flowLayoutPanel.ResumeLayout(true);
-                flowLayoutPanel.ResumeDrawing();
             }
 
             UpdatePaginationControls();
@@ -208,7 +206,6 @@ namespace RealEstateCRMWinForms.Views
                 {
                     _searchQuery = newQuery;
                 }
-                _viewModel.LoadProperties();
                 ApplyFilterAndSort(resetPage: true);
             }
         }
@@ -405,7 +402,6 @@ namespace RealEstateCRMWinForms.Views
             _currentPage--;
 
             // Reload data to ensure we're showing the latest set
-            _viewModel.LoadProperties();
             ApplyFilterAndSort(resetPage: false);
         }
 
@@ -415,7 +411,6 @@ namespace RealEstateCRMWinForms.Views
             _currentPage++;
 
             // Reload data to ensure we're showing the latest set
-            _viewModel.LoadProperties();
             ApplyFilterAndSort(resetPage: false);
         }
     }

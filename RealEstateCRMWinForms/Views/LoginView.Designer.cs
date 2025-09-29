@@ -21,6 +21,7 @@ namespace RealEstateCRMWinForms.Views
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LoginView));
             pnlMain = new Panel();
+            backgroundPicture = new PictureBox();
             pnlCenter = new Panel();
             pnlLogin = new Panel();
             lblTitle = new Label();
@@ -32,7 +33,9 @@ namespace RealEstateCRMWinForms.Views
             btnLogin = new Button();
             lblRegisterQuestion = new Label();
             linkRegister = new LinkLabel();
+
             pnlMain.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(backgroundPicture)).BeginInit();
             pnlCenter.SuspendLayout();
             pnlLogin.SuspendLayout();
             SuspendLayout();
@@ -40,15 +43,22 @@ namespace RealEstateCRMWinForms.Views
             // pnlMain
             // 
             pnlMain.BackColor = Color.FromArgb(248, 249, 250);
-            pnlMain.BackgroundImage = (Image)resources.GetObject("pnlMain.BackgroundImage");
-            pnlMain.BackgroundImageLayout = ImageLayout.Stretch;
-            pnlMain.Controls.Add(pnlCenter);
             pnlMain.Dock = DockStyle.Fill;
             pnlMain.Location = new Point(0, 0);
             pnlMain.Name = "pnlMain";
             pnlMain.Size = new Size(1200, 800);
             pnlMain.TabIndex = 0;
-            pnlMain.Paint += pnlMain_Paint;
+            pnlMain.Controls.Add(pnlCenter);
+            pnlMain.Controls.Add(backgroundPicture);
+            // 
+            // backgroundPicture
+            // 
+            backgroundPicture.Dock = DockStyle.Fill;
+            backgroundPicture.Image = (Image)resources.GetObject("pnlMain.BackgroundImage");
+            backgroundPicture.SizeMode = PictureBoxSizeMode.StretchImage;
+            backgroundPicture.Name = "backgroundPicture";
+            backgroundPicture.TabStop = false;
+            backgroundPicture.SendToBack();
             // 
             // pnlCenter
             // 
@@ -187,6 +197,7 @@ namespace RealEstateCRMWinForms.Views
             Name = "LoginView";
             Size = new Size(1200, 800);
             pnlMain.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(backgroundPicture)).EndInit();
             pnlCenter.ResumeLayout(false);
             pnlLogin.ResumeLayout(false);
             pnlLogin.PerformLayout();
@@ -194,6 +205,7 @@ namespace RealEstateCRMWinForms.Views
         }
 
         private Panel pnlMain;
+        private PictureBox backgroundPicture;
         private Panel pnlCenter;
         private Panel pnlLogin;
         private Label lblTitle;

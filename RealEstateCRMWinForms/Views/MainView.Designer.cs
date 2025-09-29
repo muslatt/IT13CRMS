@@ -1,4 +1,5 @@
-﻿namespace RealEstateCRMWinForms.Views
+﻿using System;
+namespace RealEstateCRMWinForms.Views
 {
     partial class MainView
     {
@@ -22,6 +23,7 @@
             btnSettings = new Button();
             navSeparator = new Panel();
             btnProperties = new Button();
+            btnPendingAssignments = new Button();
             btnDeals = new Button();
             btnContacts = new Button();
             btnLeads = new Button();
@@ -40,6 +42,7 @@
             contextMenuStripUser = new ContextMenuStrip(components);
             logoutToolStripMenuItem = new ToolStripMenuItem();
             registerAgentToolStripMenuItem = new ToolStripMenuItem();
+            changeCredentialsToolStripMenuItem = new ToolStripMenuItem();
             panelSidebar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pbLogo).BeginInit();
             panelContent.SuspendLayout();
@@ -58,6 +61,7 @@
             panelSidebar.Controls.Add(btnSettings);
             panelSidebar.Controls.Add(navSeparator);
             panelSidebar.Controls.Add(btnProperties);
+            panelSidebar.Controls.Add(btnPendingAssignments);
             panelSidebar.Controls.Add(btnDeals);
             panelSidebar.Controls.Add(btnContacts);
             panelSidebar.Controls.Add(btnLeads);
@@ -127,6 +131,20 @@
             btnProperties.UseVisualStyleBackColor = true;
             btnProperties.Click += btnProperties_Click;
             // 
+            // btnPendingAssignments
+            // 
+            btnPendingAssignments.FlatAppearance.BorderSize = 0;
+            btnPendingAssignments.FlatStyle = FlatStyle.Flat;
+            btnPendingAssignments.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnPendingAssignments.Location = new Point(12, 172);
+            btnPendingAssignments.Name = "btnPendingAssignments";
+            btnPendingAssignments.Size = new Size(196, 30);
+            btnPendingAssignments.TabIndex = 5;
+            btnPendingAssignments.Text = "Pending Assignments";
+            btnPendingAssignments.TextAlign = ContentAlignment.MiddleLeft;
+            btnPendingAssignments.UseVisualStyleBackColor = true;
+            btnPendingAssignments.Click += btnPendingAssignments_Click;
+            // 
             // btnDeals
             // 
             btnDeals.FlatAppearance.BorderSize = 0;
@@ -138,6 +156,7 @@
             btnDeals.TabIndex = 3;
             btnDeals.Text = "Deals";
             btnDeals.TextAlign = ContentAlignment.MiddleLeft;
+            // Glyph icons are assigned at runtime in MainView (CreateIconFromGlyph)
             btnDeals.UseVisualStyleBackColor = true;
             btnDeals.Click += btnDeals_Click;
             // 
@@ -310,16 +329,23 @@
             // 
             // contextMenuStripUser
             // 
-            contextMenuStripUser.Items.AddRange(new ToolStripItem[] { registerAgentToolStripMenuItem, logoutToolStripMenuItem });
+            contextMenuStripUser.Items.AddRange(new ToolStripItem[] { registerAgentToolStripMenuItem, changeCredentialsToolStripMenuItem, logoutToolStripMenuItem });
             contextMenuStripUser.Name = "contextMenuStripUser";
-            contextMenuStripUser.Size = new Size(113, 26);
+            contextMenuStripUser.Size = new Size(200, 70);
             // 
             // registerAgentToolStripMenuItem
             // 
             registerAgentToolStripMenuItem.Name = "registerAgentToolStripMenuItem";
-            registerAgentToolStripMenuItem.Size = new Size(180, 22);
+            registerAgentToolStripMenuItem.Size = new Size(199, 22);
             registerAgentToolStripMenuItem.Text = "Register Agent...";
             registerAgentToolStripMenuItem.Click += registerAgentToolStripMenuItem_Click;
+            // 
+            // changeCredentialsToolStripMenuItem
+            // 
+            changeCredentialsToolStripMenuItem.Name = "changeCredentialsToolStripMenuItem";
+            changeCredentialsToolStripMenuItem.Size = new Size(199, 22);
+            changeCredentialsToolStripMenuItem.Text = "Change Credentials...";
+            changeCredentialsToolStripMenuItem.Click += changeCredentialsToolStripMenuItem_Click;
             // 
             // logoutToolStripMenuItem
             // 
@@ -358,9 +384,11 @@
         private System.Windows.Forms.Panel navSeparator;
         private System.Windows.Forms.Button btnProperties;
         private System.Windows.Forms.Button btnDeals;
+        private System.Windows.Forms.Button btnPendingAssignments;
         private System.Windows.Forms.Button btnContacts;
         private System.Windows.Forms.Button btnLeads;
         private System.Windows.Forms.Button btnDashboard;
+        private System.Windows.Forms.ToolStripMenuItem changeCredentialsToolStripMenuItem;
         private System.Windows.Forms.Panel panelContent;
         private System.Windows.Forms.Panel contentLeftBorder;
         private System.Windows.Forms.Panel headerPanel;
@@ -375,6 +403,6 @@
         private System.Windows.Forms.ToolStripMenuItem logoutToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem registerAgentToolStripMenuItem;
         private System.Windows.Forms.DataGridView dataGridView1;
-        
+
     }
 }
