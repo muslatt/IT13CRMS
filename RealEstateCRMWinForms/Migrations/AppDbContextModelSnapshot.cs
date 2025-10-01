@@ -166,6 +166,107 @@ namespace RealEstateCRMWinForms.Migrations
                     b.ToTable("Deals");
                 });
 
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.DealStatusChangeRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DealId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PreviousStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequestedStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RespondedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ResponseNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DealId");
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("RespondedByUserId");
+
+                    b.ToTable("DealStatusChangeRequests");
+                });
+
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.Inquiry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BrokerResponse")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ClientId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContactEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactPhone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RespondedByBrokerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("RespondedByBrokerId");
+
+                    b.ToTable("Inquiries");
+                });
+
             modelBuilder.Entity("RealEstateCRMWinForms.Models.Lead", b =>
                 {
                     b.Property<int>("Id")
@@ -211,6 +312,34 @@ namespace RealEstateCRMWinForms.Migrations
                     b.ToTable("Leads");
                 });
 
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.Log", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Logs");
+                });
+
             modelBuilder.Entity("RealEstateCRMWinForms.Models.Property", b =>
                 {
                     b.Property<int>("Id")
@@ -220,10 +349,6 @@ namespace RealEstateCRMWinForms.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Agent")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -240,11 +365,23 @@ namespace RealEstateCRMWinForms.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("FloorAreaSqft")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("ImagePath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsResubmitted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("LotAreaSqm")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -253,12 +390,11 @@ namespace RealEstateCRMWinForms.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("SquareMeters")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
+                    b.Property<string>("RejectionReason")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SubmittedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -271,6 +407,38 @@ namespace RealEstateCRMWinForms.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Properties");
+                });
+
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.PropertyProofFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
+
+                    b.ToTable("PropertyProofFiles");
                 });
 
             modelBuilder.Entity("RealEstateCRMWinForms.Models.User", b =>
@@ -315,8 +483,9 @@ namespace RealEstateCRMWinForms.Migrations
                     b.Property<string>("PendingPasswordEncrypted")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
+                    b.Property<int>("RoleInt")
+                        .HasColumnType("int")
+                        .HasColumnName("Role");
 
                     b.HasKey("Id");
 
@@ -338,6 +507,85 @@ namespace RealEstateCRMWinForms.Migrations
                     b.Navigation("Contact");
 
                     b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.DealStatusChangeRequest", b =>
+                {
+                    b.HasOne("RealEstateCRMWinForms.Models.Deal", "Deal")
+                        .WithMany()
+                        .HasForeignKey("DealId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RealEstateCRMWinForms.Models.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("RealEstateCRMWinForms.Models.User", "RespondedBy")
+                        .WithMany()
+                        .HasForeignKey("RespondedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Deal");
+
+                    b.Navigation("RequestedBy");
+
+                    b.Navigation("RespondedBy");
+                });
+
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.Inquiry", b =>
+                {
+                    b.HasOne("RealEstateCRMWinForms.Models.User", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("RealEstateCRMWinForms.Models.Property", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RealEstateCRMWinForms.Models.User", "RespondedByBroker")
+                        .WithMany()
+                        .HasForeignKey("RespondedByBrokerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Property");
+
+                    b.Navigation("RespondedByBroker");
+                });
+
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.Log", b =>
+                {
+                    b.HasOne("RealEstateCRMWinForms.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.PropertyProofFile", b =>
+                {
+                    b.HasOne("RealEstateCRMWinForms.Models.Property", "Property")
+                        .WithMany("ProofFiles")
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("RealEstateCRMWinForms.Models.Property", b =>
+                {
+                    b.Navigation("ProofFiles");
                 });
 #pragma warning restore 612, 618
         }

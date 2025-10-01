@@ -1,6 +1,7 @@
 ﻿// RealEstateCRMWinForms\ViewModels\ContactViewModel.cs
 using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.Services;
 using System;
 using System.ComponentModel;
 using System.Linq;
@@ -23,16 +24,16 @@ namespace RealEstateCRMWinForms.ViewModels
         public void LoadContacts()
         {
             Contacts.Clear();
-            
+
             try
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     var contactsFromDb = dbContext.Contacts.Where(c => c.IsActive).ToList();
-                    
+
                     foreach (var contact in contactsFromDb)
                     {
                         Contacts.Add(contact);
@@ -46,7 +47,7 @@ namespace RealEstateCRMWinForms.ViewModels
                 // Log the specific error for debugging
                 System.Diagnostics.Debug.WriteLine($"Error loading contacts: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-                
+
                 // Don't show error dialog in constructor to prevent UI blocking
                 // Instead, log and continue with empty list
                 Console.WriteLine($"Database connection error: {ex.Message}");
@@ -61,10 +62,13 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     dbContext.Contacts.Add(contact);
                     dbContext.SaveChanges();
-                    
+
+                    // Log the action
+                    LoggingService.LogAction("Created Contact", $"Contact '{contact.FullName}' created");
+
                     // Add to local collection
                     Contacts.Add(contact);
                     return true;
@@ -72,7 +76,7 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error adding contact: {ex.Message}", "Error", 
+                MessageBox.Show($"Error adding contact: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -86,7 +90,7 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     dbContext.Contacts.Update(contact);
                     dbContext.SaveChanges();
                     return true;
@@ -94,7 +98,7 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error updating contact: {ex.Message}", "Error", 
+                MessageBox.Show($"Error updating contact: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -108,12 +112,12 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     // Soft delete - just mark as inactive
                     contact.IsActive = false;
                     dbContext.Contacts.Update(contact);
                     dbContext.SaveChanges();
-                    
+
                     // Remove from local collection
                     Contacts.Remove(contact);
                     return true;
@@ -121,7 +125,7 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting contact: {ex.Message}", "Error", 
+                MessageBox.Show($"Error deleting contact: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }

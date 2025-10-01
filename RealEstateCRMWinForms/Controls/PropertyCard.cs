@@ -1,8 +1,11 @@
 using RealEstateCRMWinForms.Models;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
+using Microsoft.EntityFrameworkCore;
 
 namespace RealEstateCRMWinForms.Controls
 {
@@ -10,16 +13,22 @@ namespace RealEstateCRMWinForms.Controls
     {
         private Property _property;
         private ContextMenuStrip _contextMenu;
+        private bool _isReadOnly;
+        private bool _isBrowseMode;
+        private Label? lblRejectionReason;
 
         public PropertyCard()
         {
+            _isReadOnly = false;
+            _isBrowseMode = false;
             InitializeComponent();
             SetDefaultImage();
             CreateContextMenu();
+            InitializeRejectionReasonLabel();
 
-            // Reduce flicker
+            // Reduce flicker and enable modern rendering
             this.DoubleBuffered = true;
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
             this.UpdateStyles();
 
             // Add click events to make the card clickable
@@ -28,6 +37,78 @@ namespace RealEstateCRMWinForms.Controls
 
             // Make all child controls clickable too
             MakeChildControlsClickable(this);
+
+            // Apply modern styling
+            ApplyModernStyling();
+        }
+
+        public PropertyCard(bool isReadOnly) : this()
+        {
+            _isReadOnly = isReadOnly;
+            _isBrowseMode = false;
+            CreateContextMenu(); // Recreate menu based on read-only
+        }
+
+        public PropertyCard(bool isReadOnly, bool isBrowseMode) : this()
+        {
+            _isReadOnly = isReadOnly;
+            _isBrowseMode = isBrowseMode;
+            CreateContextMenu(); // Recreate menu based on read-only
+        }
+
+        private void ApplyModernStyling()
+        {
+            // Modern card styling with rounded corners and shadow effect
+            this.BackColor = Color.White;
+            this.Padding = new Padding(0);
+            this.Margin = new Padding(12);
+
+            // Override paint to add modern card appearance
+            this.Paint += PropertyCard_Paint;
+        }
+
+        private void PropertyCard_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            // Create rounded rectangle path
+            var rect = new Rectangle(0, 0, this.Width - 1, this.Height - 1);
+            var path = CreateRoundedRectanglePath(rect, 12);
+
+            // Draw shadow effect
+            var shadowRect = new Rectangle(3, 3, this.Width - 3, this.Height - 3);
+            var shadowPath = CreateRoundedRectanglePath(shadowRect, 12);
+            using (var shadowBrush = new SolidBrush(Color.FromArgb(20, 0, 0, 0)))
+            {
+                g.FillPath(shadowBrush, shadowPath);
+            }
+
+            // Draw main card background
+            using (var cardBrush = new SolidBrush(Color.White))
+            {
+                g.FillPath(cardBrush, path);
+            }
+
+            // Draw subtle border
+            using (var borderPen = new Pen(Color.FromArgb(230, 230, 230), 1))
+            {
+                g.DrawPath(borderPen, path);
+            }
+        }
+
+        private GraphicsPath CreateRoundedRectanglePath(Rectangle rect, int cornerRadius)
+        {
+            var path = new GraphicsPath();
+            var diameter = cornerRadius * 2;
+
+            path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90);
+            path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90);
+            path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+
+            return path;
         }
 
         private void MakeChildControlsClickable(Control parent)
@@ -43,6 +124,22 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
+        private void InitializeRejectionReasonLabel()
+        {
+            lblRejectionReason = new Label
+            {
+                Name = "lblRejectionReason",
+                Location = new Point(8, 265), // Position above the price
+                Size = new Size(344, 20),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                ForeColor = Color.FromArgb(220, 53, 69), // Red color for rejection
+                TextAlign = ContentAlignment.MiddleLeft,
+                Visible = false // Initially hidden
+            };
+
+            this.Controls.Add(lblRejectionReason);
+        }
+
         private void PropertyCard_Click(object? sender, EventArgs e)
         {
             if (_property != null)
@@ -53,7 +150,18 @@ namespace RealEstateCRMWinForms.Controls
 
         private void ShowPropertyDetails()
         {
-            var detailsForm = new Views.PropertyDetailsForm(_property);
+            bool isClientBrowseContext = _isBrowseMode;
+
+            if (!isClientBrowseContext && _isReadOnly)
+            {
+                var currentUser = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
+                if (currentUser?.Role == UserRole.Client)
+                {
+                    isClientBrowseContext = true;
+                }
+            }
+
+            var detailsForm = new Views.PropertyDetailsForm(_property, isClientBrowseContext);
 
             // Subscribe to the PropertyUpdated event
             detailsForm.PropertyUpdated += (sender, e) =>
@@ -78,6 +186,8 @@ namespace RealEstateCRMWinForms.Controls
         {
             _property = property;
             UpdateCardUI();
+            // Recreate context menu based on property state (rejected or not)
+            CreateContextMenu();
         }
 
         public Property GetProperty()
@@ -92,30 +202,74 @@ namespace RealEstateCRMWinForms.Controls
         private void CreateContextMenu()
         {
             _contextMenu = new ContextMenuStrip();
+            _contextMenu.BackColor = Color.White;
+            _contextMenu.ForeColor = Color.FromArgb(73, 80, 87);
+            _contextMenu.Font = new Font("Segoe UI", 9F);
 
             var viewMenuItem = new ToolStripMenuItem("View Details")
             {
-                Image = SystemIcons.Information.ToBitmap()
+                Image = CreateModernIcon("👁", Color.FromArgb(0, 123, 255))
             };
             viewMenuItem.Click += ViewMenuItem_Click;
 
-            var editMenuItem = new ToolStripMenuItem("Edit Property")
-            {
-                Image = SystemIcons.Application.ToBitmap()
-            };
-            editMenuItem.Click += EditMenuItem_Click;
+            _contextMenu.Items.Add(viewMenuItem);
 
-            var deleteMenuItem = new ToolStripMenuItem("Delete Property")
+            if (!_isReadOnly)
             {
-                Image = SystemIcons.Error.ToBitmap()
-            };
-            deleteMenuItem.Click += DeleteMenuItem_Click;
+                // Check if this is a rejected property
+                bool isRejected = _property != null && !_property.IsApproved && !string.IsNullOrEmpty(_property.RejectionReason);
 
-            _contextMenu.Items.AddRange(new ToolStripItem[] { viewMenuItem, editMenuItem, deleteMenuItem });
+                if (isRejected)
+                {
+                    // For rejected properties, show "Edit & Resubmit" option
+                    var resubmitMenuItem = new ToolStripMenuItem("Edit & Resubmit")
+                    {
+                        Image = CreateModernIcon("🔄", Color.FromArgb(255, 193, 7)) // Orange/Yellow color
+                    };
+                    resubmitMenuItem.Click += ResubmitMenuItem_Click;
+                    _contextMenu.Items.Add(resubmitMenuItem);
+                }
+                else
+                {
+                    // For non-rejected properties, show normal edit option
+                    var editMenuItem = new ToolStripMenuItem("Edit Property")
+                    {
+                        Image = CreateModernIcon("✏", Color.FromArgb(40, 167, 69))
+                    };
+                    editMenuItem.Click += EditMenuItem_Click;
+                    _contextMenu.Items.Add(editMenuItem);
+                }
+
+                var deleteMenuItem = new ToolStripMenuItem("Delete Property")
+                {
+                    Image = CreateModernIcon("🗑", Color.FromArgb(220, 53, 69))
+                };
+                deleteMenuItem.Click += DeleteMenuItem_Click;
+
+                _contextMenu.Items.Add(deleteMenuItem);
+            }
 
             // Assign context menu to the card and its child controls
             this.ContextMenuStrip = _contextMenu;
             AssignContextMenuToChildren(this);
+        }
+
+        private Bitmap CreateModernIcon(string emoji, Color color)
+        {
+            var bmp = new Bitmap(16, 16);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.Clear(Color.Transparent);
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+                using (var font = new Font("Segoe UI Emoji", 12, FontStyle.Regular))
+                using (var brush = new SolidBrush(color))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString(emoji, font, brush, new RectangleF(0, 0, 16, 16), sf);
+                }
+            }
+            return bmp;
         }
 
         private void AssignContextMenuToChildren(Control parent)
@@ -150,6 +304,65 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
+        private void ResubmitMenuItem_Click(object? sender, EventArgs e)
+        {
+            if (_property == null) return;
+
+            // Show a message to the user about resubmission
+            var confirmResult = MessageBox.Show(
+                $"You are about to edit and resubmit this property:\n\n" +
+                $"Property: {_property.Title}\n" +
+                $"Rejection Reason: {_property.RejectionReason}\n\n" +
+                $"After making changes, the property will be resubmitted for broker approval.",
+                "Edit & Resubmit Property",
+                MessageBoxButtons.OKCancel,
+                MessageBoxIcon.Information);
+
+            if (confirmResult != DialogResult.OK)
+                return;
+
+            var editForm = new Views.EditPropertyForm(_property);
+            if (editForm.ShowDialog() == DialogResult.OK)
+            {
+                // Update the property to mark it as resubmitted and reset approval status
+                try
+                {
+                    using var db = Data.DbContextHelper.CreateDbContext();
+                    var propertyToUpdate = db.Properties.FirstOrDefault(p => p.Id == _property.Id);
+
+                    if (propertyToUpdate != null)
+                    {
+                        // Mark as resubmitted and reset approval status
+                        propertyToUpdate.IsResubmitted = true;
+                        propertyToUpdate.IsApproved = false; // Set to pending approval
+                        propertyToUpdate.RejectionReason = null; // Clear the rejection reason
+
+                        db.SaveChanges();
+
+                        MessageBox.Show(
+                            "Property has been successfully resubmitted for broker approval!",
+                            "Resubmitted Successfully",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+
+                        // Refresh property data from database after resubmit
+                        RefreshPropertyFromDatabase();
+
+                        // Notify parent that property was updated
+                        PropertyUpdated?.Invoke(this, new PropertyEventArgs(_property));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Error resubmitting property: {ex.Message}",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+        }
+
         private void RefreshPropertyFromDatabase()
         {
             if (_property == null) return;
@@ -178,18 +391,7 @@ namespace RealEstateCRMWinForms.Controls
             try
             {
                 var user = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
-                // Brokers cannot delete a property if it is assigned to an Agent
-                if (user != null && user.Role == RealEstateCRMWinForms.Models.UserRole.Broker)
-                {
-                    if (!string.IsNullOrWhiteSpace(_property.Agent))
-                    {
-                        MessageBox.Show("This property is assigned to an Agent and cannot be deleted by a Broker.",
-                            "Deletion Restricted",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning);
-                        return;
-                    }
-                }
+                // Brokers can delete properties (Agent check removed)
             }
             catch { }
 
@@ -228,72 +430,61 @@ namespace RealEstateCRMWinForms.Controls
 
             try
             {
-                // Title / address / price / status - FORCE TEXT UPDATE
+                // Apply modern typography and spacing
+                ApplyModernTypography();
+
+                // Title with modern styling
                 lblTitle.Text = _property.Title ?? string.Empty;
+                lblTitle.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+                lblTitle.ForeColor = Color.FromArgb(33, 37, 41);
                 lblTitle.Invalidate();
                 lblTitle.Update();
 
+                // Address with subtle styling
                 lblAddress.Text = _property.Address ?? string.Empty;
+                lblAddress.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+                lblAddress.ForeColor = Color.FromArgb(108, 117, 125);
                 lblAddress.Invalidate();
                 lblAddress.Update();
 
+                // Price with emphasis and modern currency formatting
                 lblPrice.Text = _property.Price.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-PH"));
+                lblPrice.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+                lblPrice.ForeColor = Color.FromArgb(40, 167, 69);
                 lblPrice.Invalidate();
                 lblPrice.Update();
 
-                lblStatus.Text = _property.Status ?? string.Empty;
-                lblStatus.Invalidate();
-                lblStatus.Update();
+                // Modern property type badge
+                UpdatePropertyTypeBadge();
 
-                // Set status color
-                statusPanel.BackColor = _property.Status == "Rent"
-                    ? Color.FromArgb(108, 117, 125)
-                    : Color.FromArgb(0, 123, 255);
-                statusPanel.Invalidate();
-                statusPanel.Update();
+                // Show rejection reason if property is rejected
+                if (lblRejectionReason != null)
+                {
+                    if (!string.IsNullOrEmpty(_property.RejectionReason))
+                    {
+                        lblRejectionReason.Text = $"Reason: {_property.RejectionReason}";
+                        lblRejectionReason.Visible = true;
+                    }
+                    else
+                    {
+                        lblRejectionReason.Visible = false;
+                    }
+                }
 
-                // --- FEATURE ICONS (render into small bitmaps for consistent sizing) ---
-                // Create small icon bitmaps using emoji rendered with Segoe UI Emoji for visual clarity.
+                // Show active deal information for clients in My Listings
+                UpdateActiveDealInfo();
 
-                // Bed icon
-                pbBedIcon.Image?.Dispose();
-                pbBedIcon.Image = CreateEmojiIconBitmap("🛏", 24, 24);
-                pbBedIcon.Invalidate();
-                pbBedIcon.Update();
+                // Update feature icons with modern design
+                UpdateFeatureIcons();
 
-                // Bath icon
-                pbBathIcon.Image?.Dispose();
-                pbBathIcon.Image = CreateEmojiIconBitmap("🛁", 24, 24);
-                pbBathIcon.Invalidate();
-                pbBathIcon.Update();
+                // Feature values with modern styling
+                UpdateFeatureValues();
 
-                // SQM icon (use a ruler-like emoji)
-                pbSqmIcon.Image?.Dispose();
-                pbSqmIcon.Image = CreateEmojiIconBitmap("📐", 24, 24);
-                pbSqmIcon.Invalidate();
-                pbSqmIcon.Update();
-
-                // Numeric values: larger, bold and clearly distinguished - FORCE UPDATE
-                lblBedValue.Text = _property.Bedrooms.ToString();
-                lblBedValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-                lblBedValue.Invalidate();
-                lblBedValue.Update();
-
-                lblBathValue.Text = _property.Bathrooms.ToString();
-                lblBathValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-                lblBathValue.Invalidate();
-                lblBathValue.Update();
-
-                lblSqmValue.Text = _property.SquareMeters > 0 ? $"{_property.SquareMeters} sqm" : "N/A";
-                lblSqmValue.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-                lblSqmValue.Invalidate();
-                lblSqmValue.Update();
-
-                // Load property image
+                // Load property image with modern styling
                 LoadPropertyImage();
 
                 // Force the entire card to refresh
-                this.Invalidate(true); // true = invalidate children too
+                this.Invalidate(true);
                 this.Update();
             }
             finally
@@ -302,21 +493,230 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
-        // Helper that generates a small bitmap with an emoji centered. Keeps icons consistent size.
-        private Bitmap CreateEmojiIconBitmap(string emoji, int width, int height)
+        private void ApplyModernTypography()
         {
-            var bmp = new Bitmap(width, height);
+            // Ensure all labels have proper modern styling
+            foreach (Control control in this.Controls)
+            {
+                if (control is Label label)
+                {
+                    label.BackColor = Color.Transparent;
+                }
+            }
+        }
+
+        private void UpdatePropertyTypeBadge()
+        {
+            var currentUser = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
+            string statusText;
+            Color badgeColor;
+
+            if (currentUser != null && currentUser.Role == Models.UserRole.Client)
+            {
+                if (!string.IsNullOrEmpty(_property.RejectionReason))
+                {
+                    // For clients viewing their rejected properties
+                    statusText = "Rejected";
+                    badgeColor = Color.FromArgb(220, 53, 69); // Red for rejected
+                }
+                else if (!_property.IsApproved)
+                {
+                    // For clients viewing their pending properties
+                    statusText = "Pending";
+                    badgeColor = Color.FromArgb(255, 193, 7); // Yellow/Orange for pending
+                }
+                else
+                {
+                    // For clients viewing their approved properties
+                    statusText = _property.PropertyType ?? string.Empty;
+                    badgeColor = statusText switch
+                    {
+                        "Residential" => Color.FromArgb(40, 167, 69),
+                        "Commercial" => Color.FromArgb(0, 123, 255),
+                        "Raw Land" => Color.FromArgb(108, 117, 125),
+                        _ => Color.FromArgb(90, 95, 100),
+                    };
+                }
+            }
+            else
+            {
+                // Show property type for brokers
+                statusText = _property.PropertyType ?? string.Empty;
+                badgeColor = statusText switch
+                {
+                    "Residential" => Color.FromArgb(40, 167, 69),
+                    "Commercial" => Color.FromArgb(0, 123, 255),
+                    "Raw Land" => Color.FromArgb(108, 117, 125),
+                    _ => Color.FromArgb(90, 95, 100),
+                };
+            }
+
+            lblStatus.Text = statusText;
+
+            // Apply color
+            statusPanel.BackColor = badgeColor;
+
+            // Ensure lblStatus has the intended font/color
+            lblStatus.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            lblStatus.ForeColor = Color.White;
+
+            // Measure label preferred size (taking padding into account) and resize statusPanel accordingly
+            using (var g = CreateGraphics())
+            {
+                var proposedSize = new Size(int.MaxValue, int.MaxValue);
+                var preferred = lblStatus.GetPreferredSize(proposedSize);
+
+                // Add a small horizontal margin so the rounded badge has breathing room
+                int panelWidth = Math.Max(preferred.Width, 40);
+                int panelHeight = Math.Max(preferred.Height, 20);
+
+                statusPanel.Size = new Size(panelWidth, panelHeight);
+
+                // Position the statusPanel anchored to the right side of titlePanel with a fixed margin
+                int rightMargin = 10;
+                statusPanel.Location = new Point(titlePanel.Width - statusPanel.Width - rightMargin, (titlePanel.Height - statusPanel.Height) / 2);
+
+                // Reduce lblTitle width so it doesn't get overlapped by the badge.
+                // Keep a small spacing between title and badge.
+                int spacing = 8;
+                int availableWidth = Math.Max(40, titlePanel.Width - statusPanel.Width - spacing);
+                lblTitle.Width = Math.Min(lblTitle.Width, availableWidth);
+            }
+
+            // Ensure we only attach a single paint handler to draw the rounded background
+            if (!_paintHandlerAttached)
+            {
+                statusPanel.Paint += StatusPanel_Paint;
+                _paintHandlerAttached = true;
+            }
+
+            statusPanel.Invalidate();
+            statusPanel.Update();
+            lblStatus.Invalidate();
+            lblStatus.Update();
+        }
+
+        private bool _paintHandlerAttached = false;
+
+        private void StatusPanel_Paint(object? sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            var rect = new Rectangle(0, 0, statusPanel.Width, statusPanel.Height);
+            var path = CreateRoundedRectanglePath(rect, 6);
+            using (var brush = new SolidBrush(statusPanel.BackColor))
+            {
+                g.FillPath(brush, path);
+            }
+        }
+
+        private void UpdateFeatureIcons()
+        {
+            // Modern minimalist icons with consistent styling
+            pbBedIcon.Image?.Dispose();
+            pbBedIcon.Image = CreateModernFeatureIcon("🛏", Color.FromArgb(73, 80, 87));
+            pbBedIcon.Invalidate();
+            pbBedIcon.Update();
+
+            pbBathIcon.Image?.Dispose();
+            pbBathIcon.Image = CreateModernFeatureIcon("🛁", Color.FromArgb(73, 80, 87));
+            pbBathIcon.Invalidate();
+            pbBathIcon.Update();
+
+            pbSqmIcon.Image?.Dispose();
+            pbSqmIcon.Image = CreateModernFeatureIcon("📐", Color.FromArgb(73, 80, 87));
+            pbSqmIcon.Invalidate();
+            pbSqmIcon.Update();
+        }
+
+        private void UpdateFeatureValues()
+        {
+            // Modern typography for feature values
+            var featureFont = new Font("Segoe UI", 12F, FontStyle.Bold);
+            var featureColor = Color.FromArgb(33, 37, 41);
+
+            lblBedValue.Text = _property.Bedrooms.ToString();
+            lblBedValue.Font = featureFont;
+            lblBedValue.ForeColor = featureColor;
+            lblBedValue.Invalidate();
+            lblBedValue.Update();
+
+            lblBathValue.Text = _property.Bathrooms.ToString();
+            lblBathValue.Font = featureFont;
+            lblBathValue.ForeColor = featureColor;
+            lblBathValue.Invalidate();
+            lblBathValue.Update();
+
+            lblSqmValue.Text = _property.LotAreaSqm > 0 ? $"{_property.LotAreaSqm:N0} sqm" : "N/A";
+            lblSqmValue.Font = featureFont;
+            lblSqmValue.ForeColor = featureColor;
+            lblSqmValue.Invalidate();
+            lblSqmValue.Update();
+        }
+
+        private void UpdateActiveDealInfo()
+        {
+            // Check if current user is a client and if this property has an active deal
+            var currentUser = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
+            if (currentUser == null || currentUser.Role != Models.UserRole.Client || _property == null)
+                return;
+
+            try
+            {
+                using var db = Data.DbContextHelper.CreateDbContext();
+
+                // Find active deal for this property where the client is the contact
+                var activeDeal = db.Deals
+                    .Include(d => d.Contact)
+                    .FirstOrDefault(d => d.PropertyId == _property.Id &&
+                                        d.IsActive &&
+                                        d.Contact != null &&
+                                        d.Contact.Email == currentUser.Email &&
+                                        d.Status.ToLower() != "closed" &&
+                                        d.Status.ToLower() != "lost");
+
+                if (activeDeal != null)
+                {
+                    // Add deal status info to the address label
+                    lblAddress.Text = $"{_property.Address ?? string.Empty}\n" +
+                                     $"🤝 Active Deal • Status: {activeDeal.Status}";
+                    lblAddress.ForeColor = Color.FromArgb(25, 135, 84); // Green to indicate active deal
+                }
+            }
+            catch
+            {
+                // Silently fail if there's an error checking for deals
+            }
+        }
+
+        private Bitmap CreateModernFeatureIcon(string emoji, Color color)
+        {
+            var bmp = new Bitmap(28, 28);
             using (var g = Graphics.FromImage(bmp))
             {
                 g.Clear(Color.Transparent);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-                // Use Segoe UI Emoji for best emoji rendering on Windows
-                using (var font = new Font("Segoe UI Emoji", Math.Max(12, height - 4), FontStyle.Regular, GraphicsUnit.Pixel))
-                using (var brush = new SolidBrush(Color.FromArgb(90, 95, 100)))
+                // Create circular background
+                var circleRect = new Rectangle(2, 2, 24, 24);
+                using (var backgroundBrush = new SolidBrush(Color.FromArgb(248, 249, 250)))
+                {
+                    g.FillEllipse(backgroundBrush, circleRect);
+                }
+
+                // Draw border
+                using (var borderPen = new Pen(Color.FromArgb(222, 226, 230), 1))
+                {
+                    g.DrawEllipse(borderPen, circleRect);
+                }
+
+                // Draw emoji
+                using (var font = new Font("Segoe UI Emoji", 14, FontStyle.Regular))
+                using (var brush = new SolidBrush(color))
                 {
                     var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    g.DrawString(emoji, font, brush, new RectangleF(0, 0, width, height), sf);
+                    g.DrawString(emoji, font, brush, new RectangleF(0, 0, 28, 28), sf);
                 }
             }
             return bmp;
@@ -333,9 +733,12 @@ namespace RealEstateCRMWinForms.Controls
                     {
                         using (var img = Image.FromFile(imagePath))
                         {
-                            pictureBox.Image?.Dispose(); // Dispose existing image first
+                            pictureBox.Image?.Dispose();
                             pictureBox.Image = new Bitmap(img);
                         }
+
+                        // Apply modern image styling
+                        ApplyModernImageStyling();
                         pictureBox.Invalidate();
                         pictureBox.Update();
                         return;
@@ -353,34 +756,73 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
+        private void ApplyModernImageStyling()
+        {
+            // Add rounded corners to image
+            pictureBox.Paint += (s, e) =>
+            {
+                if (pictureBox.Image != null)
+                {
+                    var g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    var rect = new Rectangle(0, 0, pictureBox.Width, pictureBox.Height);
+                    var path = CreateRoundedRectanglePath(rect, 8);
+
+                    g.SetClip(path);
+                    g.DrawImage(pictureBox.Image, rect);
+                    g.ResetClip();
+
+                    // Draw subtle border
+                    using (var borderPen = new Pen(Color.FromArgb(222, 226, 230), 1))
+                    {
+                        g.DrawPath(borderPen, path);
+                    }
+                }
+            };
+        }
+
         private void SetDefaultImage()
         {
             // Dispose existing image first
             pictureBox.Image?.Dispose();
 
-            // Create a default placeholder image
+            // Create a modern placeholder image
             var defaultBitmap = new Bitmap(264, 180);
             using (var g = Graphics.FromImage(defaultBitmap))
             {
-                g.Clear(Color.LightGray);
-
-                // Draw a simple house icon placeholder
-                using (var brush = new SolidBrush(Color.Gray))
-                using (var font = new Font("Segoe UI", 12, FontStyle.Bold))
+                // Modern gradient background
+                using (var brush = new LinearGradientBrush(
+                    new Rectangle(0, 0, 264, 180),
+                    Color.FromArgb(248, 249, 250),
+                    Color.FromArgb(233, 236, 239),
+                    LinearGradientMode.Vertical))
                 {
-                    string text = "No Image";
-                    var textSize = g.MeasureString(text, font);
-                    var x = (defaultBitmap.Width - textSize.Width) / 2;
-                    var y = (defaultBitmap.Height - textSize.Height) / 2;
-                    g.DrawString(text, font, brush, x, y);
+                    g.FillRectangle(brush, 0, 0, 264, 180);
+                }
+
+                // Modern placeholder icon and text
+                using (var iconBrush = new SolidBrush(Color.FromArgb(173, 181, 189)))
+                using (var iconFont = new Font("Segoe UI Emoji", 32, FontStyle.Regular))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString("🏠", iconFont, iconBrush, new RectangleF(0, 40, 264, 60), sf);
+                }
+
+                using (var textBrush = new SolidBrush(Color.FromArgb(108, 117, 125)))
+                using (var textFont = new Font("Segoe UI", 11, FontStyle.Regular))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString("No Image Available", textFont, textBrush, new RectangleF(0, 110, 264, 30), sf);
                 }
             }
             pictureBox.Image = defaultBitmap;
+            ApplyModernImageStyling();
             pictureBox.Invalidate();
             pictureBox.Update();
         }
 
-        private string GetPropertyImagePath(string imagePath)
+        public static string GetPropertyImagePath(string imagePath)
         {
             // Create images directory if it doesn't exist
             string imagesDir = Path.Combine(Application.StartupPath, "PropertyImages");
@@ -430,10 +872,11 @@ namespace RealEstateCRMWinForms.Controls
     public class PropertyEventArgs : EventArgs
     {
         public Property Property { get; }
+        public string RejectionReason { get; set; } = string.Empty;
 
         public PropertyEventArgs(Property property)
         {
-            Property = property;
+            Property = property ?? throw new ArgumentNullException(nameof(property));
         }
     }
 }

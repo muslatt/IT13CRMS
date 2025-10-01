@@ -27,7 +27,18 @@ namespace RealEstateCRMWinForms.Views
             var loginView = new LoginView(_authService);
             loginView.LoginSuccess += OnLoginSuccess;
             loginView.EmailVerificationRequested += (s, email) => ShowEmailVerificationView(email);
+            loginView.RegisterRequested += (s, e) => ShowRegisterViewForClients();
             SwitchView(loginView);
+        }
+
+        private void ShowRegisterViewForClients()
+        {
+            // When coming from public login, register users should become Clients
+            var registerView = new RegisterView(_authService, Models.UserRole.Client);
+            registerView.RegisterSuccess += (s, e) => ReturnToMainAfterRegister();
+            registerView.BackToLoginRequested += (s, e) => ShowLoginView();
+            registerView.EmailVerificationRequired += (s, email) => ShowEmailVerificationView(email);
+            SwitchView(registerView);
         }
 
         private void ShowRegisterView()
@@ -35,7 +46,7 @@ namespace RealEstateCRMWinForms.Views
             var registerView = new RegisterView(_authService);
             // When opened from Broker menu, return to Main after completing
             registerView.RegisterSuccess += (s, e) => ReturnToMainAfterRegister();
-            registerView.BackToLoginRequested += (s, e) => ReturnToMainAfterRegister();
+            registerView.BackToLoginRequested += (s, e) => ShowLoginView();
             // For non-broker self-registration, go to verification screen
             registerView.EmailVerificationRequired += (s, email) => ShowEmailVerificationView(email);
             SwitchView(registerView);
@@ -67,14 +78,14 @@ namespace RealEstateCRMWinForms.Views
             mainView.LogoutRequested += OnLogoutRequested;
             mainView.RegisterAgentRequested += OnRegisterAgentRequested;
 
+            SwitchView(mainView);
+
             if (_currentUser != null)
             {
                 var fullName = $"{_currentUser.FirstName} {_currentUser.LastName}".Trim();
-                var roleName = _currentUser.Role == Models.UserRole.Broker ? "Broker" : "Agent";
+                var roleName = _currentUser.Role.ToString();
                 mainView.SetCurrentUser(fullName, roleName);
             }
-
-            SwitchView(mainView);
         }
 
         private void OnRegisterAgentRequested(object? sender, EventArgs e)
@@ -149,7 +160,7 @@ namespace RealEstateCRMWinForms.Views
             if (_currentView is MainView mv)
             {
                 var fullName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : string.Empty;
-                var roleName = user != null && user.Role == Models.UserRole.Broker ? "Broker" : (user != null ? "Agent" : string.Empty);
+                var roleName = user != null ? user.Role.ToString() : string.Empty;
                 mv.SetCurrentUser(fullName, roleName);
             }
         }

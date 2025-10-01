@@ -135,7 +135,7 @@ namespace RealEstateCRMWinForms.Views
             var lblClient = new Label { Text = deal.Contact != null ? $"Client: {deal.Contact.FullName}" : "Client: -", Font = new Font("Segoe UI", 10f), AutoSize = false, Height = 22, Dock = DockStyle.Top };
             var assigned = ExtractAssignedAgent(deal.Notes);
             var lblAgent = new Label { Text = !string.IsNullOrWhiteSpace(assigned) ? $"Assigned: {assigned}" : "Assigned:", Font = new Font("Segoe UI", 10f), AutoSize = false, Height = 22, Dock = DockStyle.Top };
-            var lblPrice = new Label { Text = deal.Property?.Price != null ? $"Price: {deal.Property.Price:C0}" : "", Font = new Font("Segoe UI", 10f, FontStyle.Bold), AutoSize = false, Height = 24, Dock = DockStyle.Top, ForeColor = Color.FromArgb(0,123,255) };
+            var lblPrice = new Label { Text = deal.Property?.Price != null ? $"Price: {deal.Property.Price:C0}" : "", Font = new Font("Segoe UI", 10f, FontStyle.Bold), AutoSize = false, Height = 24, Dock = DockStyle.Top, ForeColor = Color.FromArgb(0, 123, 255) };
             summary.Controls.Add(lblPrice);
             summary.Controls.Add(lblAgent);
             summary.Controls.Add(lblClient);
@@ -205,6 +205,17 @@ namespace RealEstateCRMWinForms.Views
 
         private async Task AcceptAssignmentAsync(Deal deal)
         {
+            // Confirm before accepting the assignment
+            var confirmResult = MessageBox.Show(
+                $"Are you sure you want to accept the assignment for '{deal.Title}'?\n\nThis will move the deal to your pipeline.",
+                "Confirm Accept Assignment",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1);
+
+            if (confirmResult != DialogResult.Yes)
+                return;
+
             var user = UserSession.Instance.CurrentUser;
             var agentName = ($"{user?.FirstName} {user?.LastName}".Trim());
             try
@@ -225,8 +236,11 @@ namespace RealEstateCRMWinForms.Views
                 {
                     LoadAssignments();
                     AssignmentAccepted?.Invoke(this, deal);
-                    MessageBox.Show("Assignment accepted and moved to your pipeline.", "Accepted",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(
+                        $"Assignment for '{deal.Title}' has been successfully accepted and moved to your pipeline!",
+                        "Assignment Accepted",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                 }
                 else
                 {

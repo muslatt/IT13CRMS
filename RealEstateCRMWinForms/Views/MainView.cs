@@ -1,5 +1,6 @@
 using RealEstateCRMWinForms.ViewModels;
 using RealEstateCRMWinForms.Services;
+using RealEstateCRMWinForms.Models;
 using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
@@ -36,8 +37,15 @@ namespace RealEstateCRMWinForms.Views
         private readonly Color _lightAccent = Color.FromArgb(255, 244, 230);     // subtle warm background for active state
         private readonly Color _hoverAccent = Color.FromArgb(255, 247, 236);     // hover background
         private bool _isBroker = false;
+        private bool _isClient = false;
         private MailjetInboundListener? _mailjetInbound;
         private Button? btnManageAgents; // runtime-created nav button
+        private Button? btnLogs; // runtime-created nav button
+        private Button? btnPropertyRequests; // runtime-created nav button for brokers
+        private Button? btnInquiries; // runtime-created nav button for brokers
+        private Button? btnClientAddProperty; // client-specific nav
+        private Button? btnClientBrowseProperty; // client-specific nav
+        private Button? btnClientMyDeals; // client-specific nav for deals
 
         public MainView()
         {
@@ -122,6 +130,7 @@ namespace RealEstateCRMWinForms.Views
             if (flSidebarNav != null)
             {
                 panelSidebar.Controls.Remove(flSidebarNav);
+                flSidebarNav.Controls.Clear(); // Clear controls to prevent disposing the buttons
                 flSidebarNav.Dispose();
                 flSidebarNav = null;
             }
@@ -146,7 +155,21 @@ namespace RealEstateCRMWinForms.Views
 
             // Ensure consistent button sizing and margins, move existing nav buttons into the flow panel
             EnsureManageAgentsButton();
-            var navButtons = new[] { btnDashboard, btnProperties, btnPendingAssignments, btnLeads, btnContacts, btnDeals, btnManageAgents };
+            EnsureLogsButton();
+            EnsurePropertyRequestsButton();
+            EnsureInquiriesButton();
+            EnsureClientButtons();
+            List<Button?> navButtons = new List<Button?>();
+            if (_isClient)
+            {
+                navButtons.Add(btnClientBrowseProperty);
+                navButtons.Add(btnClientAddProperty);
+                navButtons.Add(btnClientMyDeals);
+            }
+            else
+            {
+                navButtons.AddRange(new[] { btnDashboard, btnProperties, btnLeads, btnContacts, btnDeals, btnInquiries, btnPropertyRequests, btnManageAgents, btnPendingAssignments, btnLogs });
+            }
             foreach (var b in navButtons)
             {
                 if (b == null) continue;
@@ -222,6 +245,7 @@ namespace RealEstateCRMWinForms.Views
                 {
                     if (panelSidebar.Controls.Contains(panelSidebarBottom))
                         panelSidebar.Controls.Remove(panelSidebarBottom);
+                    panelSidebarBottom.Controls.Clear(); // Clear controls to prevent disposing the buttons
                     panelSidebarBottom.Dispose();
                     panelSidebarBottom = null;
                 }
@@ -234,6 +258,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 if (panelSidebar.Controls.Contains(panelSidebarBottom))
                     panelSidebar.Controls.Remove(panelSidebarBottom);
+                panelSidebarBottom.Controls.Clear(); // Clear controls to prevent disposing the buttons
                 panelSidebarBottom.Dispose();
                 panelSidebarBottom = null;
             }
@@ -281,6 +306,70 @@ namespace RealEstateCRMWinForms.Views
 
             // Final layout fixup to ensure widths and positions are correct
             UpdateSidebarLayout();
+        }
+
+        private void EnsureClientButtons()
+        {
+            // Recreate client buttons if they were disposed earlier (e.g., when flSidebarNav was disposed)
+            if (btnClientAddProperty == null || btnClientAddProperty.IsDisposed)
+            {
+                btnClientAddProperty = new Button
+                {
+                    Name = "btnClientAddProperty",
+                    Text = "My Listings",
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+                btnClientAddProperty.FlatAppearance.BorderSize = 0;
+                // Fixed icon positioning - removed vertical offset for proper centering
+                try { btnClientAddProperty.Image = CreateIconFromGlyph('\uE710', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
+                btnClientAddProperty.ImageAlign = ContentAlignment.MiddleLeft;
+                btnClientAddProperty.TextImageRelation = TextImageRelation.ImageBeforeText;
+                btnClientAddProperty.Padding = new Padding(12, 0, 8, 0);
+                btnClientAddProperty.Click -= BtnClientAddProperty_Click;
+                btnClientAddProperty.Click += BtnClientAddProperty_Click;
+            }
+
+            if (btnClientBrowseProperty == null || btnClientBrowseProperty.IsDisposed)
+            {
+                btnClientBrowseProperty = new Button
+                {
+                    Name = "btnClientBrowseProperty",
+                    Text = "Browse Properties", // Fixed: Full label instead of "Browse Property"
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+                btnClientBrowseProperty.FlatAppearance.BorderSize = 0;
+                // Fixed icon positioning - removed vertical offset for proper centering
+                try { btnClientBrowseProperty.Image = CreateIconFromGlyph('\uE8B8', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
+                btnClientBrowseProperty.ImageAlign = ContentAlignment.MiddleLeft;
+                btnClientBrowseProperty.TextImageRelation = TextImageRelation.ImageBeforeText;
+                btnClientBrowseProperty.Padding = new Padding(12, 0, 8, 0);
+                btnClientBrowseProperty.Click -= BtnClientBrowseProperty_Click;
+                btnClientBrowseProperty.Click += BtnClientBrowseProperty_Click;
+            }
+
+            if (btnClientMyDeals == null || btnClientMyDeals.IsDisposed)
+            {
+                btnClientMyDeals = new Button
+                {
+                    Name = "btnClientMyDeals",
+                    Text = "My Deals",
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+                btnClientMyDeals.FlatAppearance.BorderSize = 0;
+                // Use deals icon
+                try { btnClientMyDeals.Image = CreateIconFromGlyph('\uEAFD', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
+                btnClientMyDeals.ImageAlign = ContentAlignment.MiddleLeft;
+                btnClientMyDeals.TextImageRelation = TextImageRelation.ImageBeforeText;
+                btnClientMyDeals.Padding = new Padding(12, 0, 8, 0);
+                btnClientMyDeals.Click -= BtnClientMyDeals_Click;
+                btnClientMyDeals.Click += BtnClientMyDeals_Click;
+            }
         }
 
         private void UpdateSidebarLayout()
@@ -417,7 +506,9 @@ namespace RealEstateCRMWinForms.Views
 
             // Reapply active styling to make sure active button remains highlighted
             // (SetActiveNavButton expects current active button; easiest is to re-call with current lblSectionTitle)
-            SetActiveNavButton(GetButtonForSection(lblSectionTitle.Text));
+            var activeBtn = GetButtonForSection(lblSectionTitle.Text);
+            if (activeBtn != null)
+                SetActiveNavButton(activeBtn);
         }
 
         private Button? GetButtonForSection(string section)
@@ -426,11 +517,17 @@ namespace RealEstateCRMWinForms.Views
             {
                 "Dashboard" => btnDashboard,
                 "Manage Agents" => btnManageAgents,
+                "Property Requests" => btnPropertyRequests,
+                "Inquiries" => btnInquiries,
                 "Leads" => btnLeads,
                 "Contacts" => btnContacts,
                 "Deals" => btnDeals,
                 "Properties" => btnProperties,
                 "Pending Assignments" => btnPendingAssignments,
+                "Add Property" => btnClientAddProperty,
+                "My Listings" => btnClientAddProperty,
+                "Browse Properties" => btnClientBrowseProperty, // Updated to match the corrected text
+                "My Deals" => btnClientMyDeals,
                 _ => null
             };
         }
@@ -509,11 +606,15 @@ namespace RealEstateCRMWinForms.Views
                 }
             }
 
-            // Pending Assignments icon: ensure it uses the same centered drawing as others
-            // (no manual vertical offset so it's vertically centered)
+            // Fixed: Pending Assignments icon positioning - removed manual vertical offset
             if (btnPendingAssignments != null)
             {
-                try { btnPendingAssignments.Image?.Dispose(); btnPendingAssignments.Image = CreateIconFromGlyph('\uE916', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
+                try
+                {
+                    btnPendingAssignments.Image?.Dispose();
+                    btnPendingAssignments.Image = CreateIconFromGlyph('\uE916', _sidebarIconSize, _sidebarIconSize, _brandBlue);
+                }
+                catch { }
             }
         }
 
@@ -630,9 +731,32 @@ namespace RealEstateCRMWinForms.Views
             SwitchSection("Properties");
         }
 
+        private void BtnClientAddProperty_Click(object? sender, EventArgs e)
+        {
+            // Show properties view in My Listings mode for clients
+            SwitchSection("My Listings");
+        }
+
+        private void BtnClientBrowseProperty_Click(object? sender, EventArgs e)
+        {
+            // Show properties view in browse mode (only approved properties, no add button)
+            SwitchSection("Browse Properties");
+        }
+
+        private void BtnClientMyDeals_Click(object? sender, EventArgs e)
+        {
+            // Show client deals view with status change requests
+            SwitchSection("My Deals");
+        }
+
         private void btnManageAgents_Click(object? sender, EventArgs e)
         {
             SwitchSection("Manage Agents");
+        }
+
+        private void btnLogs_Click(object? sender, EventArgs e)
+        {
+            SwitchSection("Logs");
         }
 
         private void EnsureManageAgentsButton()
@@ -648,13 +772,89 @@ namespace RealEstateCRMWinForms.Views
                 TextAlign = ContentAlignment.MiddleLeft
             };
             btnManageAgents.FlatAppearance.BorderSize = 0;
-            // assign icon similar to others
-            try { btnManageAgents.Image = CreateIconFromGlyph('\uE716', _sidebarIconSize, _sidebarIconSize, _brandBlue, -2); } catch { }
+            // assign icon similar to others - removed vertical offset for proper centering
+            try { btnManageAgents.Image = CreateIconFromGlyph('\uE716', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
             // make sure alignment/padding matches designer-created nav buttons
             btnManageAgents.ImageAlign = ContentAlignment.MiddleLeft;
             btnManageAgents.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnManageAgents.Padding = new Padding(12, btnManageAgents.Padding.Top, 8, btnManageAgents.Padding.Bottom);
             btnManageAgents.Click += btnManageAgents_Click;
+        }
+
+        private void EnsurePropertyRequestsButton()
+        {
+            if (btnPropertyRequests != null) return;
+
+            btnPropertyRequests = new Button
+            {
+                Name = "btnPropertyRequests",
+                Text = "Property Requests",
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            btnPropertyRequests.FlatAppearance.BorderSize = 0;
+            // assign icon - using a request icon glyph, e.g., \uE8C1 for mail or \uE8F1 for flag
+            try { btnPropertyRequests.Image = CreateIconFromGlyph('\uE8C1', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
+            // make sure alignment/padding matches designer-created nav buttons
+            btnPropertyRequests.ImageAlign = ContentAlignment.MiddleLeft;
+            btnPropertyRequests.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnPropertyRequests.Padding = new Padding(12, btnPropertyRequests.Padding.Top, 8, btnPropertyRequests.Padding.Bottom);
+            btnPropertyRequests.Click += btnPropertyRequests_Click;
+        }
+
+        private void btnPropertyRequests_Click(object? sender, EventArgs e)
+        {
+            SwitchSection("Property Requests");
+        }
+
+        private void EnsureInquiriesButton()
+        {
+            if (btnInquiries != null) return;
+
+            btnInquiries = new Button
+            {
+                Name = "btnInquiries",
+                Text = "Inquiries",
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            btnInquiries.FlatAppearance.BorderSize = 0;
+            // assign icon - using an inquiry/message icon glyph
+            try { btnInquiries.Image = CreateIconFromGlyph('\uE8BD', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
+            // make sure alignment/padding matches designer-created nav buttons
+            btnInquiries.ImageAlign = ContentAlignment.MiddleLeft;
+            btnInquiries.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnInquiries.Padding = new Padding(12, btnInquiries.Padding.Top, 8, btnInquiries.Padding.Bottom);
+            btnInquiries.Click += btnInquiries_Click;
+        }
+
+        private void btnInquiries_Click(object? sender, EventArgs e)
+        {
+            SwitchSection("Inquiries");
+        }
+
+        private void EnsureLogsButton()
+        {
+            if (btnLogs != null) return;
+
+            btnLogs = new Button
+            {
+                Name = "btnLogs",
+                Text = "Logs",
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            btnLogs.FlatAppearance.BorderSize = 0;
+            // assign icon - using a log icon glyph, e.g., \uE7C4 for history or \uE81C for list - removed vertical offset
+            try { btnLogs.Image = CreateIconFromGlyph('\uE81C', _sidebarIconSize, _sidebarIconSize, _brandBlue); } catch { }
+            // make sure alignment/padding matches designer-created nav buttons
+            btnLogs.ImageAlign = ContentAlignment.MiddleLeft;
+            btnLogs.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnLogs.Padding = new Padding(12, btnLogs.Padding.Top, 8, btnLogs.Padding.Bottom);
+            btnLogs.Click += btnLogs_Click;
         }
 
         private void SetActiveNavButton(Button active)
@@ -699,8 +899,8 @@ namespace RealEstateCRMWinForms.Views
 
         public void SwitchSection(string section)
         {
-            // Prevent Agents from accessing Properties section
-            if (!_isBroker && string.Equals(section, "Properties", System.StringComparison.OrdinalIgnoreCase))
+            // Prevent non-Brokers and non-Clients from accessing Properties section
+            if (!_isBroker && !_isClient && string.Equals(section, "Properties", System.StringComparison.OrdinalIgnoreCase))
             {
                 section = "Dashboard";
             }
@@ -727,6 +927,29 @@ namespace RealEstateCRMWinForms.Views
                         SwitchSection("Dashboard");
                     }
                     break;
+                case "Property Requests":
+                    if (_isBroker)
+                    {
+                        SetActiveNavButton(btnPropertyRequests!);
+                        SwitchContentView(new PropertyRequestsView());
+                    }
+                    else
+                    {
+                        SwitchSection("Dashboard");
+                    }
+                    break;
+                case "Inquiries":
+                    if (_isBroker)
+                    {
+                        SetActiveNavButton(btnInquiries!);
+                        // TODO: Create InquiriesView
+                        SwitchContentView(new InquiriesView());
+                    }
+                    else
+                    {
+                        SwitchSection("Dashboard");
+                    }
+                    break;
                 case "Leads":
                     SetActiveNavButton(btnLeads);
                     ShowLeadsView();
@@ -743,6 +966,25 @@ namespace RealEstateCRMWinForms.Views
                     SetActiveNavButton(btnPendingAssignments);
                     SwitchContentView(new PendingAssignmentsView(false));
                     break;
+                case "Logs":
+                    SetActiveNavButton(btnLogs!);
+                    SwitchContentView(new LogsView());
+                    break;
+                case "Browse Properties":
+                    if (btnClientBrowseProperty != null)
+                        SetActiveNavButton(btnClientBrowseProperty);
+                    ShowBrowsePropertiesView();
+                    break;
+                case "My Listings":
+                    if (btnClientAddProperty != null)
+                        SetActiveNavButton(btnClientAddProperty);
+                    ShowMyListingsView();
+                    break;
+                case "My Deals":
+                    if (btnClientMyDeals != null)
+                        SetActiveNavButton(btnClientMyDeals);
+                    ShowClientDealsView();
+                    break;
                 case "Properties":
                 default:
                     SetActiveNavButton(btnProperties);
@@ -754,13 +996,42 @@ namespace RealEstateCRMWinForms.Views
         private void ShowPropertiesView()
         {
             // Guard at runtime as well
-            if (_isBroker)
+            if (_isBroker || _isClient)
             {
-                SwitchContentView(new PropertiesView());
+                bool isReadOnly = _isClient;
+                SwitchContentView(new PropertiesView(isReadOnly));
             }
             else
             {
-                // Fallback for Agents
+                // Fallback for others
+                SwitchSection("Dashboard");
+            }
+        }
+
+        private void ShowBrowsePropertiesView()
+        {
+            // For browse mode: clients see only approved properties, no add button
+            if (_isClient)
+            {
+                SwitchContentView(new PropertiesView(isReadOnly: true, isBrowseMode: true));
+            }
+            else
+            {
+                // Fallback for non-clients
+                SwitchSection("Dashboard");
+            }
+        }
+
+        private void ShowMyListingsView()
+        {
+            // For My Listings mode: clients see their properties with approved listings toggle and can add new properties
+            if (_isClient)
+            {
+                SwitchContentView(new PropertiesView(isReadOnly: false, isBrowseMode: false, isMyListingsMode: true));
+            }
+            else
+            {
+                // Fallback for non-clients
                 SwitchSection("Dashboard");
             }
         }
@@ -768,6 +1039,20 @@ namespace RealEstateCRMWinForms.Views
         private void ShowDashboardView()
         {
             SwitchContentView(new DashboardView());
+        }
+
+        private void ShowClientDealsView()
+        {
+            // Show client deals view with pending status change requests
+            if (_isClient)
+            {
+                SwitchContentView(new ClientDealsView());
+            }
+            else
+            {
+                // Fallback for non-clients
+                SwitchSection("Dashboard");
+            }
         }
 
         private void ShowLeadsView()
@@ -818,20 +1103,35 @@ namespace RealEstateCRMWinForms.Views
         public void SetCurrentUser(string displayName, string role)
         {
             lblUserName.Text = displayName ?? string.Empty;
-            lblUserRole.Text = string.Equals(role, "Broker", System.StringComparison.OrdinalIgnoreCase)
-                ? "Logged in as Broker"
-                : (string.IsNullOrWhiteSpace(role) ? string.Empty : role);
+
+            // Display friendly role names
+            var friendlyRole = string.Empty;
+            if (string.Equals(role, UserRole.Broker.ToString(), System.StringComparison.OrdinalIgnoreCase))
+                friendlyRole = "Logged in as Broker";
+            else if (string.Equals(role, UserRole.Client.ToString(), System.StringComparison.OrdinalIgnoreCase))
+                friendlyRole = "Client";
+            else if (string.Equals(role, UserRole.Agent.ToString(), System.StringComparison.OrdinalIgnoreCase))
+                friendlyRole = "Agent";
+            else
+                friendlyRole = role ?? string.Empty;
+
+            lblUserRole.Text = string.IsNullOrWhiteSpace(friendlyRole) ? string.Empty : friendlyRole;
 
             // pbAvatar currently blank; you can set pbAvatar.Image = ... when available
             pbAvatar.Image = null;
 
             // Apply role-based UI gating
-            ApplyRolePermissions(role);
+            ApplyRolePermissions(friendlyRole);
         }
 
         private void ApplyRolePermissions(string role)
         {
-            _isBroker = string.Equals(role, "Broker", System.StringComparison.OrdinalIgnoreCase);
+            // Role passed in is the friendly name; treat Broker specially
+            _isBroker = string.Equals(role, "Logged in as Broker", System.StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(role, "Broker", System.StringComparison.OrdinalIgnoreCase);
+
+            // Treat Client specially (friendly name 'Client')
+            _isClient = string.Equals(role, "Client", System.StringComparison.OrdinalIgnoreCase);
 
             // Only Brokers can access certain admin/dev tools
             // Load Users button removed
@@ -856,12 +1156,46 @@ namespace RealEstateCRMWinForms.Views
                 btnProperties.Visible = _isBroker;
                 btnProperties.Enabled = _isBroker;
             }
+
+            // Client-specific nav: Add/Browse properties
+            EnsureClientButtons();
+            if (btnClientAddProperty != null)
+            {
+                btnClientAddProperty.Visible = _isClient;
+                btnClientAddProperty.Enabled = _isClient;
+            }
+            if (btnClientBrowseProperty != null)
+            {
+                btnClientBrowseProperty.Visible = _isClient;
+                btnClientBrowseProperty.Enabled = _isClient;
+            }
+            if (btnClientMyDeals != null)
+            {
+                btnClientMyDeals.Visible = _isClient;
+                btnClientMyDeals.Enabled = _isClient;
+            }
+
+            // Rebuild the sidebar layout to include/exclude client buttons as needed
+            ApplyModernSidebarLayout();
             // Manage Agents navigation for Brokers only
             EnsureManageAgentsButton();
             if (btnManageAgents != null)
             {
                 btnManageAgents.Visible = _isBroker;
                 btnManageAgents.Enabled = _isBroker;
+            }
+            // Property Requests navigation for Brokers only
+            EnsurePropertyRequestsButton();
+            if (btnPropertyRequests != null)
+            {
+                btnPropertyRequests.Visible = _isBroker;
+                btnPropertyRequests.Enabled = _isBroker;
+            }
+            EnsureInquiriesButton();
+            if (btnInquiries != null)
+            {
+                btnInquiries.Visible = _isBroker;
+                btnInquiries.Enabled = _isBroker;
             }
             // Show Pending Assignments nav for Agents only
             if (btnPendingAssignments != null)

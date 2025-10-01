@@ -1,5 +1,6 @@
 using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.Services;
 using System;
 using System.ComponentModel;
 using System.Linq;
@@ -37,13 +38,13 @@ namespace RealEstateCRMWinForms.ViewModels
                         .Include(d => d.Contact)
                         .Where(d => d.IsActive)
                         .ToList();
-                    
+
                     Deals.Clear();
                     foreach (var deal in dealsFromDb)
                     {
                         Deals.Add(deal);
                     }
-                    
+
                     Console.WriteLine($"Loaded {Deals.Count} active deals from database");
                 }
             }
@@ -51,11 +52,11 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 Console.WriteLine($"Error loading deals: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                
+
                 // Don't load sample data anymore - just log the error
                 Deals.Clear();
             }
-            
+
             OnPropertyChanged(nameof(Deals));
         }
 
@@ -65,7 +66,16 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
-                    var properties = dbContext.Properties.Where(p => p.IsActive).ToList();
+                    var currentUser = Services.UserSession.Instance.CurrentUser;
+                    var query = dbContext.Properties.Where(p => p.IsActive);
+
+                    // For brokers, only show approved properties
+                    if (currentUser != null && currentUser.Role == UserRole.Broker)
+                    {
+                        query = query.Where(p => p.IsApproved);
+                    }
+
+                    var properties = query.ToList();
                     Properties.Clear();
                     foreach (var property in properties)
                     {
@@ -77,7 +87,7 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 Console.WriteLine($"Error loading properties: {ex.Message}");
             }
-            
+
             OnPropertyChanged(nameof(Properties));
         }
 
@@ -99,7 +109,7 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 Console.WriteLine($"Error loading contacts: {ex.Message}");
             }
-            
+
             OnPropertyChanged(nameof(Contacts));
         }
 
@@ -108,12 +118,12 @@ namespace RealEstateCRMWinForms.ViewModels
             try
             {
                 Console.WriteLine($"Attempting to add deal: {deal.Title}");
-                
+
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
                     // Ensure foreign key relationships are properly handled
                     Contact? contactForNotification = null;
-                    
+
                     if (deal.PropertyId.HasValue)
                     {
                         var existingProperty = dbContext.Properties.Find(deal.PropertyId.Value);
@@ -160,9 +170,12 @@ namespace RealEstateCRMWinForms.ViewModels
 
                     dbContext.Deals.Add(dealToAdd);
                     dbContext.SaveChanges();
-                    
+
+                    // Log the action
+                    LoggingService.LogAction("Created Deal", $"Deal '{dealToAdd.Title}' created with value ${dealToAdd.Value}");
+
                     Console.WriteLine($"Successfully saved deal with ID: {dealToAdd.Id}");
-                    
+
                     // Add to local collection with the generated ID
                     deal.Id = dealToAdd.Id;
                     deal.Contact = contactForNotification; // Set for notification
@@ -182,7 +195,7 @@ namespace RealEstateCRMWinForms.ViewModels
                             // Don't fail the entire operation if email fails
                         }
                     }
-                    
+
                     return true;
                 }
             }
@@ -215,12 +228,12 @@ namespace RealEstateCRMWinForms.ViewModels
                         .Include(d => d.Contact)
                         .Include(d => d.Property)
                         .FirstOrDefault(d => d.Id == deal.Id);
-                        
+
                     if (existingDeal != null)
                     {
                         // Store old status for notification
                         string previousStatus = oldStatus ?? existingDeal.Status;
-                        
+
                         // Update the properties
                         existingDeal.Title = deal.Title;
                         existingDeal.Description = deal.Description;
@@ -234,14 +247,26 @@ namespace RealEstateCRMWinForms.ViewModels
                         existingDeal.UpdatedAt = DateTime.UtcNow;
                         existingDeal.IsActive = deal.IsActive;
 
+                        // Note: Property deactivation now happens only when client approves the closure request
+                        // Automatically mark deal as inactive when status is "Closed/Done" (or contains "closed")
+                        if (deal.Status.Contains("Closed", StringComparison.OrdinalIgnoreCase) ||
+                            deal.Status.Equals("Lost", StringComparison.OrdinalIgnoreCase))
+                        {
+                            existingDeal.IsActive = false;
+                            existingDeal.ClosedAt = DateTime.UtcNow;
+                            Console.WriteLine($"Deal ID {deal.Id} marked as inactive due to {deal.Status} status");
+
+                            // Property is NOT deactivated here anymore - it's handled in ClientDealsView approval
+                        }
+
                         // If a property is linked and an agent has accepted, stamp the property with the agent name
                         if (existingDeal.Property != null && !string.IsNullOrWhiteSpace(existingDeal.CreatedBy))
                         {
-                            existingDeal.Property.Agent = existingDeal.CreatedBy;
+                            // Agent assignment removed
                         }
 
                         dbContext.SaveChanges();
-                        
+
                         Console.WriteLine($"Successfully updated deal ID: {deal.Id}, Status: {deal.Status}");
 
                         // Send email notification if status changed and contact exists
@@ -260,7 +285,7 @@ namespace RealEstateCRMWinForms.ViewModels
                                 // Don't fail the entire operation if email fails
                             }
                         }
-                        
+
                         return true;
                     }
                     else
@@ -298,9 +323,9 @@ namespace RealEstateCRMWinForms.ViewModels
                         existingDeal.IsActive = false;
                         existingDeal.UpdatedAt = DateTime.UtcNow;
                         dbContext.SaveChanges();
-                        
+
                         Console.WriteLine($"Successfully soft deleted deal ID: {deal.Id}");
-                        
+
                         // Remove from local collection
                         Deals.Remove(deal);
                         return true;
@@ -334,7 +359,7 @@ namespace RealEstateCRMWinForms.ViewModels
                 string oldStatus = deal.Status;
                 deal.Status = newStatus;
                 deal.UpdatedAt = DateTime.UtcNow;
-                
+
                 bool result = await UpdateDealAsync(deal, oldStatus);
                 if (result)
                 {
@@ -363,8 +388,8 @@ namespace RealEstateCRMWinForms.ViewModels
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
                     // Find deals with typical sample data names
-                    var sampleDeals = dbContext.Deals.Where(d => 
-                        d.Title == "Test" || 
+                    var sampleDeals = dbContext.Deals.Where(d =>
+                        d.Title == "Test" ||
                         d.Title == "Test Again" ||
                         d.Description == "Test" ||
                         d.Description == "Again").ToList();
@@ -372,16 +397,16 @@ namespace RealEstateCRMWinForms.ViewModels
                     if (sampleDeals.Any())
                     {
                         Console.WriteLine($"Found {sampleDeals.Count} sample deals to clean up");
-                        
+
                         foreach (var deal in sampleDeals)
                         {
                             deal.IsActive = false;
                             deal.UpdatedAt = DateTime.UtcNow;
                         }
-                        
+
                         dbContext.SaveChanges();
                         Console.WriteLine("Sample data cleanup completed");
-                        
+
                         // Reload deals after cleanup
                         LoadDeals();
                     }

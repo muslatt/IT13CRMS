@@ -258,23 +258,6 @@ namespace RealEstateCRMWinForms.Views
             typeColumn.Items.AddRange(new string[] { "Contact", "Lead", "Buyer", "Owner", "Renter" });
             dataGridViewContacts.Columns.Add(typeColumn);
 
-            var agentColumn = new DataGridViewImageTextColumn
-            {
-                ImagePropertyName = "AgentAvatarPath",
-                TextPropertyName = "AssignedAgent",
-                HeaderText = "Agent",
-                Name = "Agent",
-                Width = 180,
-                ShowInitialsWhenNoImage = true,
-                DefaultCellStyle = new DataGridViewCellStyle
-                {
-                    WrapMode = DataGridViewTriState.False,
-                    Font = UIStyles.DefaultFont,
-                    Padding = new Padding(8, 4, 8, 4)
-                }
-            };
-            dataGridViewContacts.Columns.Add(agentColumn);
-
             dataGridViewContacts.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Email",
@@ -365,18 +348,6 @@ namespace RealEstateCRMWinForms.Views
         {
             if (!_isDataInitialized) return;
             ApplyFilterAndSort(true);
-        }
-
-        private void BtnAddContact_Click(object? sender, EventArgs e)
-        {
-            var addContactForm = new AddContactForm();
-            if (addContactForm.ShowDialog() == DialogResult.OK && addContactForm.CreatedContact != null)
-            {
-                if (_viewModel.AddContact(addContactForm.CreatedContact))
-                {
-                    RefreshContactsView();
-                }
-            }
         }
 
         private void RefreshContactsView()
