@@ -37,6 +37,10 @@
             btnFilter = new Button();
             sortComboBox = new ComboBox();
             btnAddProperty = new Button();
+            btnShowAll = new Button();
+            btnShowApproved = new Button();
+            btnShowPending = new Button();
+            btnShowRejected = new Button();
             paginationPanel = new Panel();
             propertiesPaginationLayout = new TableLayoutPanel();
             lblPropertyPageInfo = new Label();
@@ -116,30 +120,35 @@
             // 
             rightControlsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             rightControlsPanel.BackColor = Color.Transparent;
-            rightControlsPanel.Controls.Add(btnFilter);
-            rightControlsPanel.Controls.Add(sortComboBox);
             rightControlsPanel.Controls.Add(btnAddProperty);
-            rightControlsPanel.Location = new Point(530, 20);
+            rightControlsPanel.Controls.Add(btnShowAll);
+            rightControlsPanel.Controls.Add(btnShowApproved);
+            rightControlsPanel.Controls.Add(btnShowPending);
+            rightControlsPanel.Controls.Add(btnShowRejected);
+            rightControlsPanel.Location = new Point(460, 20);
             rightControlsPanel.Name = "rightControlsPanel";
-            rightControlsPanel.Size = new Size(440, 40);
+            rightControlsPanel.Size = new Size(510, 40);
             rightControlsPanel.TabIndex = 1;
             // 
             // btnFilter
             // 
+            btnFilter.Anchor = AnchorStyles.None;
             btnFilter.BackColor = Color.White;
             btnFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             btnFilter.FlatStyle = FlatStyle.Flat;
             btnFilter.Font = new Font("Segoe UI", 10F);
             btnFilter.ForeColor = Color.FromArgb(55, 65, 81);
             btnFilter.Location = new Point(0, 0);
+            btnFilter.Margin = new Padding(0, 0, 10, 0);
             btnFilter.Name = "btnFilter";
-            btnFilter.Size = new Size(100, 36);
+            btnFilter.Size = new Size(100, 30);
             btnFilter.TabIndex = 0;
             btnFilter.Text = "Filter";
             btnFilter.UseVisualStyleBackColor = false;
             // 
             // sortComboBox
             // 
+            sortComboBox.Anchor = AnchorStyles.None;
             sortComboBox.BackColor = Color.White;
             sortComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             sortComboBox.FlatStyle = FlatStyle.Flat;
@@ -148,6 +157,7 @@
             sortComboBox.FormattingEnabled = true;
             sortComboBox.Items.AddRange(new object[] { "Newest to Oldest", "Price: Low to High", "Price: High to Low" });
             sortComboBox.Location = new Point(110, 3);
+            sortComboBox.Margin = new Padding(0, 0, 20, 0);
             sortComboBox.Name = "sortComboBox";
             sortComboBox.Size = new Size(170, 25);
             sortComboBox.TabIndex = 1;
@@ -159,7 +169,7 @@
             btnAddProperty.FlatStyle = FlatStyle.Flat;
             btnAddProperty.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnAddProperty.ForeColor = Color.White;
-            btnAddProperty.Location = new Point(290, 0);
+            btnAddProperty.Location = new Point(0, 0);
             btnAddProperty.Name = "btnAddProperty";
             btnAddProperty.Size = new Size(150, 36);
             btnAddProperty.TabIndex = 2;
@@ -167,96 +177,155 @@
             btnAddProperty.UseVisualStyleBackColor = false;
             btnAddProperty.Click += BtnAddProperty_Click;
             // 
+            // btnShowAll
+            // 
+            btnShowAll.BackColor = Color.White;
+            btnShowAll.FlatAppearance.BorderColor = Color.FromArgb(0, 123, 255);
+            btnShowAll.FlatAppearance.BorderSize = 1;
+            btnShowAll.FlatStyle = FlatStyle.Flat;
+            btnShowAll.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnShowAll.ForeColor = Color.FromArgb(0, 123, 255);
+            btnShowAll.Location = new Point(160, 6);
+            btnShowAll.Name = "btnShowAll";
+            btnShowAll.Size = new Size(70, 28);
+            btnShowAll.TabIndex = 3;
+            btnShowAll.Text = "All";
+            btnShowAll.UseVisualStyleBackColor = false;
+            btnShowAll.Click += BtnShowAll_Click;
+            // 
+            // btnShowApproved
+            // 
+            btnShowApproved.BackColor = Color.White;
+            btnShowApproved.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnShowApproved.FlatAppearance.BorderSize = 1;
+            btnShowApproved.FlatStyle = FlatStyle.Flat;
+            btnShowApproved.Font = new Font("Segoe UI", 9F);
+            btnShowApproved.ForeColor = Color.FromArgb(107, 114, 128);
+            btnShowApproved.Location = new Point(235, 6);
+            btnShowApproved.Name = "btnShowApproved";
+            btnShowApproved.Size = new Size(90, 28);
+            btnShowApproved.TabIndex = 4;
+            btnShowApproved.Text = "Approved";
+            btnShowApproved.UseVisualStyleBackColor = false;
+            btnShowApproved.Click += BtnShowApproved_Click;
+            // 
+            // btnShowPending
+            // 
+            btnShowPending.BackColor = Color.White;
+            btnShowPending.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnShowPending.FlatAppearance.BorderSize = 1;
+            btnShowPending.FlatStyle = FlatStyle.Flat;
+            btnShowPending.Font = new Font("Segoe UI", 9F);
+            btnShowPending.ForeColor = Color.FromArgb(107, 114, 128);
+            btnShowPending.Location = new Point(330, 6);
+            btnShowPending.Name = "btnShowPending";
+            btnShowPending.Size = new Size(80, 28);
+            btnShowPending.TabIndex = 5;
+            btnShowPending.Text = "Pending";
+            btnShowPending.UseVisualStyleBackColor = false;
+            btnShowPending.Click += BtnShowPending_Click;
+            // 
+            // btnShowRejected
+            // 
+            btnShowRejected.BackColor = Color.White;
+            btnShowRejected.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnShowRejected.FlatAppearance.BorderSize = 1;
+            btnShowRejected.FlatStyle = FlatStyle.Flat;
+            btnShowRejected.Font = new Font("Segoe UI", 9F);
+            btnShowRejected.ForeColor = Color.FromArgb(107, 114, 128);
+            btnShowRejected.Location = new Point(415, 6);
+            btnShowRejected.Name = "btnShowRejected";
+            btnShowRejected.Size = new Size(85, 28);
+            btnShowRejected.TabIndex = 6;
+            btnShowRejected.Text = "Rejected";
+            btnShowRejected.UseVisualStyleBackColor = false;
+            btnShowRejected.Click += BtnShowRejected_Click;
+            // 
             // paginationPanel
             // 
             paginationPanel.BackColor = Color.White;
             paginationPanel.Controls.Add(propertiesPaginationLayout);
             paginationPanel.Dock = DockStyle.Bottom;
-            paginationPanel.Location = new Point(0, 630);
+            paginationPanel.Location = new Point(0, 620);
             paginationPanel.Name = "paginationPanel";
-            // Give a bit more vertical room so text isn't clipped
-            // 40 (panel height) - 5 - 5 = 30 client height
-            paginationPanel.Padding = new Padding(10, 5, 10, 5);
-            paginationPanel.Size = new Size(1000, 40);
+            paginationPanel.Padding = new Padding(20, 10, 20, 10);
+            paginationPanel.Size = new Size(1000, 50);
             paginationPanel.TabIndex = 2;
             // 
             // propertiesPaginationLayout
             // 
-            propertiesPaginationLayout.ColumnCount = 4;
+            propertiesPaginationLayout.ColumnCount = 5;
+            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            propertiesPaginationLayout.Controls.Add(lblPropertyPageInfo, 1, 0);
-            propertiesPaginationLayout.Controls.Add(btnPrevPropertyPage, 2, 0);
-            propertiesPaginationLayout.Controls.Add(btnNextPropertyPage, 3, 0);
+            propertiesPaginationLayout.Controls.Add(btnFilter, 0, 0);
+            propertiesPaginationLayout.Controls.Add(sortComboBox, 1, 0);
+            propertiesPaginationLayout.Controls.Add(lblPropertyPageInfo, 2, 0);
+            propertiesPaginationLayout.Controls.Add(btnPrevPropertyPage, 3, 0);
+            propertiesPaginationLayout.Controls.Add(btnNextPropertyPage, 4, 0);
             propertiesPaginationLayout.Dock = DockStyle.Fill;
-            propertiesPaginationLayout.Location = new Point(10, 8);
+            propertiesPaginationLayout.Location = new Point(20, 10);
             propertiesPaginationLayout.Name = "propertiesPaginationLayout";
             propertiesPaginationLayout.RowCount = 1;
             propertiesPaginationLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            // Match inner client height to buttons so text isn't clipped
-            propertiesPaginationLayout.Size = new Size(980, 30);
+            propertiesPaginationLayout.Size = new Size(960, 30);
             propertiesPaginationLayout.TabIndex = 0;
             // 
             // lblPropertyPageInfo
             // 
-            lblPropertyPageInfo.Anchor = AnchorStyles.Right;
+            lblPropertyPageInfo.Anchor = AnchorStyles.None;
             lblPropertyPageInfo.AutoSize = true;
             lblPropertyPageInfo.Font = new Font("Segoe UI", 10F);
             lblPropertyPageInfo.ForeColor = Color.FromArgb(55, 65, 81);
-            lblPropertyPageInfo.Location = new Point(800, 3);
-            lblPropertyPageInfo.Margin = new Padding(0, 0, 10, 0);
+            lblPropertyPageInfo.Location = new Point(0, 5);
+            lblPropertyPageInfo.Margin = new Padding(20, 0, 20, 0);
             lblPropertyPageInfo.Name = "lblPropertyPageInfo";
-            lblPropertyPageInfo.Size = new Size(86, 19);
+            lblPropertyPageInfo.Size = new Size(70, 19);
             lblPropertyPageInfo.TabIndex = 0;
             lblPropertyPageInfo.Text = "Page 1 of 1";
+            lblPropertyPageInfo.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // btnPrevPropertyPage
             // 
-            btnPrevPropertyPage.AutoSize = false;
-            btnPrevPropertyPage.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            btnPrevPropertyPage.Anchor = AnchorStyles.None;
             btnPrevPropertyPage.BackColor = Color.White;
             btnPrevPropertyPage.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             btnPrevPropertyPage.FlatAppearance.BorderSize = 1;
             btnPrevPropertyPage.FlatAppearance.MouseOverBackColor = Color.FromArgb(243, 244, 246);
             btnPrevPropertyPage.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 231, 235);
             btnPrevPropertyPage.FlatStyle = FlatStyle.Flat;
-            btnPrevPropertyPage.Font = new Font("Segoe UI", 10F);
+            btnPrevPropertyPage.Font = new Font("Segoe UI", 9F);
             btnPrevPropertyPage.ForeColor = Color.FromArgb(55, 65, 81);
-            btnPrevPropertyPage.Location = new Point(896, 0);
-            btnPrevPropertyPage.Margin = new Padding(0, 0, 6, 0);
+            btnPrevPropertyPage.Location = new Point(790, 0);
+            btnPrevPropertyPage.Margin = new Padding(0, 0, 8, 0);
             btnPrevPropertyPage.Name = "btnPrevPropertyPage";
-            btnPrevPropertyPage.Padding = new Padding(12, 6, 12, 6);
-            btnPrevPropertyPage.MinimumSize = new Size(100, 30);
-            btnPrevPropertyPage.Size = new Size(100, 30);
-            btnPrevPropertyPage.TextAlign = ContentAlignment.MiddleCenter;
+            btnPrevPropertyPage.Size = new Size(80, 30);
             btnPrevPropertyPage.TabIndex = 1;
             btnPrevPropertyPage.Text = "Previous";
+            btnPrevPropertyPage.TextAlign = ContentAlignment.MiddleCenter;
             btnPrevPropertyPage.UseVisualStyleBackColor = false;
             btnPrevPropertyPage.Click += BtnPrevPropertyPage_Click;
             // 
             // btnNextPropertyPage
             // 
-            btnNextPropertyPage.AutoSize = false;
-            btnNextPropertyPage.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            btnNextPropertyPage.Anchor = AnchorStyles.None;
             btnNextPropertyPage.BackColor = Color.White;
             btnNextPropertyPage.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             btnNextPropertyPage.FlatAppearance.BorderSize = 1;
             btnNextPropertyPage.FlatAppearance.MouseOverBackColor = Color.FromArgb(243, 244, 246);
             btnNextPropertyPage.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 231, 235);
             btnNextPropertyPage.FlatStyle = FlatStyle.Flat;
-            btnNextPropertyPage.Font = new Font("Segoe UI", 10F);
+            btnNextPropertyPage.Font = new Font("Segoe UI", 9F);
             btnNextPropertyPage.ForeColor = Color.FromArgb(55, 65, 81);
-            btnNextPropertyPage.Location = new Point(992, 0);
+            btnNextPropertyPage.Location = new Point(878, 0);
             btnNextPropertyPage.Margin = new Padding(0);
             btnNextPropertyPage.Name = "btnNextPropertyPage";
-            btnNextPropertyPage.Padding = new Padding(12, 6, 12, 6);
-            btnNextPropertyPage.MinimumSize = new Size(72, 30);
-            btnNextPropertyPage.Size = new Size(72, 30);
-            btnNextPropertyPage.TextAlign = ContentAlignment.MiddleCenter;
+            btnNextPropertyPage.Size = new Size(80, 30);
             btnNextPropertyPage.TabIndex = 2;
             btnNextPropertyPage.Text = "Next";
+            btnNextPropertyPage.TextAlign = ContentAlignment.MiddleCenter;
             btnNextPropertyPage.UseVisualStyleBackColor = false;
             btnNextPropertyPage.Click += BtnNextPropertyPage_Click;
             // 
@@ -278,7 +347,6 @@
             propertiesPaginationLayout.ResumeLayout(false);
             propertiesPaginationLayout.PerformLayout();
             ResumeLayout(false);
-
         }
 
         #endregion
@@ -290,6 +358,10 @@
         private System.Windows.Forms.Button btnFilter;
         private System.Windows.Forms.ComboBox sortComboBox;
         private System.Windows.Forms.Button btnAddProperty;
+        private System.Windows.Forms.Button btnShowAll;
+        private System.Windows.Forms.Button btnShowApproved;
+        private System.Windows.Forms.Button btnShowPending;
+        private System.Windows.Forms.Button btnShowRejected;
         private System.Windows.Forms.Panel searchBoxContainer;
         private System.Windows.Forms.Label searchIcon;
         private System.Windows.Forms.Panel paginationPanel;

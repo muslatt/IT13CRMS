@@ -15,7 +15,6 @@ namespace RealEstateCRMWinForms.Views
         private TextBox txtPhone;
         private TextBox txtOccupation;
         private TextBox txtSalary;
-        private ComboBox cmbAgent;
         private Button btnSave;
         private Button btnCancel;
 
@@ -27,13 +26,12 @@ namespace RealEstateCRMWinForms.Views
         {
             _propertyViewModel = new PropertyViewModel();
             InitializeComponent();
-            LoadAgents();
         }
 
         private void InitializeComponent()
         {
             Text = "Add New Lead";
-            Size = new Size(450, 450); // Reduced height since we removed Type field
+            Size = new Size(450, 300);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -59,84 +57,19 @@ namespace RealEstateCRMWinForms.Views
             var lblSalary = new Label { Text = "Salary:", Location = new Point(20, 145), AutoSize = true, Font = new Font("Segoe UI", 12F) };
             txtSalary = new TextBox { Location = new Point(140, 140), Size = new Size(200, 28), Font = new Font("Segoe UI", 12F), PlaceholderText = "Optional" };
 
-            // Removed Type dropdown and label - moved Agent up to fill the gap
-            var lblAgent = new Label { Text = "Agent:", Location = new Point(20, 175), AutoSize = true, Font = new Font("Segoe UI", 12F) };
-            cmbAgent = new ComboBox { Location = new Point(140, 170), Size = new Size(250, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 12F) };
-
-            btnSave = new Button { Text = "Save", Location = new Point(290, 350), Size = new Size(110, 35), DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 12F) };
-            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 350), Size = new Size(110, 35), DialogResult = DialogResult.Cancel, Font = new Font("Segoe UI", 12F) };
+            btnSave = new Button { Text = "Save", Location = new Point(290, 210), Size = new Size(110, 35), DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 12F) };
+            btnCancel = new Button { Text = "Cancel", Location = new Point(180, 210), Size = new Size(110, 35), DialogResult = DialogResult.Cancel, Font = new Font("Segoe UI", 12F) };
 
             btnSave.Click += BtnSave_Click;
 
             Controls.AddRange(new Control[] {
                 lblFullName, txtFullName, lblEmail, txtEmail, lblPhone, txtPhone,
                 lblOccupation, txtOccupation, lblSalary, txtSalary,
-                lblAgent, cmbAgent,
                 btnSave, btnCancel
             });
 
             AcceptButton = btnSave;
             CancelButton = btnCancel;
-        }
-
-        private void LoadAgents()
-        {
-            try
-            {
-                cmbAgent.Items.Clear();
-                cmbAgent.Items.Add("(No Agent)");
-
-                // Load agents from Users table (Role = Agent)
-                var agents = Services.AgentDirectory.GetAgentDisplayNames();
-                foreach (var agent in agents)
-                {
-                    cmbAgent.Items.Add(agent);
-                }
-
-                // Auto-set based on current user
-                var currentUser = UserSession.Instance.CurrentUser;
-                if (currentUser != null)
-                {
-                    if (currentUser.Role == UserRole.Broker)
-                    {
-                        cmbAgent.Items.Add("Broker");
-                        cmbAgent.Text = "Broker";
-                    }
-                    else if (currentUser.Role == UserRole.Agent)
-                    {
-                        var agentName = currentUser.FullName;
-                        var index = cmbAgent.Items.IndexOf(agentName);
-                        if (index >= 0)
-                        {
-                            cmbAgent.SelectedIndex = index;
-                        }
-                        else
-                        {
-                            // If not in list, add and select
-                            cmbAgent.Items.Add(agentName);
-                            cmbAgent.Text = agentName;
-                        }
-                    }
-                    else
-                    {
-                        cmbAgent.SelectedIndex = 0; // (No Agent)
-                    }
-                }
-                else
-                {
-                    cmbAgent.SelectedIndex = 0;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error loading agents: {ex.Message}");
-                // If loading fails, keep "No Agent" option
-                if (cmbAgent.Items.Count == 0)
-                {
-                    cmbAgent.Items.Add("(No Agent)");
-                    cmbAgent.SelectedIndex = 0;
-                }
-            }
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -183,11 +116,20 @@ namespace RealEstateCRMWinForms.Views
                 }
             }
 
-            // Get selected agent information
+            // Get selected agent information - now auto-assigned to current user
             string assignedAgent = string.Empty;
-            if (cmbAgent.SelectedIndex > 0) // Skip "(No Agent)" option
+            var currentUser = UserSession.Instance.CurrentUser;
+            if (currentUser != null)
             {
-                assignedAgent = cmbAgent.SelectedItem?.ToString() ?? string.Empty;
+                if (currentUser.Role == UserRole.Broker)
+                {
+                    assignedAgent = "Broker";
+                }
+                else if (currentUser.Role == UserRole.Agent)
+                {
+                    assignedAgent = currentUser.FullName;
+                }
+                // For other roles, leave as empty
             }
 
             CreatedLead = new Lead

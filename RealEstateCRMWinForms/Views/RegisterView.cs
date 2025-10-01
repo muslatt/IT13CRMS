@@ -11,10 +11,13 @@ namespace RealEstateCRMWinForms.Views
         public event EventHandler? BackToLoginRequested;
         public event EventHandler<string>? EmailVerificationRequired;
 
-        public RegisterView(AuthenticationService authService)
+        private Models.UserRole? _defaultRole;
+
+        public RegisterView(AuthenticationService authService, Models.UserRole? defaultRole = null)
         {
             InitializeComponent();
             _authService = authService;
+            _defaultRole = defaultRole;
         }
 
         private async void btnRegister_Click(object? sender, EventArgs e)
@@ -52,7 +55,8 @@ namespace RealEstateCRMWinForms.Views
                 txtRegFirstName.Text.Trim(),
                 txtRegLastName.Text.Trim(),
                 txtRegEmail.Text.Trim(),
-                txtRegPassword.Text);
+                txtRegPassword.Text,
+                _defaultRole);
 
             if (success)
             {

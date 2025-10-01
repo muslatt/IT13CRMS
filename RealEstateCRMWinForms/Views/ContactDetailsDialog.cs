@@ -15,7 +15,7 @@ namespace RealEstateCRMWinForms.Views
         private readonly EmailNotificationService _emailService = new EmailNotificationService();
         private readonly EmailLogService _emailLog = new EmailLogService();
 
-        private TextBox txtName, txtAgent, txtEmail, txtPhone, txtOccupation;
+        private TextBox txtName, txtEmail, txtPhone, txtOccupation;
         private ComboBox cmbType;
         private NumericUpDown numSalary;
         private DateTimePicker dtpDateAdded;
@@ -58,7 +58,6 @@ namespace RealEstateCRMWinForms.Views
             txtName = new TextBox();
             cmbType = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
             cmbType.Items.AddRange(new object[] { "Buyer", "Renter", "Owner", "Lead" });
-            txtAgent = new TextBox();
             txtEmail = new TextBox();
             txtPhone = new TextBox();
             txtOccupation = new TextBox();
@@ -67,12 +66,11 @@ namespace RealEstateCRMWinForms.Views
 
             Add(details, new Label { Text = "Name", AutoSize = true }, 0, 0); Add(details, txtName, 0, 1);
             Add(details, new Label { Text = "Type", AutoSize = true }, 1, 0); Add(details, cmbType, 1, 1);
-            Add(details, new Label { Text = "Agent", AutoSize = true }, 2, 0); Add(details, txtAgent, 2, 1);
-            Add(details, new Label { Text = "Email", AutoSize = true }, 3, 0); Add(details, txtEmail, 3, 1);
-            Add(details, new Label { Text = "Phone", AutoSize = true }, 0, 2); Add(details, txtPhone, 0, 3);
-            Add(details, new Label { Text = "Occupation", AutoSize = true }, 1, 2); Add(details, txtOccupation, 1, 3);
-            Add(details, new Label { Text = "Salary", AutoSize = true }, 2, 2); Add(details, numSalary, 2, 3);
-            Add(details, new Label { Text = "Date Added", AutoSize = true }, 3, 2); Add(details, dtpDateAdded, 3, 3);
+            Add(details, new Label { Text = "Email", AutoSize = true }, 2, 0); Add(details, txtEmail, 2, 1);
+            Add(details, new Label { Text = "Phone", AutoSize = true }, 3, 0); Add(details, txtPhone, 3, 1);
+            Add(details, new Label { Text = "Occupation", AutoSize = true }, 0, 2); Add(details, txtOccupation, 0, 3);
+            Add(details, new Label { Text = "Salary", AutoSize = true }, 1, 2); Add(details, numSalary, 1, 3);
+            Add(details, new Label { Text = "Date Added", AutoSize = true }, 2, 2); Add(details, dtpDateAdded, 2, 3);
 
             btnSave = new Button { Text = "Save", BackColor = Color.FromArgb(0, 123, 255), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Width = 100, Height = 28 };
             btnSave.FlatAppearance.BorderSize = 0;
@@ -143,7 +141,6 @@ namespace RealEstateCRMWinForms.Views
         {
             txtName.Text = _contact.FullName;
             cmbType.SelectedItem = string.IsNullOrWhiteSpace(_contact.Type) ? "Buyer" : _contact.Type;
-            txtAgent.Text = (_contact as Contact).AssignedAgent;
             txtEmail.Text = _contact.Email;
             txtPhone.Text = _contact.Phone;
             txtOccupation.Text = _contact.Occupation;

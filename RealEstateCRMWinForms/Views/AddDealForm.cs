@@ -45,7 +45,7 @@ namespace RealEstateCRMWinForms.Views
         private void InitializeComponent()
         {
             Text = "Add New Deal";
-            Size = new Size(450, 220);
+            Size = new Size(450, 260);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -298,6 +298,12 @@ namespace RealEstateCRMWinForms.Views
                 {
                     CreatedDeal.CreatedBy = ($"{user.FirstName} {user.LastName}").Trim();
                 }
+
+                MessageBox.Show(
+                    $"Deal '{dealTitle}' has been successfully created!",
+                    "Deal Created",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
 
                 DialogResult = DialogResult.OK;
                 Close();

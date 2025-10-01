@@ -925,11 +925,11 @@ namespace RealEstateCRMWinForms.Views
 
             chartArea.Controls.Clear();
 
-            // Get property status distribution
-            var statusCounts = _propertyViewModel.Properties
+            // Get property type distribution (Status field removed, using PropertyType instead)
+            var typeCounts = _propertyViewModel.Properties
                 .Where(p => p.IsActive)
-                .GroupBy(p => p.Status)
-                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .GroupBy(p => p.PropertyType)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
                 .ToList();
 
             var colors = new[] {
@@ -939,13 +939,13 @@ namespace RealEstateCRMWinForms.Views
                 Color.FromArgb(239, 68, 68)     // Red
             };
 
-            var total = statusCounts.Sum(x => x.Count);
+            var total = typeCounts.Sum(x => x.Count);
             var startY = 20;
 
-            for (int i = 0; i < statusCounts.Count; i++)
+            for (int i = 0; i < typeCounts.Count; i++)
             {
-                var status = statusCounts[i];
-                var percentage = total > 0 ? (double)status.Count / total * 100 : 0;
+                var type = typeCounts[i];
+                var percentage = total > 0 ? (double)type.Count / total * 100 : 0;
 
                 var colorBox = new Panel
                 {
@@ -954,16 +954,16 @@ namespace RealEstateCRMWinForms.Views
                     Location = new Point(20, startY + i * 30)
                 };
 
-                var statusLabel = new Label
+                var typeLabel = new Label
                 {
-                    Text = $"{status.Status}: {status.Count} ({percentage:F1}%)",
+                    Text = $"{type.Type}: {type.Count} ({percentage:F1}%)",
                     Font = new Font("Segoe UI", 10F),
                     ForeColor = Color.FromArgb(75, 85, 99),
                     Location = new Point(50, startY + i * 30 + 2),
                     AutoSize = true
                 };
 
-                chartArea.Controls.AddRange(new Control[] { colorBox, statusLabel });
+                chartArea.Controls.AddRange(new Control[] { colorBox, typeLabel });
             }
         }
 
@@ -1249,7 +1249,7 @@ namespace RealEstateCRMWinForms.Views
 
             var properties = _propertyViewModel.Properties.Where(p => p.IsActive).ToList();
             var totalValue = properties.Sum(p => p.Price);
-            var totalArea = properties.Sum(p => p.SquareMeters);
+            var totalArea = properties.Sum(p => p.LotAreaSqm);
             var avgPricePerSqm = totalArea > 0 ? totalValue / (decimal)totalArea : 0;
             var avgPrice = properties.Any() ? properties.Average(p => p.Price) : 0;
 

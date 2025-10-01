@@ -11,7 +11,7 @@ namespace RealEstateCRMWinForms.Services
         {
             using var db = DbContextHelper.CreateDbContext();
             return db.Users
-                .Where(u => u.IsActive && u.IsEmailVerified && u.Role == UserRole.Agent)
+                .Where(u => u.IsActive && u.IsEmailVerified && u.RoleInt == (int)UserRole.Agent)
                 .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
                 .ToList();
         }

@@ -36,7 +36,7 @@ namespace RealEstateCRMWinForms.Views
         public DealsView()
         {
             InitializeComponent();
-            
+
             try
             {
                 _toolTip = new ToolTip
@@ -50,16 +50,16 @@ namespace RealEstateCRMWinForms.Views
                 LoadBoards();
                 InitializeDealBoard();
                 _isInitialized = true;
-                
+
                 // Load deals after everything is set up
                 LoadDeals();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in DealsView constructor: {ex.Message}");
-                MessageBox.Show($"Error initializing deals view: {ex.Message}", 
-                    "Initialization Error", 
-                    MessageBoxButtons.OK, 
+                MessageBox.Show($"Error initializing deals view: {ex.Message}",
+                    "Initialization Error",
+                    MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
             }
         }
@@ -77,7 +77,7 @@ namespace RealEstateCRMWinForms.Views
                 .ThenBy(b => b.CreatedAt)
                 .ToList();
             _statusColors = new Dictionary<string, Color>();
-            
+
             foreach (var board in _boards)
             {
                 _statusColors[board.Name] = ColorTranslator.FromHtml(board.Color);
@@ -255,14 +255,14 @@ namespace RealEstateCRMWinForms.Views
 
         private void UpdateBoardHeights()
         {
-            if (_scrollableContainer == null || _statusPanels == null || !_isInitialized) 
+            if (_scrollableContainer == null || _statusPanels == null || !_isInitialized)
                 return;
 
             try
             {
                 // Calculate available height
                 int availableHeight = Math.Max(_scrollableContainer.ClientSize.Height - _scrollableContainer.Padding.Vertical, 400);
-                
+
                 foreach (var panel in _statusPanels.Values)
                 {
                     if (panel.Parent is Panel container)
@@ -288,8 +288,8 @@ namespace RealEstateCRMWinForms.Views
             for (int i = 0; i < _boards.Count; i++)
             {
                 var board = _boards[i];
-                var color = _statusColors.ContainsKey(board.Name) 
-                    ? _statusColors[board.Name] 
+                var color = _statusColors.ContainsKey(board.Name)
+                    ? _statusColors[board.Name]
                     : Color.FromArgb(173, 216, 230);
 
                 var columnContainer = CreateStatusColumn(board, color);
@@ -302,7 +302,7 @@ namespace RealEstateCRMWinForms.Views
         private void UpdateScrollableContainerSize()
         {
             if (_boardPanel == null) return;
-            
+
             int totalWidth = (_boards.Count * BOARD_WIDTH) + ((_boards.Count + 1) * BOARD_MARGIN);
             _boardPanel.MinimumSize = new Size(totalWidth, 0);
         }
@@ -310,8 +310,8 @@ namespace RealEstateCRMWinForms.Views
         private Panel CreateStatusColumn(Board board, Color headerColor)
         {
             // Container for the entire column with fixed width
-            var container = new Panel 
-            { 
+            var container = new Panel
+            {
                 Width = BOARD_WIDTH,
                 Height = 600, // Will be updated by UpdateBoardHeights
                 Margin = new Padding(BOARD_MARGIN, 0, 0, 0),
@@ -386,6 +386,13 @@ namespace RealEstateCRMWinForms.Views
                             MessageBox.Show("Failed to rename board. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
+
+                        MessageBox.Show(
+                            $"Board '{oldName}' has been successfully renamed to '{newName}'!",
+                            "Board Renamed",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+
                         // Reload entire layout so internal dictionaries (by name) update correctly
                         LoadBoards();
                         RefreshBoardLayout();
@@ -583,7 +590,7 @@ namespace RealEstateCRMWinForms.Views
             if (boardNameDialog.ShowDialog() == DialogResult.OK)
             {
                 string newBoardName = boardNameDialog.BoardName;
-                
+
                 if (!string.IsNullOrWhiteSpace(newBoardName) && !_boards.Any(b => b.Name == newBoardName))
                 {
                     var newBoard = new Board
@@ -601,18 +608,18 @@ namespace RealEstateCRMWinForms.Views
                         LoadBoards();
                         RefreshBoardLayout();
                         LoadDeals();
-                        
-                        MessageBox.Show($"Board '{newBoardName}' has been successfully created.", 
-                            "Board Added", 
-                            MessageBoxButtons.OK, 
+
+                        MessageBox.Show($"Board '{newBoardName}' has been successfully created.",
+                            "Board Added",
+                            MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
                     }
                 }
                 else if (_boards.Any(b => b.Name == newBoardName))
                 {
-                    MessageBox.Show("A board with this name already exists!", 
-                        "Duplicate Board Name", 
-                        MessageBoxButtons.OK, 
+                    MessageBox.Show("A board with this name already exists!",
+                        "Duplicate Board Name",
+                        MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
                 }
             }
@@ -642,9 +649,9 @@ namespace RealEstateCRMWinForms.Views
                 var board = _boards.FirstOrDefault(b => b.Id == boardId);
                 if (board != null)
                 {
-                    var result = MessageBox.Show($"Are you sure you want to delete the '{board.Name}' board?\n\nAll deals in this board will be moved to '{BoardViewModel.NewBoardName}'.", 
-                        "Delete Board", 
-                        MessageBoxButtons.YesNo, 
+                    var result = MessageBox.Show($"Are you sure you want to delete the '{board.Name}' board?\n\nAll deals in this board will be moved to '{BoardViewModel.NewBoardName}'.",
+                        "Delete Board",
+                        MessageBoxButtons.YesNo,
                         MessageBoxIcon.Warning);
 
                     if (result == DialogResult.Yes)
@@ -655,9 +662,9 @@ namespace RealEstateCRMWinForms.Views
                             RefreshBoardLayout();
                             LoadDeals();
 
-                            MessageBox.Show($"Board '{board.Name}' has been successfully deleted!", 
-                                "Board Deleted", 
-                                MessageBoxButtons.OK, 
+                            MessageBox.Show($"Board '{board.Name}' has been successfully deleted!",
+                                "Board Deleted",
+                                MessageBoxButtons.OK,
                                 MessageBoxIcon.Information);
                         }
                         else
@@ -747,7 +754,7 @@ namespace RealEstateCRMWinForms.Views
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading deals: {ex.Message}\n{ex.StackTrace}");
-                MessageBox.Show($"Error loading deals: {ex.Message}", "Error", 
+                MessageBox.Show($"Error loading deals: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -768,10 +775,10 @@ namespace RealEstateCRMWinForms.Views
                     panel.Controls.Remove(card);
                     UpdateColumnCounts();
                 }
-                
+
                 // Dispose of the card to free resources
                 card.Dispose();
-                
+
                 // Force refresh of the view
                 LoadDeals();
             }
@@ -786,7 +793,7 @@ namespace RealEstateCRMWinForms.Views
                 var status = kvp.Key;
                 var panel = kvp.Value;
                 var count = panel.Controls.Count;
-                
+
                 if (_countLabels.ContainsKey(status))
                 {
                     _countLabels[status].Text = $"/ {count}";
@@ -800,7 +807,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 var boardNames = _boards.Select(b => b.Name).ToList();
                 var defaultBoard = _boardViewModel.GetDefaultBoard();
-                
+
                 var addDealForm = new AddDealForm(boardNames, defaultBoard?.Name);
                 if (addDealForm.ShowDialog() == DialogResult.OK && addDealForm.CreatedDeal != null)
                 {
@@ -816,15 +823,15 @@ namespace RealEstateCRMWinForms.Views
                         if (await _dealViewModel.AddDealAsync(addDealForm.CreatedDeal))
                         {
                             LoadDeals();
-                            
-                            MessageBox.Show($"Deal '{addDealForm.CreatedDeal.Title}' has been successfully created and the contact has been notified!", 
-                                "Deal Added", 
-                                MessageBoxButtons.OK, 
+
+                            MessageBox.Show($"Deal '{addDealForm.CreatedDeal.Title}' has been successfully created and the contact has been notified!",
+                                "Deal Added",
+                                MessageBoxButtons.OK,
                                 MessageBoxIcon.Information);
                         }
                         else
                         {
-                            MessageBox.Show("Failed to add deal. Please check the console for error details.", "Error", 
+                            MessageBox.Show("Failed to add deal. Please check the console for error details.", "Error",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                     }
@@ -841,9 +848,9 @@ namespace RealEstateCRMWinForms.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error adding deal: {ex.Message}", "Error", 
+                MessageBox.Show($"Error adding deal: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
-                
+
                 // Re-enable the button in case of error
                 if (sender is Button btnSender)
                 {
@@ -896,9 +903,9 @@ namespace RealEstateCRMWinForms.Views
                 string newStatus = targetPanel.Tag?.ToString() ?? BoardViewModel.NewBoardName;
                 var dealToUpdate = card.GetDeal();
                 string oldStatus = dealToUpdate.Status;
-                
+
                 Console.WriteLine($"Moving deal '{dealToUpdate.Title}' from '{oldStatus}' to '{newStatus}'");
-                
+
                 // Temporarily disable drag and drop to prevent multiple operations
                 foreach (var panel in _statusPanels.Values)
                 {
@@ -907,20 +914,53 @@ namespace RealEstateCRMWinForms.Views
 
                 try
                 {
-                    // Brokers cannot move deals whose property is assigned to an Agent
                     var currentUser = UserSession.Instance.CurrentUser;
-                    if (currentUser != null && currentUser.Role == UserRole.Broker)
+
+                    // If current user is an Agent and the deal has a Contact, create a status change request instead of directly updating
+                    if (currentUser != null && currentUser.Role == UserRole.Agent && dealToUpdate.Contact != null)
                     {
-                        var assignedAgent = dealToUpdate?.Property?.Agent;
-                        if (!string.IsNullOrWhiteSpace(assignedAgent))
+                        using var db = Data.DbContextHelper.CreateDbContext();
+
+                        // Check if the contact has an associated client user (email matching)
+                        // Fetch users with matching email first, then filter by role in memory to avoid EF translation issues
+                        var clientUser = db.Users
+                            .Where(u => u.Email == dealToUpdate.Contact.Email)
+                            .AsEnumerable()
+                            .FirstOrDefault(u => u.Role == UserRole.Client);
+
+                        if (clientUser != null)
                         {
-                            MessageBox.Show("This property is assigned to an Agent. Brokers cannot move it between pipelines.",
-                                "Move Restricted",
+                            // Create a status change request for the client to approve
+                            var statusChangeRequest = new DealStatusChangeRequest
+                            {
+                                DealId = dealToUpdate.Id,
+                                RequestedByUserId = currentUser.Id,
+                                PreviousStatus = oldStatus,
+                                RequestedStatus = newStatus,
+                                CreatedAt = DateTime.UtcNow
+                            };
+
+                            db.DealStatusChangeRequests.Add(statusChangeRequest);
+                            db.SaveChanges();
+
+                            // Log the status change request
+                            LoggingService.LogAction(
+                                "Deal Status Change Requested",
+                                $"Agent requested to move deal '{dealToUpdate.Title}' from '{oldStatus}' to '{newStatus}' for client approval",
+                                currentUser.Id);
+
+                            MessageBox.Show(
+                                $"Status change request sent to client for approval.\n\n" +
+                                $"The client will be notified to approve moving this deal from '{oldStatus}' to '{newStatus}'.",
+                                "Request Sent",
                                 MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning);
-                            return;
+                                MessageBoxIcon.Information);
+
+                            return; // Don't move the card visually until approved
                         }
                     }
+
+                    // Brokers can move deals directly (Agent check removed for brokers)
 
                     // If moving to Closed/Done, confirm and compute commission
                     if (string.Equals(newStatus, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase))
@@ -958,11 +998,22 @@ namespace RealEstateCRMWinForms.Views
                         UpdateColumnCounts();
                         card.SetDeal(dealToUpdate);
                         Console.WriteLine($"Successfully moved deal to '{newStatus}' board and sent notification");
+
+                        // Log the deal status change (for Brokers or Agents without client approval)
+                        var currentUserForLog = UserSession.Instance.CurrentUser;
+                        if (currentUserForLog != null)
+                        {
+                            string userType = currentUserForLog.Role == UserRole.Broker ? "Broker" : "Agent";
+                            LoggingService.LogAction(
+                                "Deal Status Changed",
+                                $"{userType} moved deal '{dealToUpdate.Title}' from '{oldStatus}' to '{newStatus}'",
+                                currentUserForLog.Id);
+                        }
                     }
                     else
                     {
                         Console.WriteLine($"Failed to update deal status in database");
-                        MessageBox.Show("Failed to move deal. Please try again.", "Error", 
+                        MessageBox.Show("Failed to move deal. Please try again.", "Error",
                             MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
@@ -1131,15 +1182,15 @@ namespace RealEstateCRMWinForms.Views
             btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 
-             CancelButton = btnCancel;
-             AcceptButton = btnSave;
+            CancelButton = btnCancel;
+            AcceptButton = btnSave;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtBoardName.Text))
             {
-                MessageBox.Show("Please enter a board name.", "Validation Error", 
+                MessageBox.Show("Please enter a board name.", "Validation Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtBoardName.Focus();
                 return;

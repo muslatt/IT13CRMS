@@ -25,8 +25,9 @@ namespace RealEstateCRMWinForms.Views
             // Hide self-registration on login screen
             try
             {
-                lblRegisterQuestion.Visible = false;
-                linkRegister.Visible = false;
+                // By default, show the register link so public users can create Client accounts
+                lblRegisterQuestion.Visible = true;
+                linkRegister.Visible = true;
             }
             catch { }
         }

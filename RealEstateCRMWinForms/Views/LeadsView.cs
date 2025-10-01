@@ -267,27 +267,6 @@ namespace RealEstateCRMWinForms.Views
 
             // NOTE: Removed Status, Source, Last Contacted, and Actions columns per request.
 
-            // 2. Agent with Avatar (using custom ImageText column)
-            var agentColumn = new DataGridViewImageTextColumn
-            {
-                ImagePropertyName = "AgentAvatarPath",
-                TextPropertyName = "AssignedAgent",
-                HeaderText = "Agent",
-                Name = "Agent",
-                Width = 180,
-                ShowInitialsWhenNoImage = true,
-                ReadOnly = true, // Agent column should not be editable
-                DefaultCellStyle = new DataGridViewCellStyle
-                {
-                    WrapMode = DataGridViewTriState.False,
-                    Font = UIStyles.DefaultFont,
-                    Padding = new Padding(8, 4, 8, 4)
-                }
-            };
-            agentColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            agentColumn.FillWeight = 140f;
-            dataGridViewLeads.Columns.Add(agentColumn);
-
             var emailColumn = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Email",

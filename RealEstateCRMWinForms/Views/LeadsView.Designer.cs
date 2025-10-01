@@ -39,7 +39,6 @@ namespace RealEstateCRMWinForms.Views
             this.rightControlsPanel = new System.Windows.Forms.Panel();
             this.btnAddLead = new System.Windows.Forms.Button();
             this.sortComboBox = new System.Windows.Forms.ComboBox();
-            this.filterButton = new System.Windows.Forms.Button();
             this.contentPanel = new System.Windows.Forms.Panel();
             this.paginationPanel = new System.Windows.Forms.Panel();
             this.leadsPaginationLayout = new System.Windows.Forms.TableLayoutPanel();
@@ -109,7 +108,6 @@ namespace RealEstateCRMWinForms.Views
             this.rightControlsPanel.BackColor = System.Drawing.Color.Transparent;
             this.rightControlsPanel.Controls.Add(this.btnAddLead);
             this.rightControlsPanel.Controls.Add(this.sortComboBox);
-            this.rightControlsPanel.Controls.Add(this.filterButton);
             this.rightControlsPanel.Location = new System.Drawing.Point(530, 20);
             this.rightControlsPanel.Name = "rightControlsPanel";
             this.rightControlsPanel.Size = new System.Drawing.Size(440, 40);
@@ -148,21 +146,6 @@ namespace RealEstateCRMWinForms.Views
             this.sortComboBox.Size = new System.Drawing.Size(170, 27);
             this.sortComboBox.TabIndex = 1;
             this.sortComboBox.SelectedIndexChanged += new System.EventHandler(this.SortComboBox_SelectedIndexChanged);
-            // 
-            // filterButton
-            // 
-            this.filterButton.BackColor = System.Drawing.Color.White;
-            this.filterButton.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
-            this.filterButton.FlatAppearance.BorderSize = 1;
-            this.filterButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.filterButton.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.filterButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
-            this.filterButton.Location = new System.Drawing.Point(0, 0);
-            this.filterButton.Name = "filterButton";
-            this.filterButton.Size = new System.Drawing.Size(100, 36);
-            this.filterButton.TabIndex = 0;
-            this.filterButton.Text = "Filter";
-            this.filterButton.UseVisualStyleBackColor = false;
             // 
             // contentPanel
             // 
@@ -292,7 +275,6 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.Panel searchPanel;
         private System.Windows.Forms.TextBox searchBox;
         private System.Windows.Forms.Panel rightControlsPanel;
-        private System.Windows.Forms.Button filterButton;
         private System.Windows.Forms.ComboBox sortComboBox;
         private System.Windows.Forms.Button btnAddLead;
         private System.Windows.Forms.Panel contentPanel;

@@ -25,7 +25,7 @@ namespace RealEstateCRMWinForms.Controls
         {
             InitializeComponent();
             CreateContextMenu();
-            
+
             // Reduce flicker for draggable card
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
@@ -111,7 +111,7 @@ namespace RealEstateCRMWinForms.Controls
             {
                 // Update the card display
                 UpdateCardUI();
-                
+
                 // Notify parent that deal was updated
                 DealUpdated?.Invoke(this, new DealEventArgs(_deal));
             }
@@ -133,15 +133,15 @@ namespace RealEstateCRMWinForms.Controls
                 var viewModel = new DealViewModel();
                 if (viewModel.DeleteDeal(_deal))
                 {
-                    MessageBox.Show("Deal deleted successfully!", "Success", 
+                    MessageBox.Show("Deal deleted successfully!", "Success",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    
+
                     // Notify parent that deal was deleted
                     DealDeleted?.Invoke(this, new DealEventArgs(_deal));
                 }
                 else
                 {
-                    MessageBox.Show("Failed to delete deal. Please try again.", "Error", 
+                    MessageBox.Show("Failed to delete deal. Please try again.", "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
@@ -301,7 +301,7 @@ namespace RealEstateCRMWinForms.Controls
             using (var g = Graphics.FromImage(defaultBitmap))
             {
                 g.Clear(Color.FromArgb(240, 242, 245));
-                
+
                 // Draw a simple house icon placeholder (scaled for new size)
                 using (var brush = new SolidBrush(Color.FromArgb(180, 180, 180)))
                 {
@@ -310,7 +310,7 @@ namespace RealEstateCRMWinForms.Controls
                     int houseHeight = 30;
                     int houseX = (264 - houseWidth) / 2;
                     int houseY = (120 - houseHeight) / 2 - 10;
-                    
+
                     g.FillRectangle(brush, houseX, houseY + 15, houseWidth, houseHeight - 15);
                     g.FillPolygon(brush, new Point[] {
                         new Point(houseX - 10, houseY + 15),
@@ -318,15 +318,15 @@ namespace RealEstateCRMWinForms.Controls
                         new Point(houseX + houseWidth + 10, houseY + 15)
                     });
                 }
-                
+
                 // Add "Property Image" text
                 using (var font = new Font("Segoe UI", 10F))
                 using (var textBrush = new SolidBrush(Color.FromArgb(150, 150, 150)))
                 {
                     var text = "Property Image";
                     var textSize = g.MeasureString(text, font);
-                    g.DrawString(text, font, textBrush, 
-                        (264 - textSize.Width) / 2, 
+                    g.DrawString(text, font, textBrush,
+                        (264 - textSize.Width) / 2,
                         (120 - textSize.Height) / 2 + 20);
                 }
             }
@@ -350,7 +350,7 @@ namespace RealEstateCRMWinForms.Controls
                         return;
                     }
                 }
-                
+
                 // Set default image if no image or file doesn't exist
                 SetDefaultPropertyImage();
             }
@@ -394,7 +394,7 @@ namespace RealEstateCRMWinForms.Controls
         private void UpdateCardUI()
         {
             if (_deal == null) return;
-            
+
             lblTitle.Text = _deal.Title;
             lblDescription.Text = _deal.Description;
             lblValue.Text = _deal.Value.HasValue ? $"₱ {_deal.Value:N0}" : "₱ 0";
@@ -405,12 +405,11 @@ namespace RealEstateCRMWinForms.Controls
                 var clientName = _deal?.Contact != null ? (_deal.Contact.FullName ?? _deal.Contact.Email ?? string.Empty) : string.Empty;
                 if (lblClient != null) lblClient.Text = string.IsNullOrWhiteSpace(clientName) ? "Client: -" : $"Client: {clientName}";
 
-                var assignedAgent = _deal?.Property?.Agent;
-                if (string.IsNullOrWhiteSpace(assignedAgent)) assignedAgent = _deal?.CreatedBy;
+                var assignedAgent = _deal?.CreatedBy;
                 if (lblAssignedAgent != null) lblAssignedAgent.Text = string.IsNullOrWhiteSpace(assignedAgent) ? "Assigned Agent: -" : $"Assigned Agent: {assignedAgent}";
             }
             catch { }
-            
+
             // Set drag bar color to match board header colors (from DealsView)
             var boardColor = _deal.Status switch
             {
@@ -422,8 +421,8 @@ namespace RealEstateCRMWinForms.Controls
                 _ => Color.FromArgb(173, 216, 230) // Light blue for unknown statuses
             };
 
-            dragBar.BackColor = boardColor; 
-            
+            dragBar.BackColor = boardColor;
+
             // Load property image
             LoadPropertyImage();
         }

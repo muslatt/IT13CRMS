@@ -14,8 +14,9 @@ namespace RealEstateCRMWinForms.Models
         public bool IsEmailVerified { get; set; } = false;
         public string? EmailVerificationToken { get; set; }
         public DateTime? EmailVerificationSentAt { get; set; }
-        public UserRole Role { get; set; } = UserRole.Agent;
-        
+        [Column("Role")]
+        public int RoleInt { get; set; } = 0;
+
         // Temporarily stores broker-set password (encrypted) until agent verifies email
         public string? PendingPasswordEncrypted { get; set; }
         /// <summary>
@@ -23,5 +24,8 @@ namespace RealEstateCRMWinForms.Models
         /// </summary>
         [NotMapped]
         public string FullName => $"{FirstName} {LastName}".Trim();
+
+        [NotMapped]
+        public UserRole Role => Enum.IsDefined(typeof(UserRole), RoleInt) ? (UserRole)RoleInt : UserRole.Agent;
     }
 }
