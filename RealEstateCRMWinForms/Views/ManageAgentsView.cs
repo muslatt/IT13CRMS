@@ -155,6 +155,21 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
+                var action = agent.IsActive ? "deactivate" : "activate";
+                var actionCapitalized = agent.IsActive ? "Deactivate" : "Activate";
+
+                // Confirm before changing agent status
+                var result = MessageBox.Show(
+                    $"Are you sure you want to {action} agent '{agent.FullName}'?\n\n" +
+                    (agent.IsActive ? "Deactivating will prevent this agent from accessing the system." : "Activating will allow this agent to access the system."),
+                    $"Confirm {actionCapitalized} Agent",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2);
+
+                if (result != DialogResult.Yes)
+                    return;
+
                 using var db = RealEstateCRMWinForms.Data.DbContextHelper.CreateDbContext();
                 var entity = db.Users.FirstOrDefault(x => x.Id == agent.Id);
                 if (entity == null)
@@ -164,6 +179,13 @@ namespace RealEstateCRMWinForms.Views
                 }
                 entity.IsActive = !entity.IsActive;
                 db.SaveChanges();
+
+                MessageBox.Show(
+                    $"Agent '{agent.FullName}' has been successfully {action}d!",
+                    $"Agent {actionCapitalized}d",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
                 RefreshAgents();
             }
             catch (Exception ex)
@@ -183,6 +205,12 @@ namespace RealEstateCRMWinForms.Views
             using var dlg = new EditAgentCredentialsDialog(_auth, agent);
             if (dlg.ShowDialog(FindForm()) == DialogResult.OK && dlg.Updated)
             {
+                MessageBox.Show(
+                    $"Agent '{agent.FullName}' credentials have been successfully updated!",
+                    "Agent Updated",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
                 RefreshAgents();
             }
         }

@@ -21,7 +21,7 @@ namespace RealEstateCRMWinForms.ViewModels
             try
             {
                 using var db = DbContextHelper.CreateDbContext();
-                var q = db.Users.Where(u => u.Role == UserRole.Agent);
+                var q = db.Users.Where(u => u.RoleInt == (int)UserRole.Agent);
 
                 if (isActive.HasValue)
                     q = q.Where(u => u.IsActive == isActive.Value);

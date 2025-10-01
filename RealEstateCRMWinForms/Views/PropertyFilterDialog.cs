@@ -19,7 +19,7 @@ namespace RealEstateCRMWinForms.Views
 
     public class PropertyFilterDialog : Form
     {
-        private ComboBox cmbStatus;
+
         private ComboBox cmbType;
         private ComboBox cmbTransaction;
         private NumericUpDown numMinPrice;
@@ -55,35 +55,30 @@ namespace RealEstateCRMWinForms.Views
 
             int labelX = 20; int controlX = 180; int width = 300; int y = 20; int spacing = 34;
 
-            Controls.Add(new Label { Text = "Status", Location = new Point(labelX, y+4), AutoSize = true });
-            cmbStatus = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(controlX, y), Width = width };
-            cmbStatus.Items.AddRange(new object[] { "", "Sell", "Rent" });
-            Controls.Add(cmbStatus); y += spacing;
-
-            Controls.Add(new Label { Text = "Property Type", Location = new Point(labelX, y+4), AutoSize = true });
+            Controls.Add(new Label { Text = "Property Type", Location = new Point(labelX, y + 4), AutoSize = true });
             cmbType = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(controlX, y), Width = width };
             cmbType.Items.Add("");
             foreach (var t in _types) cmbType.Items.Add(t);
             Controls.Add(cmbType); y += spacing;
 
-            Controls.Add(new Label { Text = "Transaction", Location = new Point(labelX, y+4), AutoSize = true });
+            Controls.Add(new Label { Text = "Transaction", Location = new Point(labelX, y + 4), AutoSize = true });
             cmbTransaction = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(controlX, y), Width = width };
             cmbTransaction.Items.AddRange(new object[] { "", "Buying", "Viewing" });
             Controls.Add(cmbTransaction); y += spacing;
 
-            Controls.Add(new Label { Text = "Min Price", Location = new Point(labelX, y+4), AutoSize = true });
+            Controls.Add(new Label { Text = "Min Price", Location = new Point(labelX, y + 4), AutoSize = true });
             numMinPrice = new NumericUpDown { Location = new Point(controlX, y), Width = width, Maximum = 1000000000, DecimalPlaces = 0, ThousandsSeparator = true };
             Controls.Add(numMinPrice); y += spacing;
 
-            Controls.Add(new Label { Text = "Max Price", Location = new Point(labelX, y+4), AutoSize = true });
+            Controls.Add(new Label { Text = "Max Price", Location = new Point(labelX, y + 4), AutoSize = true });
             numMaxPrice = new NumericUpDown { Location = new Point(controlX, y), Width = width, Maximum = 1000000000, DecimalPlaces = 0, ThousandsSeparator = true };
             Controls.Add(numMaxPrice); y += spacing;
 
-            Controls.Add(new Label { Text = "Min Bedrooms", Location = new Point(labelX, y+4), AutoSize = true });
+            Controls.Add(new Label { Text = "Min Bedrooms", Location = new Point(labelX, y + 4), AutoSize = true });
             numMinBeds = new NumericUpDown { Location = new Point(controlX, y), Width = width, Maximum = 50, DecimalPlaces = 0 };
             Controls.Add(numMinBeds); y += spacing;
 
-            Controls.Add(new Label { Text = "Min Bathrooms", Location = new Point(labelX, y+4), AutoSize = true });
+            Controls.Add(new Label { Text = "Min Bathrooms", Location = new Point(labelX, y + 4), AutoSize = true });
             numMinBaths = new NumericUpDown { Location = new Point(controlX, y), Width = width, Maximum = 50, DecimalPlaces = 0 };
             Controls.Add(numMinBaths); y += spacing + 8;
 
@@ -106,7 +101,7 @@ namespace RealEstateCRMWinForms.Views
         private void LoadInitial(PropertyFilterOptions current)
         {
             if (current == null) return;
-            cmbStatus.SelectedItem = current.Status ?? "";
+            // Status field removed from filter - previously set here
             cmbType.SelectedItem = string.IsNullOrEmpty(current.PropertyType) ? "" : current.PropertyType;
             cmbTransaction.SelectedItem = current.TransactionType ?? "";
             if (current.MinPrice.HasValue) numMinPrice.Value = Clamp(numMinPrice.Minimum, numMinPrice.Maximum, current.MinPrice.Value);
@@ -126,7 +121,7 @@ namespace RealEstateCRMWinForms.Views
         {
             var opts = new PropertyFilterOptions
             {
-                Status = NullIfEmpty(cmbStatus.SelectedItem as string),
+                // Status removed from filter options
                 PropertyType = NullIfEmpty(cmbType.SelectedItem as string),
                 TransactionType = NullIfEmpty(cmbTransaction.SelectedItem as string)
             };

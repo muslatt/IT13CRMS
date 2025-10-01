@@ -76,11 +76,11 @@ namespace RealEstateCRMWinForms.Controls
             // container for potential designer components
             this.components = new System.ComponentModel.Container();
 
-            // Basic UserControl sizing
+            // Basic UserControl sizing (wider card)
             this.SuspendLayout();
             this.BackColor = Color.White;
             this.BorderStyle = BorderStyle.FixedSingle;
-            this.Size = new Size(280, 320);
+            this.Size = new Size(360, 320); // increased width from 280 to 360
             this.Margin = new Padding(8);
 
             // pictureBox (top)
@@ -88,7 +88,7 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Name = "pictureBox",
                 Location = new Point(8, 8),
-                Size = new Size(264, 180),
+                Size = new Size(344, 180), // widened to match new card width with 8px margins
                 SizeMode = PictureBoxSizeMode.Zoom,
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.FromArgb(240, 242, 245)
@@ -99,7 +99,7 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Name = "titlePanel",
                 Location = new Point(8, 196),
-                Size = new Size(264, 36),
+                Size = new Size(344, 36), // widened
                 BackColor = Color.Transparent
             };
 
@@ -107,7 +107,7 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Name = "lblTitle",
                 Location = new Point(0, 0),
-                Size = new Size(200, 36),
+                Size = new Size(260, 36), // give more width to the title
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(33, 37, 41),
                 AutoEllipsis = true,
@@ -118,19 +118,23 @@ namespace RealEstateCRMWinForms.Controls
             statusPanel = new Panel
             {
                 Name = "statusPanel",
-                Size = new Size(56, 24),
-                Location = new Point(titlePanel.Width - 66, 6),
-                BackColor = Color.FromArgb(0, 123, 255)
+                Size = new Size(68, 26),
+                Location = new Point(titlePanel.Width - 78, 6),
+                BackColor = Color.FromArgb(0, 123, 255),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
 
+            // status label will autosize to its text and be padded so the badge fits longer values
             lblStatus = new Label
             {
                 Name = "lblStatus",
-                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Padding = new Padding(8, 3, 8, 3),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.White,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Text = "Sell"
+                Text = "Sell",
+                AutoEllipsis = false
             };
 
             statusPanel.Controls.Add(lblStatus);
@@ -142,7 +146,7 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Name = "lblAddress",
                 Location = new Point(8, 236),
-                Size = new Size(264, 18),
+                Size = new Size(344, 18),
                 Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(108, 117, 125),
                 Text = "Address"
@@ -153,13 +157,13 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Name = "detailsPanel",
                 Location = new Point(8, 258),
-                Size = new Size(264, 28),
+                Size = new Size(344, 28),
                 BackColor = Color.Transparent
             };
 
             // Calculate even spacing for 3 features across 264px width
             // Each feature gets about 88px (264/3), with small margins
-            int featureWidth = 80;  // slightly less than 88 to allow spacing
+            int featureWidth = 110;  // wider features to space across the larger card
             int spaceBetween = 8;   // small gap between features
 
             // Bed feature: icon + value (left third)
@@ -220,7 +224,7 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Name = "lblSqmValue",
                 Location = new Point(sqmStartX + 22, 0),
-                Size = new Size(264 - sqmStartX - 22, 28), // use remaining width to fit "sqm"
+                Size = new Size(344 - sqmStartX - 22, 28), // use remaining width to fit "sqm"
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(50, 54, 59),
                 Text = "0 sqm",
@@ -239,7 +243,7 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Name = "lblPrice",
                 Location = new Point(8, 288),
-                Size = new Size(264, 24),
+                Size = new Size(344, 24),
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(33, 37, 41),
                 TextAlign = ContentAlignment.MiddleLeft,

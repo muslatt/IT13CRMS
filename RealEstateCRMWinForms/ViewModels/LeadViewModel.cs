@@ -1,6 +1,7 @@
 ﻿// RealEstateCRMWinForms\ViewModels\LeadViewModel.cs
 using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.Services;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -24,22 +25,22 @@ namespace RealEstateCRMWinForms.ViewModels
         public void LoadLeads()
         {
             Leads.Clear();
-            
+
             try
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     var leadsFromDb = dbContext.Leads.Where(l => l.IsActive).ToList();
-                    
+
                     // Get available agents from Users table
                     var availableAgents = RealEstateCRMWinForms.Services.AgentDirectory
                         .GetAgentDisplayNames();
-                    
+
                     var random = new Random();
-                    
+
                     foreach (var lead in leadsFromDb)
                     {
                         // Assign a random agent from available agents for display purposes
@@ -51,7 +52,7 @@ namespace RealEstateCRMWinForms.ViewModels
                         {
                             lead.AssignedAgent = "No Agent";
                         }
-                        
+
                         Leads.Add(lead);
                     }
 
@@ -63,7 +64,7 @@ namespace RealEstateCRMWinForms.ViewModels
                 // Log the specific error for debugging
                 System.Diagnostics.Debug.WriteLine($"Error loading leads: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-                
+
                 // Don't show error dialog in constructor to prevent UI blocking
                 // Instead, log and continue with empty list
                 Console.WriteLine($"Database connection error: {ex.Message}");
@@ -78,13 +79,16 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     lead.Type = "Lead";
                     // The AssignedAgent property is NotMapped, so it won't be saved to DB
                     // but it will be preserved in memory for display
                     dbContext.Leads.Add(lead);
                     dbContext.SaveChanges();
-                    
+
+                    // Log the action
+                    LoggingService.LogAction("Created Lead", $"Lead '{lead.FullName}' created");
+
                     // Add to local collection
                     Leads.Add(lead);
                     return true;
@@ -92,7 +96,7 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error adding lead: {ex.Message}", "Error", 
+                MessageBox.Show($"Error adding lead: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -106,15 +110,19 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     dbContext.Leads.Update(lead);
                     dbContext.SaveChanges();
+
+                    // Log the action
+                    LoggingService.LogAction("Updated Lead", $"Lead '{lead.FullName}' updated");
+
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error updating lead: {ex.Message}", "Error", 
+                MessageBox.Show($"Error updating lead: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -128,12 +136,15 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     // Soft delete - just mark as inactive
                     lead.IsActive = false;
                     dbContext.Leads.Update(lead);
                     dbContext.SaveChanges();
-                    
+
+                    // Log the action
+                    LoggingService.LogAction("Deleted Lead", $"Lead '{lead.FullName}' deleted");
+
                     // Remove from local collection
                     Leads.Remove(lead);
                     return true;
@@ -141,7 +152,7 @@ namespace RealEstateCRMWinForms.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting lead: {ex.Message}", "Error", 
+                MessageBox.Show($"Error deleting lead: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -155,7 +166,7 @@ namespace RealEstateCRMWinForms.ViewModels
                 {
                     // Ensure database is created
                     dbContext.Database.EnsureCreated();
-                    
+
                     // Create a new contact from the lead with ALL fields transferred
                     var contact = new Contact
                     {
@@ -172,17 +183,20 @@ namespace RealEstateCRMWinForms.ViewModels
 
                     // Add the contact to the database
                     dbContext.Contacts.Add(contact);
-                    
+
                     // HARD DELETE: Completely remove the lead from the Leads table
                     var leadToDelete = dbContext.Leads.Find(lead.Id);
                     if (leadToDelete != null)
                     {
                         dbContext.Leads.Remove(leadToDelete);
                     }
-                    
+
                     // Save changes in a single transaction to ensure data integrity
                     await dbContext.SaveChangesAsync();
-                    
+
+                    // Log the action
+                    LoggingService.LogAction("Converted Lead to Contact", $"Lead '{lead.FullName}' converted to contact");
+
                     // Remove from local collection
                     Leads.Remove(lead);
 
@@ -197,14 +211,14 @@ namespace RealEstateCRMWinForms.ViewModels
                         System.Diagnostics.Debug.WriteLine($"Failed to send email notification: {emailEx.Message}");
                         // Don't fail the entire operation if email fails
                     }
-                    
+
                     return true;
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error moving lead to contact: {ex.Message}");
-                MessageBox.Show($"Error moving lead to contact: {ex.Message}", "Error", 
+                MessageBox.Show($"Error moving lead to contact: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }

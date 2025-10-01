@@ -11,6 +11,14 @@ using System.ComponentModel;
 
 namespace RealEstateCRMWinForms.Views
 {
+    public enum ApprovalFilterMode
+    {
+        All,
+        ApprovedOnly,
+        PendingOnly,
+        RejectedOnly
+    }
+
     public partial class PropertiesView : UserControl
     {
         private readonly PropertyViewModel _viewModel;
@@ -20,9 +28,17 @@ namespace RealEstateCRMWinForms.Views
         private List<Property> _currentProperties = new();
         private string _searchQuery = string.Empty;
         private PropertyFilterOptions _filters = new();
+        private bool _isReadOnly;
+        private bool _isBrowseMode;
+        private bool _isMyListingsMode;
+        private bool _showApprovedOnly;
+        private bool _showPendingApproval;
+        private ApprovalFilterMode _currentFilterMode = ApprovalFilterMode.All;
 
         public PropertiesView()
         {
+            _isReadOnly = false;
+            _isBrowseMode = false;
             _viewModel = new PropertyViewModel();
             InitializeComponent();
             // Enable smoother scrolling/painting in the panel hosting cards
@@ -52,6 +68,92 @@ namespace RealEstateCRMWinForms.Views
             LoadProperties();
         }
 
+        public PropertiesView(bool isReadOnly) : this()
+        {
+            _isReadOnly = isReadOnly;
+            _isBrowseMode = false;
+
+            // For Broker side only: hide the Add Property and filter buttons
+            if (!_isReadOnly) // Broker side
+            {
+                if (btnAddProperty != null) btnAddProperty.Visible = false;
+                if (btnShowAll != null) btnShowAll.Visible = false;
+                if (btnShowApproved != null) btnShowApproved.Visible = false;
+                if (btnShowPending != null) btnShowPending.Visible = false;
+                if (btnShowRejected != null) btnShowRejected.Visible = false;
+            }
+
+            // Load properties with filtering
+            LoadProperties();
+        }
+
+        public PropertiesView(bool isReadOnly, bool isBrowseMode) : this()
+        {
+            _isReadOnly = isReadOnly;
+            _isBrowseMode = isBrowseMode;
+            _isMyListingsMode = false;
+
+            // In browse mode, automatically show only approved properties
+            if (isBrowseMode)
+            {
+                _showApprovedOnly = true;
+                _currentFilterMode = ApprovalFilterMode.ApprovedOnly;
+            }
+
+            // In browse mode, hide the Add Property button
+            if (btnAddProperty != null)
+            {
+                btnAddProperty.Visible = false;
+            }
+            // In browse mode, hide the approval filter buttons
+            if (btnShowAll != null) btnShowAll.Visible = false;
+            if (btnShowApproved != null) btnShowApproved.Visible = false;
+            if (btnShowPending != null) btnShowPending.Visible = false;
+            if (btnShowRejected != null) btnShowRejected.Visible = false;
+            // Load properties with filtering
+            LoadProperties();
+        }
+
+        public PropertiesView(bool isReadOnly, bool isBrowseMode, bool isMyListingsMode) : this()
+        {
+            _isReadOnly = isReadOnly;
+            _isBrowseMode = isBrowseMode;
+            _isMyListingsMode = isMyListingsMode;
+
+            // In browse mode, hide the Add Property button
+            // In My Listings mode, show the Add Property button for clients
+            if (btnAddProperty != null)
+            {
+                btnAddProperty.Visible = isMyListingsMode && !_isReadOnly;
+            }
+
+            // Show the approval filter buttons only in My Listings mode
+            if (btnShowAll != null)
+            {
+                btnShowAll.Visible = isMyListingsMode;
+            }
+            if (btnShowApproved != null)
+            {
+                btnShowApproved.Visible = isMyListingsMode;
+            }
+            if (btnShowPending != null)
+            {
+                btnShowPending.Visible = isMyListingsMode;
+            }
+            if (btnShowRejected != null)
+            {
+                btnShowRejected.Visible = isMyListingsMode;
+            }
+
+            if (isMyListingsMode)
+            {
+                UpdateButtonStyles();
+            }
+
+            // Load properties with filtering
+            LoadProperties();
+        }
+
         private void BtnAddProperty_Click(object? sender, EventArgs e)
         {
             var addPropertyForm = new AddPropertyForm();
@@ -64,6 +166,8 @@ namespace RealEstateCRMWinForms.Views
 
         private void LoadProperties()
         {
+            bool showRejected = _currentFilterMode == ApprovalFilterMode.RejectedOnly;
+            _viewModel.LoadProperties(_isReadOnly, _isBrowseMode, _isMyListingsMode, _showApprovedOnly, _showPendingApproval, showRejected);
             _currentProperties = _viewModel.Properties?.ToList() ?? new List<Property>();
             ApplyFilterAndSort(resetPage: false);
         }
@@ -87,6 +191,111 @@ namespace RealEstateCRMWinForms.Views
                 // Optionally refresh the entire list to ensure consistency
                 LoadProperties();
             }
+        }
+
+        private void ChkApprovedOnly_CheckedChanged(object? sender, EventArgs e)
+        {
+            // This method is no longer used - replaced with toggle button
+        }
+
+        private void ChkPendingApproval_CheckedChanged(object? sender, EventArgs e)
+        {
+            // This method is no longer used - replaced with toggle button
+        }
+
+        private void BtnShowAll_Click(object? sender, EventArgs e)
+        {
+            _currentFilterMode = ApprovalFilterMode.All;
+            _showApprovedOnly = false;
+            _showPendingApproval = false;
+            UpdateButtonStyles();
+            LoadProperties();
+        }
+
+        private void BtnShowApproved_Click(object? sender, EventArgs e)
+        {
+            _currentFilterMode = ApprovalFilterMode.ApprovedOnly;
+            _showApprovedOnly = true;
+            _showPendingApproval = false;
+            UpdateButtonStyles();
+            LoadProperties();
+        }
+
+        private void BtnShowPending_Click(object? sender, EventArgs e)
+        {
+            _currentFilterMode = ApprovalFilterMode.PendingOnly;
+            _showApprovedOnly = false;
+            _showPendingApproval = true;
+            UpdateButtonStyles();
+            LoadProperties();
+        }
+
+        private void BtnShowRejected_Click(object? sender, EventArgs e)
+        {
+            _currentFilterMode = ApprovalFilterMode.RejectedOnly;
+            _showApprovedOnly = false;
+            _showPendingApproval = false;
+            UpdateButtonStyles();
+            LoadProperties();
+        }
+
+        private void UpdateButtonStyles()
+        {
+            if (btnShowAll == null || btnShowApproved == null || btnShowPending == null || btnShowRejected == null)
+                return;
+
+            // Define colors
+            var activeBlue = Color.FromArgb(0, 123, 255);
+            var inactiveGray = Color.FromArgb(107, 114, 128);
+            var activeBorderBlue = Color.FromArgb(0, 123, 255);
+            var inactiveBorderGray = Color.FromArgb(209, 213, 219);
+
+            // Reset all buttons to inactive state
+            btnShowAll.ForeColor = inactiveGray;
+            btnShowAll.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            btnShowAll.FlatAppearance.BorderColor = inactiveBorderGray;
+
+            btnShowApproved.ForeColor = inactiveGray;
+            btnShowApproved.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            btnShowApproved.FlatAppearance.BorderColor = inactiveBorderGray;
+
+            btnShowPending.ForeColor = inactiveGray;
+            btnShowPending.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            btnShowPending.FlatAppearance.BorderColor = inactiveBorderGray;
+
+            btnShowRejected.ForeColor = inactiveGray;
+            btnShowRejected.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            btnShowRejected.FlatAppearance.BorderColor = inactiveBorderGray;
+
+            // Highlight the active button based on current filter mode
+            switch (_currentFilterMode)
+            {
+                case ApprovalFilterMode.All:
+                    btnShowAll.ForeColor = activeBlue;
+                    btnShowAll.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    btnShowAll.FlatAppearance.BorderColor = activeBorderBlue;
+                    break;
+                case ApprovalFilterMode.ApprovedOnly:
+                    btnShowApproved.ForeColor = activeBlue;
+                    btnShowApproved.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    btnShowApproved.FlatAppearance.BorderColor = activeBorderBlue;
+                    break;
+                case ApprovalFilterMode.PendingOnly:
+                    btnShowPending.ForeColor = activeBlue;
+                    btnShowPending.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    btnShowPending.FlatAppearance.BorderColor = activeBorderBlue;
+                    break;
+                case ApprovalFilterMode.RejectedOnly:
+                    btnShowRejected.ForeColor = activeBlue;
+                    btnShowRejected.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    btnShowRejected.FlatAppearance.BorderColor = activeBorderBlue;
+                    break;
+            }
+        }
+
+        private void UpdateToggleButtonText()
+        {
+            // This method is no longer used - replaced with separate buttons
         }
 
         private void flowLayoutPanel_Paint(object sender, PaintEventArgs e)
@@ -142,7 +351,7 @@ namespace RealEstateCRMWinForms.Views
                 foreach (var property in pageItems)
                 {
                     // Create a completely fresh card
-                    var card = new PropertyCard
+                    var card = new PropertyCard(_isReadOnly, _isBrowseMode)
                     {
                         Margin = new Padding(10)
                     };
@@ -278,7 +487,7 @@ namespace RealEstateCRMWinForms.Views
                         bool match = false;
 
                         if (statusOn)
-                            match = match || string.Equals(p.Status, _filters.Status, StringComparison.OrdinalIgnoreCase);
+                            match = match || false; // Status field removed, always false
                         if (typeOn)
                             match = match || string.Equals(p.PropertyType, _filters.PropertyType, StringComparison.OrdinalIgnoreCase);
                         if (transOn)
@@ -324,7 +533,7 @@ namespace RealEstateCRMWinForms.Views
 
             // Prepare numeric strings without separators for price and area
             string priceDigits = new string(p.Price.ToString("F0").Where(char.IsDigit).ToArray());
-            string sqmDigits = new string(p.SquareMeters.ToString().Where(char.IsDigit).ToArray());
+            string sqmDigits = new string(p.LotAreaSqm.ToString("F0").Where(char.IsDigit).ToArray());
             string bedDigits = new string(p.Bedrooms.ToString().Where(char.IsDigit).ToArray());
             string bathDigits = new string(p.Bathrooms.ToString().Where(char.IsDigit).ToArray());
 
@@ -332,8 +541,8 @@ namespace RealEstateCRMWinForms.Views
             string Hay(string? s) => (s ?? string.Empty).ToLowerInvariant();
             var haystack = string.Join(" ", new[]
             {
-                Hay(p.Title), Hay(p.Address), Hay(p.Agent), Hay(p.Description),
-                Hay(p.PropertyType), Hay(p.Status), priceDigits, sqmDigits, bedDigits, bathDigits
+                Hay(p.Title), Hay(p.Address), Hay(p.Description),
+                Hay(p.PropertyType), priceDigits, sqmDigits, bedDigits, bathDigits
             });
 
             foreach (var raw in tokens)

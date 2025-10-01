@@ -10,23 +10,23 @@ namespace RealEstateCRMWinForms.Models
     public partial class Contact
     {
         /// <summary>
-        /// Name of the assigned agent (placeholder - will be dynamic in future)
+        /// Name of the assigned agent (for UI display)
         /// </summary>
         [NotMapped]
-        public string AssignedAgent => "Rheniel Personal";
-        
+        public string AssignedAgent { get; set; } = string.Empty;
+
         /// <summary>
         /// Avatar path for the assigned agent (placeholder - will be dynamic in future)
         /// </summary>
         [NotMapped]
         public string? AgentAvatarPath => null; // Will use initials for now
-        
+
         /// <summary>
         /// Gets the number of days since the contact was created
         /// </summary>
         [NotMapped]
         public int DaysAsContact => (int)(DateTime.UtcNow - CreatedAt).TotalDays;
-        
+
         /// <summary>
         /// Gets a user-friendly description of how long they've been a contact
         /// </summary>
@@ -47,13 +47,13 @@ namespace RealEstateCRMWinForms.Models
                 };
             }
         }
-        
+
         /// <summary>
         /// Indicates if this is a new contact (less than 7 days old)
         /// </summary>
         [NotMapped]
         public bool IsNewContact => DaysAsContact < 7;
-        
+
         /// <summary>
         /// Gets a priority level for the contact based on type and recency
         /// </summary>
@@ -64,7 +64,7 @@ namespace RealEstateCRMWinForms.Models
             {
                 if (IsNewContact)
                     return "High";
-                
+
                 return Type?.ToLower() switch
                 {
                     "buyer" => "High",
@@ -74,7 +74,7 @@ namespace RealEstateCRMWinForms.Models
                 };
             }
         }
-        
+
         /// <summary>
         /// Gets the contact's initials for display purposes
         /// </summary>
@@ -85,21 +85,21 @@ namespace RealEstateCRMWinForms.Models
             {
                 if (string.IsNullOrWhiteSpace(FullName))
                     return "??";
-                
+
                 var parts = FullName.Trim().Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                
+
                 if (parts.Length == 0)
                     return "??";
-                
+
                 if (parts.Length == 1)
                 {
                     var name = parts[0];
                     return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
                 }
-                
+
                 var firstInitial = parts[0][0];
                 var lastInitial = parts[parts.Length - 1][0];
-                
+
                 return $"{firstInitial}{lastInitial}".ToUpper();
             }
         }

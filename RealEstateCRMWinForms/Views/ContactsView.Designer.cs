@@ -38,9 +38,7 @@ namespace RealEstateCRMWinForms.Views
             this.searchBox = new System.Windows.Forms.TextBox();
             this.searchIcon = new System.Windows.Forms.Label();
             this.rightControlsPanel = new System.Windows.Forms.Panel();
-            this.btnAddContact = new System.Windows.Forms.Button();
             this.sortComboBox = new System.Windows.Forms.ComboBox();
-            this.filterButton = new System.Windows.Forms.Button();
             this.contentPanel = new System.Windows.Forms.Panel();
             this.paginationPanel = new System.Windows.Forms.Panel();
             this.contactsPaginationLayout = new System.Windows.Forms.TableLayoutPanel();
@@ -108,28 +106,11 @@ namespace RealEstateCRMWinForms.Views
             // 
             this.rightControlsPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.rightControlsPanel.BackColor = System.Drawing.Color.Transparent;
-            this.rightControlsPanel.Controls.Add(this.btnAddContact);
             this.rightControlsPanel.Controls.Add(this.sortComboBox);
-            this.rightControlsPanel.Controls.Add(this.filterButton);
             this.rightControlsPanel.Location = new System.Drawing.Point(530, 20);
             this.rightControlsPanel.Name = "rightControlsPanel";
             this.rightControlsPanel.Size = new System.Drawing.Size(440, 40);
             this.rightControlsPanel.TabIndex = 1;
-            // 
-            // btnAddContact
-            // 
-            this.btnAddContact.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(99)))), ((int)(((byte)(235)))));
-            this.btnAddContact.FlatAppearance.BorderSize = 0;
-            this.btnAddContact.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnAddContact.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.btnAddContact.ForeColor = System.Drawing.Color.White;
-            this.btnAddContact.Location = new System.Drawing.Point(290, 0);
-            this.btnAddContact.Name = "btnAddContact";
-            this.btnAddContact.Size = new System.Drawing.Size(150, 36);
-            this.btnAddContact.TabIndex = 2;
-            this.btnAddContact.Text = "+ Add Contact";
-            this.btnAddContact.UseVisualStyleBackColor = false;
-            this.btnAddContact.Click += new System.EventHandler(this.BtnAddContact_Click);
             // 
             // sortComboBox
             // 
@@ -149,21 +130,6 @@ namespace RealEstateCRMWinForms.Views
             this.sortComboBox.Size = new System.Drawing.Size(170, 27);
             this.sortComboBox.TabIndex = 1;
             this.sortComboBox.SelectedIndexChanged += new System.EventHandler(this.SortComboBox_SelectedIndexChanged);
-            // 
-            // filterButton
-            // 
-            this.filterButton.BackColor = System.Drawing.Color.White;
-            this.filterButton.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
-            this.filterButton.FlatAppearance.BorderSize = 1;
-            this.filterButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.filterButton.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.filterButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
-            this.filterButton.Location = new System.Drawing.Point(0, 0);
-            this.filterButton.Name = "filterButton";
-            this.filterButton.Size = new System.Drawing.Size(100, 36);
-            this.filterButton.TabIndex = 0;
-            this.filterButton.Text = "Filter";
-            this.filterButton.UseVisualStyleBackColor = false;
             // 
             // contentPanel
             // 
@@ -295,9 +261,7 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.Panel searchPanel;
         private System.Windows.Forms.TextBox searchBox;
         private System.Windows.Forms.Panel rightControlsPanel;
-        private System.Windows.Forms.Button filterButton;
         private System.Windows.Forms.ComboBox sortComboBox;
-        private System.Windows.Forms.Button btnAddContact;
         private System.Windows.Forms.Panel contentPanel;
         private System.Windows.Forms.Panel paginationPanel;
         private System.Windows.Forms.TableLayoutPanel contactsPaginationLayout;

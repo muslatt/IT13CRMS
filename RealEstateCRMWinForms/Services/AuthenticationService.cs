@@ -44,7 +44,7 @@ namespace RealEstateCRMWinForms.Services
                         CreatedAt = DateTime.Now,
                         IsActive = true,
                         IsEmailVerified = true,
-                        Role = UserRole.Broker
+                        RoleInt = (int)UserRole.Broker
                     };
                     UserSession.Instance.CurrentUser = brokerUser;
 
@@ -67,6 +67,7 @@ namespace RealEstateCRMWinForms.Services
                     }
                     catch { /* ignore persistence errors */ }
 
+                    LoggingService.LogAction("User Login", $"Broker {brokerUser.FullName} logged in");
                     return brokerUser;
                 }
 
@@ -81,6 +82,7 @@ namespace RealEstateCRMWinForms.Services
                         return null;
                     }
                     UserSession.Instance.CurrentUser = user;
+                    LoggingService.LogAction("User Login", $"User {user.FullName} logged in");
                     return user;
                 }
 
@@ -92,13 +94,13 @@ namespace RealEstateCRMWinForms.Services
             }
         }
 
-        public bool Register(string firstName, string lastName, string email, string password)
+        public bool Register(string firstName, string lastName, string email, string password, Models.UserRole? role = null)
         {
             // Backwards-compatible wrapper that uses the async implementation
-            return RegisterAsync(firstName, lastName, email, password).GetAwaiter().GetResult();
+            return RegisterAsync(firstName, lastName, email, password, role).GetAwaiter().GetResult();
         }
 
-        public async Task<bool> RegisterAsync(string firstName, string lastName, string email, string password)
+        public async Task<bool> RegisterAsync(string firstName, string lastName, string email, string password, Models.UserRole? role = null)
         {
             try
             {
@@ -112,6 +114,9 @@ namespace RealEstateCRMWinForms.Services
                 var createdByBroker = UserSession.Instance.CurrentUser?.Role == UserRole.Broker;
                 var isFirstUser = !dbContext.Users.Any();
 
+                // Determine assigned role: explicit role parameter wins; otherwise first user becomes Broker, others default to Agent
+                var assignedRole = role ?? (isFirstUser ? UserRole.Broker : UserRole.Agent);
+
                 var user = new User
                 {
                     FirstName = firstName,
@@ -120,14 +125,40 @@ namespace RealEstateCRMWinForms.Services
                     PasswordHash = HashPassword(password),
                     CreatedAt = DateTime.Now,
                     IsActive = true,
+                    // If the account is being created by a Broker (session), mark as verified and do not send token
                     IsEmailVerified = createdByBroker,
                     EmailVerificationToken = createdByBroker ? null : GenerateVerificationToken(),
                     EmailVerificationSentAt = createdByBroker ? null : DateTime.Now,
-                    Role = isFirstUser ? UserRole.Broker : UserRole.Agent
+                    RoleInt = (int)assignedRole
                 };
 
                 dbContext.Users.Add(user);
                 dbContext.SaveChanges();
+
+                // If the user is registering as a Client, automatically create a Lead entry
+                if (assignedRole == UserRole.Client)
+                {
+                    var lead = new Models.Lead
+                    {
+                        FullName = $"{firstName} {lastName}".Trim(),
+                        Email = email,
+                        Phone = "", // Can be updated later
+                        Type = "Lead",
+                        Occupation = "",
+                        Salary = null,
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = true
+                    };
+
+                    dbContext.Leads.Add(lead);
+                    dbContext.SaveChanges();
+
+                    LoggingService.LogAction("Lead Created from Registration",
+                        $"Lead '{lead.FullName}' automatically created from client registration");
+                }
+
+                // Log the action
+                LoggingService.LogAction("User Registered", $"User '{user.FullName}' registered as {user.Role}");
 
                 if (createdByBroker)
                 {
@@ -200,7 +231,7 @@ namespace RealEstateCRMWinForms.Services
                 // Log the error and fall back to debug output for development
                 System.Diagnostics.Debug.WriteLine($"Failed to send email: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"Verification code for {email}: {token}");
-                
+
                 // In production, you might want to throw the exception or handle it differently
                 // For now, we'll continue as if the email was sent
             }
@@ -244,11 +275,11 @@ namespace RealEstateCRMWinForms.Services
             {
                 using var dbContext = DbContextHelper.CreateDbContext();
                 var user = dbContext.Users.FirstOrDefault(u => u.Email == email && !u.IsEmailVerified);
-                
+
                 if (user != null && user.EmailVerificationToken == token)
                 {
                     // Check if token hasn't expired (24 hours)
-                    if (user.EmailVerificationSentAt.HasValue && 
+                    if (user.EmailVerificationSentAt.HasValue &&
                         DateTime.Now.Subtract(user.EmailVerificationSentAt.Value).TotalHours > 24)
                     {
                         return false; // Token expired
@@ -323,14 +354,14 @@ namespace RealEstateCRMWinForms.Services
             {
                 using var dbContext = DbContextHelper.CreateDbContext();
                 var user = dbContext.Users.FirstOrDefault(u => u.Email == email && !u.IsEmailVerified);
-                
+
                 if (user != null)
                 {
                     // Generate new verification token
                     var newToken = GenerateVerificationToken();
                     user.EmailVerificationToken = newToken;
                     user.EmailVerificationSentAt = DateTime.Now;
-                    
+
                     dbContext.SaveChanges();
                     SendVerificationEmailAsync(email, newToken);
                     return true;

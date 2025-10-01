@@ -1,4 +1,5 @@
 using RealEstateCRMWinForms.Models;
+using RealEstateCRMWinForms.Services;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -10,18 +11,20 @@ namespace RealEstateCRMWinForms.Views
         private TextBox txtEmail;
         private TextBox txtPhone;
         private ComboBox cmbType;
+        private ComboBox cmbAgent;
         private Button btnSave;
         private Button btnCancel;
 
         public AddContactForm()
         {
             InitializeComponent();
+            LoadAgents();
         }
 
         private void InitializeComponent()
         {
             Text = "Add New Contact";
-            Size = new Size(500, 350);
+            Size = new Size(500, 400); // Increased height for agent field
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -99,11 +102,28 @@ namespace RealEstateCRMWinForms.Views
             cmbType.Items.AddRange(new[] { "Buyer", "Renter", "Owner" });
             cmbType.SelectedIndex = 0; // Default to Buyer
 
+            // Agent
+            var lblAgent = new Label
+            {
+                Text = "Agent:",
+                Location = new Point(20, 160),
+                Size = new Size(100, 28),
+                Font = new Font("Segoe UI", 12F)
+            };
+
+            cmbAgent = new ComboBox
+            {
+                Location = new Point(130, 160),
+                Size = new Size(320, 28),
+                Font = new Font("Segoe UI", 12F),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+
             // Buttons
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(250, 270),
+                Location = new Point(250, 320), // Moved down
                 Size = new Size(110, 35),
                 Font = new Font("Segoe UI", 12F),
                 DialogResult = DialogResult.Cancel,
@@ -116,7 +136,7 @@ namespace RealEstateCRMWinForms.Views
             btnSave = new Button
             {
                 Text = "Save Contact",
-                Location = new Point(370, 270),
+                Location = new Point(370, 320), // Moved down
                 Size = new Size(110, 35),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 BackColor = Color.FromArgb(0, 123, 255),
@@ -132,6 +152,7 @@ namespace RealEstateCRMWinForms.Views
                 lblEmail, txtEmail,
                 lblPhone, txtPhone,
                 lblType, cmbType,
+                lblAgent, cmbAgent,
                 btnCancel, btnSave
             });
 
@@ -139,12 +160,64 @@ namespace RealEstateCRMWinForms.Views
             AcceptButton = btnSave;
         }
 
+        private void LoadAgents()
+        {
+            try
+            {
+                cmbAgent.Items.Clear();
+                cmbAgent.Items.Add("(No Agent)");
+
+                // Load agents from Users table (Role = Agent)
+                var agents = AgentDirectory.GetAgentDisplayNames();
+                foreach (var agent in agents)
+                {
+                    cmbAgent.Items.Add(agent);
+                }
+
+                // Auto-set based on current user and disable the dropdown
+                var currentUser = UserSession.Instance.CurrentUser;
+                if (currentUser != null)
+                {
+                    if (currentUser.Role == UserRole.Broker)
+                    {
+                        cmbAgent.Text = "Broker";
+                    }
+                    else if (currentUser.Role == UserRole.Agent)
+                    {
+                        cmbAgent.Text = currentUser.FullName;
+                    }
+                    else
+                    {
+                        cmbAgent.Text = "(No Agent)";
+                    }
+                }
+                else
+                {
+                    cmbAgent.Text = "(No Agent)";
+                }
+
+                // Disable the dropdown since agent is auto-assigned
+                cmbAgent.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading agents: {ex.Message}");
+                // If loading fails, keep "No Agent" option
+                if (cmbAgent.Items.Count == 0)
+                {
+                    cmbAgent.Items.Add("(No Agent)");
+                    cmbAgent.Text = "(No Agent)";
+                }
+                cmbAgent.Enabled = false;
+            }
+        }
+
         private void BtnSave_Click(object? sender, EventArgs e)
         {
             // Validation
             if (string.IsNullOrWhiteSpace(txtFullName.Text))
             {
-                MessageBox.Show("Please enter the contact's full name.", "Validation Error", 
+                MessageBox.Show("Please enter the contact's full name.", "Validation Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtFullName.Focus();
                 return;
@@ -152,7 +225,7 @@ namespace RealEstateCRMWinForms.Views
 
             if (string.IsNullOrWhiteSpace(txtEmail.Text))
             {
-                MessageBox.Show("Please enter the contact's email address.", "Validation Error", 
+                MessageBox.Show("Please enter the contact's email address.", "Validation Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtEmail.Focus();
                 return;
@@ -161,10 +234,26 @@ namespace RealEstateCRMWinForms.Views
             // Basic email validation
             if (!IsValidEmail(txtEmail.Text))
             {
-                MessageBox.Show("Please enter a valid email address.", "Validation Error", 
+                MessageBox.Show("Please enter a valid email address.", "Validation Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtEmail.Focus();
                 return;
+            }
+
+            // Get selected agent information - now auto-assigned to current user
+            string assignedAgent = string.Empty;
+            var currentUser = UserSession.Instance.CurrentUser;
+            if (currentUser != null)
+            {
+                if (currentUser.Role == UserRole.Broker)
+                {
+                    assignedAgent = "Broker";
+                }
+                else if (currentUser.Role == UserRole.Agent)
+                {
+                    assignedAgent = currentUser.FullName;
+                }
+                // For other roles, leave as empty
             }
 
             // Create new contact
@@ -174,6 +263,7 @@ namespace RealEstateCRMWinForms.Views
                 Email = txtEmail.Text.Trim(),
                 Phone = txtPhone.Text.Trim(),
                 Type = cmbType.SelectedItem?.ToString() ?? "Buyer",
+                AssignedAgent = assignedAgent, // Set the assigned agent
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
