@@ -47,10 +47,7 @@
             avgSalaryChartCard = new Panel();
             occupationPreferenceCard = new Panel();
             kpiPanel = new TableLayoutPanel();
-            totalRevenueCard = new Panel();
-            avgDealValueCard = new Panel();
             conversionRateCard = new Panel();
-            avgDaysToCloseCard = new Panel();
             projectedRevenueCard = new Panel();
             headerPanel.SuspendLayout();
             mainPanel.SuspendLayout();
@@ -79,7 +76,7 @@
             lblLastUpdated.AutoSize = true;
             lblLastUpdated.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
             lblLastUpdated.ForeColor = Color.FromArgb(107, 114, 128);
-            lblLastUpdated.Location = new Point(800, 35);
+            lblLastUpdated.Location = new Point(1180, 35);
             lblLastUpdated.Name = "lblLastUpdated";
             lblLastUpdated.Size = new Size(205, 17);
             lblLastUpdated.TabIndex = 2;
@@ -111,7 +108,6 @@
             // 
             mainPanel.AutoScroll = true;
             mainPanel.BackColor = Color.FromArgb(249, 250, 251);
-            // Order: Top to bottom -> KPI, Charts, Avg Salary (full width), Occupation Preference (full width), System Overview, Analytics
             mainPanel.Controls.Add(analyticsPanel);
             mainPanel.Controls.Add(totalCountsPanel);
             mainPanel.Controls.Add(occupationPreferenceCard);
@@ -125,71 +121,109 @@
             mainPanel.Size = new Size(1400, 810);
             mainPanel.TabIndex = 1;
             // 
-            // analyticsPanel
+            // kpiPanel
             // 
-            analyticsPanel.ColumnCount = 2;
-            analyticsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            analyticsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            analyticsPanel.Controls.Add(revenueAnalyticsCard, 0, 0);
-            analyticsPanel.Controls.Add(propertyAnalyticsCard, 1, 0);
-            analyticsPanel.Controls.Add(performanceAnalyticsCard, 0, 1);
-            analyticsPanel.Controls.Add(trendsAnalyticsCard, 1, 1);
-            analyticsPanel.Dock = DockStyle.Top;
-            analyticsPanel.Location = new Point(30, 910);
-            analyticsPanel.Name = "analyticsPanel";
-            analyticsPanel.RowCount = 2;
-            analyticsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            analyticsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            analyticsPanel.Size = new Size(1323, 400);
-            analyticsPanel.TabIndex = 3;
+            kpiPanel.ColumnCount = 2;
+            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            kpiPanel.Controls.Add(conversionRateCard, 0, 0);
+            kpiPanel.Controls.Add(projectedRevenueCard, 1, 0);
+            kpiPanel.Dock = DockStyle.Top;
+            kpiPanel.Location = new Point(30, 30);
+            kpiPanel.Name = "kpiPanel";
+            kpiPanel.RowCount = 1;
+            kpiPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            kpiPanel.Size = new Size(1340, 180);
+            kpiPanel.TabIndex = 0;
             // 
-            // revenueAnalyticsCard
+            // conversionRateCard
             // 
-            revenueAnalyticsCard.BackColor = Color.White;
-            revenueAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
-            revenueAnalyticsCard.Dock = DockStyle.Fill;
-            revenueAnalyticsCard.Location = new Point(12, 12);
-            revenueAnalyticsCard.Margin = new Padding(12);
-            revenueAnalyticsCard.Name = "revenueAnalyticsCard";
-            revenueAnalyticsCard.Padding = new Padding(20);
-            revenueAnalyticsCard.Size = new Size(637, 176);
-            revenueAnalyticsCard.TabIndex = 0;
+            conversionRateCard.BackColor = Color.White;
+            conversionRateCard.BorderStyle = BorderStyle.FixedSingle;
+            conversionRateCard.Dock = DockStyle.Fill;
+            conversionRateCard.Location = new Point(0, 0);
+            conversionRateCard.Margin = new Padding(0, 0, 3, 0);
+            conversionRateCard.Name = "conversionRateCard";
+            conversionRateCard.Padding = new Padding(20);
+            conversionRateCard.Size = new Size(667, 180);
+            conversionRateCard.TabIndex = 0;
             // 
-            // propertyAnalyticsCard
+            // projectedRevenueCard
             // 
-            propertyAnalyticsCard.BackColor = Color.White;
-            propertyAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
-            propertyAnalyticsCard.Dock = DockStyle.Fill;
-            propertyAnalyticsCard.Location = new Point(673, 12);
-            propertyAnalyticsCard.Margin = new Padding(12);
-            propertyAnalyticsCard.Name = "propertyAnalyticsCard";
-            propertyAnalyticsCard.Padding = new Padding(20);
-            propertyAnalyticsCard.Size = new Size(638, 176);
-            propertyAnalyticsCard.TabIndex = 1;
+            projectedRevenueCard.BackColor = Color.White;
+            projectedRevenueCard.BorderStyle = BorderStyle.FixedSingle;
+            projectedRevenueCard.Dock = DockStyle.Fill;
+            projectedRevenueCard.Location = new Point(673, 0);
+            projectedRevenueCard.Margin = new Padding(3, 0, 0, 0);
+            projectedRevenueCard.Name = "projectedRevenueCard";
+            projectedRevenueCard.Padding = new Padding(20);
+            projectedRevenueCard.Size = new Size(667, 180);
+            projectedRevenueCard.TabIndex = 1;
             // 
-            // performanceAnalyticsCard
+            // chartsPanel
             // 
-            performanceAnalyticsCard.BackColor = Color.White;
-            performanceAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
-            performanceAnalyticsCard.Dock = DockStyle.Fill;
-            performanceAnalyticsCard.Location = new Point(12, 212);
-            performanceAnalyticsCard.Margin = new Padding(12);
-            performanceAnalyticsCard.Name = "performanceAnalyticsCard";
-            performanceAnalyticsCard.Padding = new Padding(20);
-            performanceAnalyticsCard.Size = new Size(637, 176);
-            performanceAnalyticsCard.TabIndex = 2;
+            chartsPanel.ColumnCount = 2;
+            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            // Updated: Only one row (Lead Conversion left, Property Status right) to remove vertical gap.
+            chartsPanel.Controls.Add(leadConversionChartCard, 0, 0);
+            chartsPanel.Controls.Add(propertyStatusChartCard, 1, 0);
+            chartsPanel.Dock = DockStyle.Top;
+            chartsPanel.Location = new Point(30, 210);
+            chartsPanel.Name = "chartsPanel";
+            chartsPanel.RowCount = 1;
+            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 240F));
+            chartsPanel.Size = new Size(1340, 240);
+            chartsPanel.TabIndex = 1;
             // 
-            // trendsAnalyticsCard
+            // leadConversionChartCard (moved to top-left)
             // 
-            trendsAnalyticsCard.BackColor = Color.White;
-            trendsAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
-            trendsAnalyticsCard.Dock = DockStyle.Fill;
-            trendsAnalyticsCard.Location = new Point(673, 212);
-            trendsAnalyticsCard.Margin = new Padding(12);
-            trendsAnalyticsCard.Name = "trendsAnalyticsCard";
-            trendsAnalyticsCard.Padding = new Padding(20);
-            trendsAnalyticsCard.Size = new Size(638, 176);
-            trendsAnalyticsCard.TabIndex = 3;
+            leadConversionChartCard.BackColor = Color.White;
+            leadConversionChartCard.BorderStyle = BorderStyle.FixedSingle;
+            leadConversionChartCard.Dock = DockStyle.Fill;
+            leadConversionChartCard.Location = new Point(0, 0);
+            leadConversionChartCard.Margin = new Padding(0, 0, 3, 3);
+            leadConversionChartCard.Name = "leadConversionChartCard";
+            leadConversionChartCard.Padding = new Padding(20);
+            leadConversionChartCard.Size = new Size(667, 237);
+            leadConversionChartCard.TabIndex = 0;
+            // 
+            // propertyStatusChartCard (top-right)
+            // 
+            propertyStatusChartCard.BackColor = Color.White;
+            propertyStatusChartCard.BorderStyle = BorderStyle.FixedSingle;
+            propertyStatusChartCard.Dock = DockStyle.Fill;
+            propertyStatusChartCard.Location = new Point(673, 0);
+            propertyStatusChartCard.Margin = new Padding(3, 0, 0, 3);
+            propertyStatusChartCard.Name = "propertyStatusChartCard";
+            propertyStatusChartCard.Padding = new Padding(20);
+            propertyStatusChartCard.Size = new Size(667, 237);
+            propertyStatusChartCard.TabIndex = 1;
+            // 
+            // salesChartCard retained (not displayed) - removed from panel to reclaim space. Leave variable for potential future use.
+            // 
+            // avgSalaryChartCard
+            // 
+            avgSalaryChartCard.BackColor = Color.White;
+            avgSalaryChartCard.BorderStyle = BorderStyle.FixedSingle;
+            avgSalaryChartCard.Dock = DockStyle.Top;
+            // Move up to immediately follow chartsPanel (210 + 240 = 450)
+            avgSalaryChartCard.Location = new Point(30, 450);
+            avgSalaryChartCard.Name = "avgSalaryChartCard";
+            avgSalaryChartCard.Padding = new Padding(20);
+            avgSalaryChartCard.Size = new Size(1340, 220);
+            avgSalaryChartCard.TabIndex = 2;
+            // 
+            // occupationPreferenceCard
+            // 
+            occupationPreferenceCard.BackColor = Color.White;
+            occupationPreferenceCard.BorderStyle = BorderStyle.FixedSingle;
+            occupationPreferenceCard.Dock = DockStyle.Top;
+            occupationPreferenceCard.Location = new Point(30, 670);
+            occupationPreferenceCard.Name = "occupationPreferenceCard";
+            occupationPreferenceCard.Padding = new Padding(20);
+            occupationPreferenceCard.Size = new Size(1340, 220);
+            occupationPreferenceCard.TabIndex = 3;
             // 
             // totalCountsPanel
             // 
@@ -197,188 +231,94 @@
             totalCountsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             totalCountsPanel.Controls.Add(totalCountsCard, 0, 0);
             totalCountsPanel.Dock = DockStyle.Top;
-            totalCountsPanel.Location = new Point(30, 690);
+            totalCountsPanel.Location = new Point(30, 890);
             totalCountsPanel.Name = "totalCountsPanel";
             totalCountsPanel.RowCount = 1;
             totalCountsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            totalCountsPanel.Size = new Size(1323, 280);
-            totalCountsPanel.TabIndex = 2;
+            totalCountsPanel.Size = new Size(1340, 280);
+            totalCountsPanel.TabIndex = 4;
             // 
             // totalCountsCard
             // 
             totalCountsCard.BackColor = Color.White;
             totalCountsCard.BorderStyle = BorderStyle.FixedSingle;
             totalCountsCard.Dock = DockStyle.Fill;
-            totalCountsCard.Location = new Point(12, 12);
-            totalCountsCard.Margin = new Padding(12);
+            totalCountsCard.Location = new Point(0, 0);
+            totalCountsCard.Margin = new Padding(0);
             totalCountsCard.Name = "totalCountsCard";
             totalCountsCard.Padding = new Padding(20);
-            totalCountsCard.Size = new Size(1299, 256);
+            totalCountsCard.Size = new Size(1340, 280);
             totalCountsCard.TabIndex = 0;
-            totalCountsCard.Paint += totalCountsCard_Paint;
             // 
-            // chartsPanel (keeps three charts only)
+            // analyticsPanel
             // 
-            chartsPanel.ColumnCount = 2;
-            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            chartsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            chartsPanel.Controls.Add(salesChartCard, 0, 0);
-            chartsPanel.Controls.Add(propertyStatusChartCard, 1, 0);
-            chartsPanel.Controls.Add(leadConversionChartCard, 0, 1);
-            // removed avgSalaryChartCard from chartsPanel
-            chartsPanel.Dock = DockStyle.Top;
-            chartsPanel.Location = new Point(30, 211);
-            chartsPanel.Name = "chartsPanel";
-            chartsPanel.RowCount = 2;
-            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 260F));
-            chartsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 260F));
-            chartsPanel.Size = new Size(1323, 544);
-            chartsPanel.TabIndex = 1;
+            // Adjusted layout: shift Property, Performance, Market Trends to the left.
+            // Keep revenueAnalyticsCard (first slot) hidden/reserved in case it's reintroduced.
+            analyticsPanel.ColumnCount = 4;
+            analyticsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            analyticsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            analyticsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            analyticsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            analyticsPanel.Controls.Add(propertyAnalyticsCard, 0, 0);
+            analyticsPanel.Controls.Add(performanceAnalyticsCard, 1, 0);
+            analyticsPanel.Controls.Add(trendsAnalyticsCard, 2, 0);
+            analyticsPanel.Controls.Add(revenueAnalyticsCard, 3, 0); // moved to the far right (hidden later in code)
+            analyticsPanel.Dock = DockStyle.Top;
+            analyticsPanel.Location = new Point(30, 1170);
+            analyticsPanel.Name = "analyticsPanel";
+            analyticsPanel.RowCount = 1;
+            analyticsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            analyticsPanel.Size = new Size(1340, 200);
+            analyticsPanel.TabIndex = 5;
             // 
-            // salesChartCard
+            // revenueAnalyticsCard
             // 
-            salesChartCard.BackColor = Color.White;
-            salesChartCard.BorderStyle = BorderStyle.FixedSingle;
-            salesChartCard.Dock = DockStyle.Fill;
-            salesChartCard.Location = new Point(12, 12);
-            salesChartCard.Margin = new Padding(12);
-            salesChartCard.Name = "salesChartCard";
-            salesChartCard.Padding = new Padding(20);
-            salesChartCard.Size = new Size(649, 236);
-            salesChartCard.MinimumSize = new Size(0, 236);
-            salesChartCard.TabIndex = 0;
+            revenueAnalyticsCard.BackColor = Color.White;
+            revenueAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
+            revenueAnalyticsCard.Dock = DockStyle.Fill;
+            // Moved to last column (index 3)
+            revenueAnalyticsCard.Location = new Point(1008, 0);
+            revenueAnalyticsCard.Margin = new Padding(3, 0, 0, 0);
+            revenueAnalyticsCard.Name = "revenueAnalyticsCard";
+            revenueAnalyticsCard.Padding = new Padding(20);
+            revenueAnalyticsCard.Size = new Size(332, 200);
+            revenueAnalyticsCard.TabIndex = 3;
             // 
-            // propertyStatusChartCard
+            // propertyAnalyticsCard
             // 
-            propertyStatusChartCard.BackColor = Color.White;
-            propertyStatusChartCard.BorderStyle = BorderStyle.FixedSingle;
-            propertyStatusChartCard.Dock = DockStyle.Fill;
-            propertyStatusChartCard.Location = new Point(673, 12);
-            propertyStatusChartCard.Margin = new Padding(12);
-            propertyStatusChartCard.Name = "propertyStatusChartCard";
-            propertyStatusChartCard.Padding = new Padding(20);
-            propertyStatusChartCard.Size = new Size(638, 236);
-            propertyStatusChartCard.MinimumSize = new Size(0, 236);
-            propertyStatusChartCard.TabIndex = 1;
+            propertyAnalyticsCard.BackColor = Color.White;
+            propertyAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
+            propertyAnalyticsCard.Dock = DockStyle.Fill;
+            propertyAnalyticsCard.Location = new Point(0, 0);
+            propertyAnalyticsCard.Margin = new Padding(0, 0, 3, 0);
+            propertyAnalyticsCard.Name = "propertyAnalyticsCard";
+            propertyAnalyticsCard.Padding = new Padding(20);
+            propertyAnalyticsCard.Size = new Size(329, 200);
+            propertyAnalyticsCard.TabIndex = 1;
             // 
-            // leadConversionChartCard
+            // performanceAnalyticsCard
             // 
-            leadConversionChartCard.BackColor = Color.White;
-            leadConversionChartCard.BorderStyle = BorderStyle.FixedSingle;
-            leadConversionChartCard.Dock = DockStyle.Fill;
-            leadConversionChartCard.Location = new Point(12, 141);
-            leadConversionChartCard.Margin = new Padding(12);
-            leadConversionChartCard.Name = "leadConversionChartCard";
-            leadConversionChartCard.Padding = new Padding(20);
-            leadConversionChartCard.Size = new Size(649, 236);
-            leadConversionChartCard.MinimumSize = new Size(0, 236);
-            leadConversionChartCard.TabIndex = 2;
+            performanceAnalyticsCard.BackColor = Color.White;
+            performanceAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
+            performanceAnalyticsCard.Dock = DockStyle.Fill;
+            performanceAnalyticsCard.Location = new Point(338, 0);
+            performanceAnalyticsCard.Margin = new Padding(3, 0, 3, 0);
+            performanceAnalyticsCard.Name = "performanceAnalyticsCard";
+            performanceAnalyticsCard.Padding = new Padding(20);
+            performanceAnalyticsCard.Size = new Size(329, 200);
+            performanceAnalyticsCard.TabIndex = 2;
             // 
-            // avgSalaryChartCard (now full width like System Overview)
+            // trendsAnalyticsCard
             // 
-            avgSalaryChartCard.BackColor = Color.White;
-            avgSalaryChartCard.BorderStyle = BorderStyle.FixedSingle;
-            avgSalaryChartCard.Dock = DockStyle.Top;
-            avgSalaryChartCard.Location = new Point(30, 470);
-            avgSalaryChartCard.Margin = new Padding(12);
-            avgSalaryChartCard.Name = "avgSalaryChartCard";
-            avgSalaryChartCard.Padding = new Padding(20);
-            avgSalaryChartCard.Size = new Size(1323, 220); // match System Overview height
-            avgSalaryChartCard.TabIndex = 4;
-            // 
-            // occupationPreferenceCard (full width like avg salary)
-            // 
-            occupationPreferenceCard.BackColor = Color.White;
-            occupationPreferenceCard.BorderStyle = BorderStyle.FixedSingle;
-            occupationPreferenceCard.Dock = DockStyle.Top;
-            occupationPreferenceCard.Location = new Point(30, 690);
-            occupationPreferenceCard.Margin = new Padding(12);
-            occupationPreferenceCard.Name = "occupationPreferenceCard";
-            occupationPreferenceCard.Padding = new Padding(20);
-            occupationPreferenceCard.Size = new Size(1323, 220);
-            occupationPreferenceCard.TabIndex = 5;
-            // 
-            // kpiPanel
-            // 
-            kpiPanel.ColumnCount = 5;
-            kpiPanel.ColumnStyles.Clear();
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-            kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-            kpiPanel.Controls.Add(totalRevenueCard, 0, 0);
-            kpiPanel.Controls.Add(avgDealValueCard, 1, 0);
-            kpiPanel.Controls.Add(conversionRateCard, 2, 0);
-            kpiPanel.Controls.Add(avgDaysToCloseCard, 3, 0);
-            kpiPanel.Controls.Add(projectedRevenueCard, 4, 0);
-            kpiPanel.Dock = DockStyle.Top;
-            kpiPanel.Location = new Point(30, 30);
-            kpiPanel.Name = "kpiPanel";
-            kpiPanel.RowCount = 1;
-            kpiPanel.RowStyles.Clear();
-            kpiPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            kpiPanel.Size = new Size(1323, 181);
-            kpiPanel.TabIndex = 0;
-            // 
-            // totalRevenueCard
-            // 
-            totalRevenueCard.BackColor = Color.White;
-            totalRevenueCard.BorderStyle = BorderStyle.FixedSingle;
-            totalRevenueCard.Dock = DockStyle.Fill;
-            totalRevenueCard.Location = new Point(12, 12);
-            totalRevenueCard.Margin = new Padding(12);
-            totalRevenueCard.Name = "totalRevenueCard";
-            totalRevenueCard.Padding = new Padding(20);
-            totalRevenueCard.Size = new Size(306, 157);
-            totalRevenueCard.TabIndex = 0;
-            // 
-            // avgDealValueCard
-            // 
-            avgDealValueCard.BackColor = Color.White;
-            avgDealValueCard.BorderStyle = BorderStyle.FixedSingle;
-            avgDealValueCard.Dock = DockStyle.Fill;
-            avgDealValueCard.Location = new Point(342, 12);
-            avgDealValueCard.Margin = new Padding(12);
-            avgDealValueCard.Name = "avgDealValueCard";
-            avgDealValueCard.Padding = new Padding(20);
-            avgDealValueCard.Size = new Size(306, 157);
-            avgDealValueCard.TabIndex = 1;
-            // 
-            // conversionRateCard
-            // 
-            conversionRateCard.BackColor = Color.White;
-            conversionRateCard.BorderStyle = BorderStyle.FixedSingle;
-            conversionRateCard.Dock = DockStyle.Fill;
-            conversionRateCard.Location = new Point(672, 12);
-            conversionRateCard.Margin = new Padding(12);
-            conversionRateCard.Name = "conversionRateCard";
-            conversionRateCard.Padding = new Padding(20);
-            conversionRateCard.Size = new Size(306, 157);
-            conversionRateCard.TabIndex = 2;
-            // 
-            // avgDaysToCloseCard
-            // 
-            avgDaysToCloseCard.BackColor = Color.White;
-            avgDaysToCloseCard.BorderStyle = BorderStyle.FixedSingle;
-            avgDaysToCloseCard.Dock = DockStyle.Fill;
-            avgDaysToCloseCard.Location = new Point(1002, 12);
-            avgDaysToCloseCard.Margin = new Padding(12);
-            avgDaysToCloseCard.Name = "avgDaysToCloseCard";
-            avgDaysToCloseCard.Padding = new Padding(20);
-            avgDaysToCloseCard.Size = new Size(309, 157);
-            avgDaysToCloseCard.TabIndex = 3;
-
-            // projectedRevenueCard
-            projectedRevenueCard.BackColor = Color.White;
-            projectedRevenueCard.BorderStyle = BorderStyle.FixedSingle;
-            projectedRevenueCard.Dock = DockStyle.Fill;
-            projectedRevenueCard.Location = new Point(1332, 12);
-            projectedRevenueCard.Margin = new Padding(12);
-            projectedRevenueCard.Name = "projectedRevenueCard";
-            projectedRevenueCard.Padding = new Padding(20);
-            projectedRevenueCard.Size = new Size(306, 157);
-            projectedRevenueCard.TabIndex = 4;
+            trendsAnalyticsCard.BackColor = Color.White;
+            trendsAnalyticsCard.BorderStyle = BorderStyle.FixedSingle;
+            trendsAnalyticsCard.Dock = DockStyle.Fill;
+            trendsAnalyticsCard.Location = new Point(673, 0);
+            trendsAnalyticsCard.Margin = new Padding(3, 0, 3, 0);
+            trendsAnalyticsCard.Name = "trendsAnalyticsCard";
+            trendsAnalyticsCard.Padding = new Padding(20);
+            trendsAnalyticsCard.Size = new Size(332, 200);
+            trendsAnalyticsCard.TabIndex = 3;
             // 
             // DashboardView
             // 
@@ -406,25 +346,25 @@
         private System.Windows.Forms.Label lblSubtitle;
         private System.Windows.Forms.Label lblLastUpdated;
         private System.Windows.Forms.Panel mainPanel;
-        
-        // New Analytics Components
+
+        // KPI Components (only remaining 2 cards)
         private System.Windows.Forms.TableLayoutPanel kpiPanel;
-        private System.Windows.Forms.Panel totalRevenueCard;
-        private System.Windows.Forms.Panel avgDealValueCard;
         private System.Windows.Forms.Panel conversionRateCard;
-        private System.Windows.Forms.Panel avgDaysToCloseCard;
         private System.Windows.Forms.Panel projectedRevenueCard;
-        
+
+        // Charts Components
         private System.Windows.Forms.TableLayoutPanel chartsPanel;
         private System.Windows.Forms.Panel salesChartCard;
         private System.Windows.Forms.Panel propertyStatusChartCard;
         private System.Windows.Forms.Panel leadConversionChartCard;
         private System.Windows.Forms.Panel avgSalaryChartCard;
         private System.Windows.Forms.Panel occupationPreferenceCard;
-        
+
+        // System Overview
         private System.Windows.Forms.TableLayoutPanel totalCountsPanel;
         private System.Windows.Forms.Panel totalCountsCard;
-        
+
+        // Analytics Components
         private System.Windows.Forms.TableLayoutPanel analyticsPanel;
         private System.Windows.Forms.Panel revenueAnalyticsCard;
         private System.Windows.Forms.Panel propertyAnalyticsCard;

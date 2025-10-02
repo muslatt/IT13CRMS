@@ -250,13 +250,86 @@ namespace RealEstateCRMWinForms.ViewModels
                         // Note: Property deactivation now happens only when client approves the closure request
                         // Automatically mark deal as inactive when status is "Closed/Done" (or contains "closed")
                         if (deal.Status.Contains("Closed", StringComparison.OrdinalIgnoreCase) ||
-                            deal.Status.Equals("Lost", StringComparison.OrdinalIgnoreCase))
+                            deal.Status.Equals("Lost", StringComparison.OrdinalIgnoreCase) ||
+                            deal.Status.Contains("Done", StringComparison.OrdinalIgnoreCase))
                         {
                             existingDeal.IsActive = false;
                             existingDeal.ClosedAt = DateTime.UtcNow;
                             Console.WriteLine($"Deal ID {deal.Id} marked as inactive due to {deal.Status} status");
 
                             // Property is NOT deactivated here anymore - it's handled in ClientDealsView approval
+
+                            // NEW: Transfer corresponding lead (if any) fully into contacts (move, not copy)
+                            try
+                            {
+                                // Identify lead based on contact info (email preferred, fallback to FullName)
+                                using var transferContext = DbContextHelper.CreateDbContext();
+                                transferContext.Database.EnsureCreated();
+
+                                Lead? leadToTransfer = null;
+                                if (existingDeal.ContactId.HasValue)
+                                {
+                                    // Try find an active lead with same email
+                                    var contactRef = transferContext.Contacts.FirstOrDefault(c => c.Id == existingDeal.ContactId.Value);
+                                    if (contactRef != null && !string.IsNullOrWhiteSpace(contactRef.Email))
+                                    {
+                                        leadToTransfer = transferContext.Leads.FirstOrDefault(l => l.IsActive && l.Email == contactRef.Email);
+                                    }
+                                }
+
+                                // Fallback: search by email from deal (if Contact navigation not loaded yet)
+                                if (leadToTransfer == null && existingDeal.Contact != null && !string.IsNullOrWhiteSpace(existingDeal.Contact.Email))
+                                {
+                                    leadToTransfer = transferContext.Leads.FirstOrDefault(l => l.IsActive && l.Email == existingDeal.Contact.Email);
+                                }
+
+                                // Final fallback: match by FullName if unique
+                                if (leadToTransfer == null && existingDeal.Contact != null)
+                                {
+                                    var possibleLeads = transferContext.Leads.Where(l => l.IsActive && l.FullName == existingDeal.Contact.FullName).ToList();
+                                    if (possibleLeads.Count == 1)
+                                        leadToTransfer = possibleLeads.First();
+                                }
+
+                                if (leadToTransfer != null)
+                                {
+                                    // Ensure there is a corresponding contact; if not, create one from lead data
+                                    Contact? existingContact = null;
+                                    if (!string.IsNullOrWhiteSpace(leadToTransfer.Email))
+                                    {
+                                        existingContact = transferContext.Contacts.FirstOrDefault(c => c.Email == leadToTransfer.Email);
+                                    }
+                                    if (existingContact == null)
+                                    {
+                                        existingContact = new Contact
+                                        {
+                                            FullName = leadToTransfer.FullName,
+                                            Email = leadToTransfer.Email,
+                                            Phone = leadToTransfer.Phone,
+                                            Type = string.IsNullOrWhiteSpace(leadToTransfer.Type) ? "Buyer" : leadToTransfer.Type,
+                                            AvatarPath = leadToTransfer.AvatarPath,
+                                            Occupation = leadToTransfer.Occupation,
+                                            Salary = leadToTransfer.Salary,
+                                            CreatedAt = leadToTransfer.CreatedAt,
+                                            IsActive = true
+                                        };
+                                        transferContext.Contacts.Add(existingContact);
+                                        transferContext.SaveChanges();
+                                        Console.WriteLine($"Created contact '{existingContact.FullName}' from lead during deal close.");
+                                    }
+
+                                    // Remove lead permanently (hard delete) so no trace remains
+                                    transferContext.Leads.Remove(leadToTransfer);
+                                    transferContext.SaveChanges();
+
+                                    // Log action
+                                    LoggingService.LogAction("Lead Transferred on Deal Close", $"Lead '{leadToTransfer.FullName}' moved to Contacts due to deal closure (Deal ID {existingDeal.Id})");
+                                }
+                            }
+                            catch (Exception transferEx)
+                            {
+                                Console.WriteLine($"Lead transfer on deal close failed: {transferEx.Message}");
+                            }
                         }
 
                         // If a property is linked and an agent has accepted, stamp the property with the agent name

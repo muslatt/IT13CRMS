@@ -425,7 +425,7 @@ namespace RealEstateCRMWinForms.Views
                 new { Icon = "🛏️", Label = "Bedrooms", Value = "0", Position = new Point(0, 0) },
                 new { Icon = "🛁", Label = "Bathrooms", Value = "0", Position = new Point(230, 0) },
                 new { Icon = "📐", Label = "Lot Area", Value = "0 sqm", Position = new Point(460, 0) },
-                new { Icon = "🏠", Label = "Floor Area", Value = "0 sqft", Position = new Point(690, 0) },
+                new { Icon = "🏠", Label = "Floor Area", Value = "0 sqm", Position = new Point(690, 0) },
                 new { Icon = "📅", Label = "Listed", Value = "-", Position = new Point(0, 44) },
                 new { Icon = "🏢", Label = "Type", Value = "-", Position = new Point(230, 44) },
                 new { Icon = "💼", Label = "Transaction", Value = "-", Position = new Point(460, 44) }
@@ -519,7 +519,7 @@ namespace RealEstateCRMWinForms.Views
             UpdateDetailValue("Bedrooms_Value", _property.Bedrooms.ToString());
             UpdateDetailValue("Bathrooms_Value", _property.Bathrooms.ToString());
             UpdateDetailValue("Lot Area_Value", $"{_property.LotAreaSqm:N0} sqm");
-            UpdateDetailValue("Floor Area_Value", $"{_property.FloorAreaSqft:N0} sqft");
+            UpdateDetailValue("Floor Area_Value", $"{_property.FloorAreaSqm:N0} sqm");
             UpdateDetailValue("Listed_Value", _property.CreatedAt.ToString("MMM dd, yyyy"));
             UpdateDetailValue("Type_Value", GetPropertyValue("PropertyType") ?? "Not specified");
             UpdateDetailValue("Transaction_Value", GetPropertyValue("TransactionType") ?? "Not specified");

@@ -22,8 +22,15 @@ namespace RealEstateCRMWinForms
             // Ensure DB is created and up to date
             try
             {
+                Console.WriteLine("Program: Creating database context...");
                 using var ctx = DbContextHelper.CreateDbContext();
+                Console.WriteLine("Program: Running database migration...");
                 ctx.Database.Migrate();
+
+                // Seed initial data
+                Console.WriteLine("Program: Calling SeedData.Initialize...");
+                SeedData.Initialize(ctx);
+                Console.WriteLine("Program: SeedData.Initialize completed!");
 
                 // Self-heal missing columns that older databases may lack (EnsureCreated -> Migrate switch cases)
                 try
@@ -33,8 +40,9 @@ ALTER TABLE [Users] ADD [PendingPasswordEncrypted] NVARCHAR(MAX) NULL;");
                 }
                 catch { /* ignore */ }
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Program: Error during initialization: {ex.Message}");
                 // Ignore at startup; UI will still load and surface issues later
             }
 
