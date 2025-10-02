@@ -9,7 +9,38 @@ namespace RealEstateCRMWinForms.Services
 {
     public class AuthenticationService
     {
+        // Centralized password length policy
+        public const int MinPasswordLength = 8;
+        public const int MaxPasswordLength = 12;
+
+        private static bool IsPasswordLengthValid(string? password) =>
+            !string.IsNullOrEmpty(password) && password.Length >= MinPasswordLength && password.Length <= MaxPasswordLength;
+
+        /// <summary>
+        /// Validates password length and returns a user-facing error if invalid.
+        /// </summary>
+        public static bool TryValidatePassword(string? password, out string? error)
+        {
+            if (string.IsNullOrEmpty(password))
+            {
+                error = $"Password is required (must be {MinPasswordLength}-{MaxPasswordLength} characters).";
+                return false;
+            }
+            if (password.Length < MinPasswordLength || password.Length > MaxPasswordLength)
+            {
+                error = $"Password must be {MinPasswordLength}-{MaxPasswordLength} characters.";
+                return false;
+            }
+            error = null;
+            return true;
+        }
+
         public AuthenticationService() { }
+
+        // Centralized lockout policy (applies to ALL roles including broker)
+        public const int LockoutThreshold = 5;          // failed attempts before lockout
+        public const int LockoutDurationSeconds = 10;    // lockout duration
+
         public bool IsEmailInUse(string email)
         {
             try
@@ -25,70 +56,117 @@ namespace RealEstateCRMWinForms.Services
                 return true;
             }
         }
+
         public User? Authenticate(string email, string password)
         {
             try
             {
-                // Hard-coded Broker account (temporary)
-                // Email: broker@crm.local, Password: broker123
-                if (string.Equals(email?.Trim(), "broker@crm.local", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(password, "broker123"))
+                // Broker shortcut credentials still respect lockout
+                if (string.Equals(email?.Trim(), "broker@crm.local", StringComparison.OrdinalIgnoreCase) && string.Equals(password, "broker123"))
                 {
-                    // Set session immediately so broker can log in even if DB is unavailable
-                    var brokerUser = new User
-                    {
-                        FirstName = "Broker",
-                        LastName = "Admin",
-                        Email = "broker@crm.local",
-                        PasswordHash = HashPassword("broker123"),
-                        CreatedAt = DateTime.Now,
-                        IsActive = true,
-                        IsEmailVerified = true,
-                        RoleInt = (int)UserRole.Broker
-                    };
-                    UserSession.Instance.CurrentUser = brokerUser;
-
-                    // Best-effort: persist to DB if possible, but do not fail login if DB is down
                     try
                     {
-                        using var seedContext = DbContextHelper.CreateDbContext();
-                        var persisted = seedContext.Users.FirstOrDefault(u => u.Email == "broker@crm.local");
-                        if (persisted == null)
+                        using var brokerCtx = DbContextHelper.CreateDbContext();
+                        var existingBroker = brokerCtx.Users.FirstOrDefault(u => u.Email == "broker@crm.local");
+                        if (existingBroker != null)
                         {
-                            seedContext.Users.Add(brokerUser);
-                            seedContext.SaveChanges();
+                            if (existingBroker.LockoutEnd.HasValue && existingBroker.LockoutEnd.Value > DateTime.UtcNow)
+                                return null; // locked
+
+                            if (existingBroker.FailedLoginAttempts != 0 || existingBroker.LockoutEnd != null)
+                            {
+                                existingBroker.FailedLoginAttempts = 0;
+                                existingBroker.LockoutEnd = null;
+                                brokerCtx.SaveChanges();
+                            }
+                            UserSession.Instance.CurrentUser = existingBroker;
+                            LoggingService.LogAction("User Login", $"Broker {existingBroker.FullName} logged in");
+                            return existingBroker;
                         }
                         else
                         {
-                            // Replace session with persisted entity for consistency
-                            brokerUser = persisted;
+                            var brokerUser = new User
+                            {
+                                FirstName = "Broker",
+                                LastName = "Admin",
+                                Email = "broker@crm.local",
+                                PasswordHash = HashPassword("broker123"),
+                                CreatedAt = DateTime.Now,
+                                IsActive = true,
+                                IsEmailVerified = true,
+                                RoleInt = (int)UserRole.Broker
+                            };
+                            brokerCtx.Users.Add(brokerUser);
+                            brokerCtx.SaveChanges();
                             UserSession.Instance.CurrentUser = brokerUser;
+                            LoggingService.LogAction("User Login", $"Broker {brokerUser.FullName} logged in (seeded)");
+                            return brokerUser;
                         }
                     }
-                    catch { /* ignore persistence errors */ }
-
-                    LoggingService.LogAction("User Login", $"Broker {brokerUser.FullName} logged in");
-                    return brokerUser;
+                    catch
+                    {
+                        var fallbackBroker = new User
+                        {
+                            FirstName = "Broker",
+                            LastName = "Admin",
+                            Email = "broker@crm.local",
+                            PasswordHash = HashPassword("broker123"),
+                            CreatedAt = DateTime.Now,
+                            IsActive = true,
+                            IsEmailVerified = true,
+                            RoleInt = (int)UserRole.Broker
+                        };
+                        UserSession.Instance.CurrentUser = fallbackBroker;
+                        LoggingService.LogAction("User Login", "Broker fallback login (DB unavailable)");
+                        return fallbackBroker;
+                    }
                 }
 
                 using var dbContext = DbContextHelper.CreateDbContext();
                 var user = dbContext.Users.FirstOrDefault(u => u.Email == email && u.IsActive);
+                if (user == null) return null;
 
-                if (user != null && VerifyPassword(password, user.PasswordHash))
+                // Lockout checks
+                if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+                    return null;
+                if (user.LockoutEnd.HasValue && user.LockoutEnd.Value <= DateTime.UtcNow)
                 {
-                    if (!user.IsEmailVerified)
+                    user.LockoutEnd = null;
+                    user.FailedLoginAttempts = 0;
+                    dbContext.SaveChanges();
+                }
+
+                if (VerifyPassword(password, user.PasswordHash))
+                {
+                    if (!user.IsEmailVerified) return null;
+                    if (user.FailedLoginAttempts != 0 || user.LockoutEnd != null)
                     {
-                        // Block login if email not verified
-                        return null;
+                        user.FailedLoginAttempts = 0;
+                        user.LockoutEnd = null;
+                        dbContext.SaveChanges();
                     }
                     UserSession.Instance.CurrentUser = user;
                     LoggingService.LogAction("User Login", $"User {user.FullName} logged in");
                     return user;
                 }
-
-                return null;
+                else
+                {
+                    user.FailedLoginAttempts += 1;
+                    int remaining = Math.Max(0, LockoutThreshold - user.FailedLoginAttempts);
+                    if (user.FailedLoginAttempts >= LockoutThreshold)
+                    {
+                        user.LockoutEnd = DateTime.UtcNow.AddSeconds(LockoutDurationSeconds);
+                        LoggingService.LogAction("Account Locked", $"User {user.Email} locked out after {LockoutThreshold} failed attempts until {user.LockoutEnd:u}");
+                    }
+                    else
+                    {
+                        LoggingService.LogAction("Failed Login", $"Failed login for {user.Email}. Attempts={user.FailedLoginAttempts}, Remaining={remaining}");
+                    }
+                    dbContext.SaveChanges();
+                    return null;
+                }
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
@@ -107,6 +185,12 @@ namespace RealEstateCRMWinForms.Services
                 using var dbContext = DbContextHelper.CreateDbContext();
 
                 if (dbContext.Users.Any(u => u.Email == email))
+                {
+                    return false;
+                }
+
+                // Enforce password length policy (8-12 chars)
+                if (!IsPasswordLengthValid(password))
                 {
                     return false;
                 }
@@ -134,6 +218,16 @@ namespace RealEstateCRMWinForms.Services
 
                 dbContext.Users.Add(user);
                 dbContext.SaveChanges();
+
+                // If created by a broker and the assigned role is Agent or Client, log explicit creation
+                if (createdByBroker && (assignedRole == UserRole.Agent || assignedRole == UserRole.Client))
+                {
+                    var creatorId = UserSession.Instance.CurrentUser?.Id;
+                    LoggingService.LogAction(
+                        "Created User Account",
+                        $"Broker created {assignedRole} account for {user.Email} (UserId={user.Id})",
+                        creatorId);
+                }
 
                 // If the user is registering as a Client, automatically create a Lead entry
                 if (assignedRole == UserRole.Client)
@@ -398,6 +492,8 @@ namespace RealEstateCRMWinForms.Services
                 newEmail = (newEmail ?? string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(newEmail)) return false;
 
+                var originalEmail = user.Email; // capture for logging
+
                 if (!string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
                 {
                     var exists = dbContext.Users.Any(u => u.Email == newEmail && u.Id != userId);
@@ -407,11 +503,20 @@ namespace RealEstateCRMWinForms.Services
 
                 if (!string.IsNullOrEmpty(newPassword))
                 {
-                    if (newPassword.Length < 6) return false;
+                    if (!IsPasswordLengthValid(newPassword)) return false;
                     user.PasswordHash = HashPassword(newPassword);
                 }
 
                 dbContext.SaveChanges();
+
+                // Log changes (do not include plaintext password)
+                var changedParts = new List<string>();
+                if (!string.Equals(originalEmail, user.Email, StringComparison.OrdinalIgnoreCase)) changedParts.Add("email");
+                if (!string.IsNullOrEmpty(newPassword)) changedParts.Add("password");
+                if (changedParts.Count > 0)
+                {
+                    LoggingService.LogAction("Credentials Updated", $"Updated {string.Join(", ", changedParts)} for userId={user.Id}");
+                }
                 return true;
             }
             catch (Exception)
@@ -432,6 +537,8 @@ namespace RealEstateCRMWinForms.Services
                 var user = dbContext.Users.FirstOrDefault(u => u.Id == userId && u.IsActive);
                 if (user == null) return false;
 
+                var originalEmail = user.Email;
+
                 newEmail = (newEmail ?? string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(newEmail)) return false;
 
@@ -440,7 +547,7 @@ namespace RealEstateCRMWinForms.Services
                 {
                     if (string.IsNullOrWhiteSpace(currentPassword)) return false;
                     if (!VerifyPassword(currentPassword, user.PasswordHash)) return false;
-                    if (newPassword.Length < 6) return false;
+                    if (!IsPasswordLengthValid(newPassword)) return false;
                 }
 
                 if (!string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
@@ -456,6 +563,15 @@ namespace RealEstateCRMWinForms.Services
                 }
 
                 dbContext.SaveChanges();
+
+                // Log changes (masked)
+                var changed = new List<string>();
+                if (!string.Equals(originalEmail, user.Email, StringComparison.OrdinalIgnoreCase)) changed.Add("email");
+                if (!string.IsNullOrEmpty(newPassword)) changed.Add("password");
+                if (changed.Count > 0)
+                {
+                    LoggingService.LogAction("Credentials Updated (Verified)", $"Updated {string.Join(", ", changed)} for userId={user.Id}");
+                }
                 return true;
             }
             catch (Exception)

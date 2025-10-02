@@ -61,7 +61,7 @@ namespace RealEstateCRMWinForms.Controls
 
         private void InitializeComponent()
         {
-            this.Size = new Size(900, 220);
+            this.Size = new Size(920, 240); // Increased height to prevent overlapping
             this.BackColor = Color.White;
             this.Padding = new Padding(0);
             this.Margin = new Padding(12);
@@ -77,10 +77,10 @@ namespace RealEstateCRMWinForms.Controls
             };
             this.Controls.Add(pbImage);
 
-            // Title panel (container for title and status badge)
+            // Title panel (container for title and status badges)
             var titlePanel = new Panel
             {
-                Size = new Size(400, 30),
+                Size = new Size(650, 35), // Increased width and height for badges
                 Location = new Point(220, 20),
                 BackColor = Color.Transparent
             };
@@ -92,17 +92,18 @@ namespace RealEstateCRMWinForms.Controls
                 Text = "Property Title",
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 Location = new Point(0, 0),
-                Size = new Size(350, 25),
+                Size = new Size(400, 25), // Reduced width to make room for badges
                 ForeColor = Color.FromArgb(33, 37, 41),
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                AutoEllipsis = true // Add ellipsis for long titles
             };
             titlePanel.Controls.Add(lblTitle);
 
             // Status panel (property type badge)
             statusPanel = new Panel
             {
-                Size = new Size(80, 22),
-                Location = new Point(320, 4),
+                Size = new Size(90, 24), // Slightly larger for better visibility
+                Location = new Point(410, 2), // Positioned after title with margin
                 BackColor = Color.FromArgb(40, 167, 69)
             };
 
@@ -112,7 +113,7 @@ namespace RealEstateCRMWinForms.Controls
                 Text = "Type",
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 Location = new Point(0, 0),
-                Size = new Size(80, 22),
+                Size = new Size(90, 24),
                 ForeColor = Color.White,
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -123,8 +124,8 @@ namespace RealEstateCRMWinForms.Controls
             // Resubmit badge panel (initially hidden, shown only for resubmitted properties)
             resubmitPanel = new Panel
             {
-                Size = new Size(100, 22),
-                Location = new Point(405, 4), // Position next to status badge
+                Size = new Size(100, 24),
+                Location = new Point(510, 2), // Position next to status badge with spacing
                 BackColor = Color.FromArgb(255, 193, 7), // Orange/Yellow color for resubmit
                 Visible = false
             };
@@ -135,7 +136,7 @@ namespace RealEstateCRMWinForms.Controls
                 Text = "RESUBMIT",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 Location = new Point(0, 0),
-                Size = new Size(100, 22),
+                Size = new Size(100, 24),
                 ForeColor = Color.White,
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -151,10 +152,11 @@ namespace RealEstateCRMWinForms.Controls
                 Name = "lblAddress",
                 Text = "Address",
                 Font = new Font("Segoe UI", 10F),
-                Location = new Point(220, 55),
-                Size = new Size(400, 20),
+                Location = new Point(220, 60), // Increased Y position to avoid overlap
+                Size = new Size(650, 20), // Increased width
                 ForeColor = Color.FromArgb(108, 117, 125),
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                AutoEllipsis = true
             };
             this.Controls.Add(lblAddress);
 
@@ -164,16 +166,17 @@ namespace RealEstateCRMWinForms.Controls
                 Name = "lblPrice",
                 Text = "$0",
                 Font = new Font("Segoe UI", 18F, FontStyle.Bold),
-                Location = new Point(220, 80),
-                Size = new Size(250, 30),
+                Location = new Point(220, 85), // Adjusted Y position
+                Size = new Size(300, 30),
                 ForeColor = Color.FromArgb(40, 167, 69),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(lblPrice);
 
-            // Feature icons and values
-            int featureY = 120;
+            // Feature icons and values - positioned with proper spacing
+            int featureY = 125; // Increased Y position to avoid overlap with price
             int iconSize = 24;
+            int featureSpacing = 100; // Consistent spacing between features
 
             // Bed icon and value
             pbBedIcon = new PictureBox
@@ -190,7 +193,7 @@ namespace RealEstateCRMWinForms.Controls
                 Text = "0",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(250, featureY - 2),
-                Size = new Size(40, 24),
+                Size = new Size(50, 24), // Increased width
                 ForeColor = Color.FromArgb(33, 37, 41),
                 BackColor = Color.Transparent
             };
@@ -200,7 +203,7 @@ namespace RealEstateCRMWinForms.Controls
             pbBathIcon = new PictureBox
             {
                 Size = new Size(iconSize, iconSize),
-                Location = new Point(310, featureY),
+                Location = new Point(220 + featureSpacing, featureY),
                 SizeMode = PictureBoxSizeMode.Zoom,
                 BackColor = Color.Transparent
             };
@@ -210,8 +213,8 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Text = "0",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                Location = new Point(340, featureY - 2),
-                Size = new Size(40, 24),
+                Location = new Point(250 + featureSpacing, featureY - 2),
+                Size = new Size(50, 24), // Increased width
                 ForeColor = Color.FromArgb(33, 37, 41),
                 BackColor = Color.Transparent
             };
@@ -221,7 +224,7 @@ namespace RealEstateCRMWinForms.Controls
             pbSqmIcon = new PictureBox
             {
                 Size = new Size(iconSize, iconSize),
-                Location = new Point(400, featureY),
+                Location = new Point(220 + (featureSpacing * 2), featureY),
                 SizeMode = PictureBoxSizeMode.Zoom,
                 BackColor = Color.Transparent
             };
@@ -231,33 +234,34 @@ namespace RealEstateCRMWinForms.Controls
             {
                 Text = "0 sqm",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                Location = new Point(430, featureY - 2),
-                Size = new Size(80, 24),
+                Location = new Point(250 + (featureSpacing * 2), featureY - 2),
+                Size = new Size(90, 24), // Increased width for sqm text
                 ForeColor = Color.FromArgb(33, 37, 41),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(lblSqmValue);
 
-            // Submitted by
+            // Submitted by - positioned with more space
             lblSubmittedBy = new Label
             {
                 Name = "lblSubmittedBy",
                 Text = "Submitted by: Loading...",
                 Font = new Font("Segoe UI", 9F),
-                Location = new Point(220, 155),
-                Size = new Size(300, 20),
+                Location = new Point(220, 160), // Increased Y position
+                Size = new Size(350, 20), // Increased width
                 ForeColor = Color.FromArgb(52, 58, 64),
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                AutoEllipsis = true
             };
             this.Controls.Add(lblSubmittedBy);
 
-            // Approve button
+            // Approve button - repositioned to avoid overlap
             btnApprove = new Button
             {
                 Name = "btnApprove",
                 Text = "Approve",
                 Size = new Size(120, 40),
-                Location = new Point(650, 150),
+                Location = new Point(650, 185), // Moved down and adjusted position
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(40, 167, 69),
                 ForeColor = Color.White,
@@ -266,13 +270,13 @@ namespace RealEstateCRMWinForms.Controls
             btnApprove.Click += BtnApprove_Click;
             this.Controls.Add(btnApprove);
 
-            // Reject button
+            // Reject button - repositioned to avoid overlap
             btnReject = new Button
             {
                 Name = "btnReject",
                 Text = "Reject",
                 Size = new Size(120, 40),
-                Location = new Point(780, 150),
+                Location = new Point(780, 185), // Moved down and adjusted position
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(220, 53, 69),
                 ForeColor = Color.White,

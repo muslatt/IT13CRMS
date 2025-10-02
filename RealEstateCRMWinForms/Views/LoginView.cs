@@ -57,7 +57,8 @@ namespace RealEstateCRMWinForms.Views
             btnLogin.Enabled = false;
             btnLogin.Text = "Signing in...";
 
-            var user = _authService.Authenticate(txtEmail.Text.Trim(), txtPassword.Text);
+            var trimmedEmail = txtEmail.Text.Trim();
+            var user = _authService.Authenticate(trimmedEmail, txtPassword.Text);
 
             if (user != null)
             {
@@ -65,7 +66,32 @@ namespace RealEstateCRMWinForms.Views
             }
             else
             {
-                var unverifiedUser = _authService.CheckUnverifiedUser(txtEmail.Text.Trim());
+                // Re-query user to inspect lockout/attempt counters
+                RealEstateCRMWinForms.Models.User? userRecord = null;
+                try
+                {
+                    using var ctx = RealEstateCRMWinForms.Data.DbContextHelper.CreateDbContext();
+                    userRecord = ctx.Users.FirstOrDefault(u => u.Email == trimmedEmail);
+                }
+                catch { }
+
+                // If locked out
+                if (userRecord != null && userRecord.LockoutEnd.HasValue && userRecord.LockoutEnd.Value > DateTime.UtcNow)
+                {
+                    var remainingLock = userRecord.LockoutEnd.Value - DateTime.UtcNow;
+                    MessageBox.Show($"Account locked due to multiple failed attempts. Try again in {(int)remainingLock.TotalMinutes} minute(s).", "Account Locked", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    // Show remaining attempts if user exists and not locked
+                    if (userRecord != null && userRecord.FailedLoginAttempts > 0 && userRecord.FailedLoginAttempts < 5)
+                    {
+                        int remaining = 5 - userRecord.FailedLoginAttempts;
+                        MessageBox.Show($"Invalid email or password. {remaining} attempt(s) remaining before lockout.", "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+
+                var unverifiedUser = _authService.CheckUnverifiedUser(trimmedEmail);
                 if (unverifiedUser)
                 {
                     var result = MessageBox.Show("Your email address has not been verified yet. Would you like to resend the verification code?",
@@ -87,10 +113,10 @@ namespace RealEstateCRMWinForms.Views
                         EmailVerificationRequested?.Invoke(this, txtEmail.Text.Trim());
                     }
                 }
-                else
+                else if (userRecord == null || userRecord.FailedLoginAttempts == 0)
                 {
-                    MessageBox.Show("Invalid email or password.", "Login Failed",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Generic message when we cannot show remaining attempts
+                    MessageBox.Show("Invalid email or password.", "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
 

@@ -18,7 +18,7 @@ namespace RealEstateCRMWinForms.Views
         private NumericUpDown? numBedrooms;
         private NumericUpDown? numBathrooms;
         private NumericUpDown? numLotAreaSqm;
-        private NumericUpDown? numFloorAreaSqft;
+        private NumericUpDown? numFloorAreaSqm;
         private Label? lblLotArea;
         private Label? lblFloorArea;
         private ComboBox? cmbPropertyType;
@@ -224,7 +224,7 @@ namespace RealEstateCRMWinForms.Views
 
             lblFloorArea = new Label
             {
-                Text = "Floor Area (Sqft):",
+                Text = "Floor Area (Sqm):",
                 Location = new Point(380, currentY),
                 Size = new Size(140, 30),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
@@ -232,7 +232,7 @@ namespace RealEstateCRMWinForms.Views
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            numFloorAreaSqft = new NumericUpDown
+            numFloorAreaSqm = new NumericUpDown
             {
                 Location = new Point(530, currentY),
                 Size = new Size(120, 30),
@@ -477,7 +477,7 @@ namespace RealEstateCRMWinForms.Views
                 lblPrice, numPrice, lblBedrooms, numBedrooms,
                 lblBathrooms, numBathrooms,
                 lblLotArea, numLotAreaSqm,
-                lblFloorArea, numFloorAreaSqft,
+                lblFloorArea, numFloorAreaSqm,
                 lblPropertyType, cmbPropertyType,
                 lblTransactionType, cmbTransactionType,
                 lblListingDate, dtpListingDate,
@@ -734,7 +734,7 @@ namespace RealEstateCRMWinForms.Views
                 Bedrooms = (int)numBedrooms!.Value,
                 Bathrooms = (int)numBathrooms!.Value,
                 LotAreaSqm = numLotAreaSqm?.Value ?? 0,
-                FloorAreaSqft = numFloorAreaSqft?.Value ?? 0,
+                FloorAreaSqm = numFloorAreaSqm?.Value ?? 0,
                 CreatedAt = dtpListingDate?.Value ?? DateTime.Now,
                 IsActive = true,
                 IsApproved = true, // Default to approved
@@ -855,14 +855,14 @@ namespace RealEstateCRMWinForms.Views
         {
             // Disable Floor Area field when Property Type is "Raw Land"
             bool isRawLand = cmbPropertyType?.SelectedItem?.ToString() == "Raw Land";
-            if (numFloorAreaSqft != null)
-                numFloorAreaSqft.Enabled = !isRawLand;
+            if (numFloorAreaSqm != null)
+                numFloorAreaSqm.Enabled = !isRawLand;
             if (lblFloorArea != null)
                 lblFloorArea.Enabled = !isRawLand;
 
-            if (isRawLand && numFloorAreaSqft != null)
+            if (isRawLand && numFloorAreaSqm != null)
             {
-                numFloorAreaSqft.Value = 0;
+                numFloorAreaSqm.Value = 0;
             }
         }
 

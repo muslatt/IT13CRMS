@@ -124,17 +124,14 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                // Total Revenue Card
-                CreateKPICard(totalRevenueCard, "💰", "Total Revenue", "₱0", "From closed deals", Color.FromArgb(16, 185, 129));
-
-                // Average Deal Value Card
-                CreateKPICard(avgDealValueCard, "📊", "Avg Deal Value", "₱0", "Per closed deal", Color.FromArgb(59, 130, 246));
+                // Removed per request: Total Revenue & Avg Deal Value
+                // Removed cards no longer exist
 
                 // Conversion Rate Card
                 CreateKPICard(conversionRateCard, "🎯", "Conversion Rate", "0%", "Leads to deals", Color.FromArgb(245, 158, 11));
 
-                // Average Days to Close Card
-                CreateKPICard(avgDaysToCloseCard, "⏱️", "Avg Days to Close", "0 days", "Deal lifecycle", Color.FromArgb(139, 92, 246));
+                // Removed per request: Avg Days to Close
+                // Removed avgDaysToClose card no longer exists
             }
             catch (Exception ex)
             {
@@ -232,13 +229,8 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                // Sales Chart Card
-                CreateChartCard(salesChartCard, "Monthly Sales", "Track sales performance over time");
-                if (salesChartCard != null)
-                {
-                    salesChartCard.Resize -= (s, e) => LoadSalesChart();
-                    salesChartCard.Resize += (s, e) => LoadSalesChart();
-                }
+                // Removed per request: Monthly Sales chart
+                if (salesChartCard != null) salesChartCard.Visible = false;
 
                 // Property Status Chart Card  
                 CreateChartCard(propertyStatusChartCard, "Property Status", "Distribution of property statuses");
@@ -704,8 +696,8 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                // Revenue Analytics Card
-                CreateAnalyticsCard(revenueAnalyticsCard, "Revenue Analytics", "💰");
+                // Removed per request: Revenue Analytics card
+                if (revenueAnalyticsCard != null) revenueAnalyticsCard.Visible = false;
 
                 // Property Analytics Card
                 CreateAnalyticsCard(propertyAnalyticsCard, "Property Analytics", "🏠");
@@ -786,8 +778,9 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                LoadKPIData();
-                LoadChartData();
+                // Skip removed KPI and Monthly Sales chart data loads for hidden components
+                LoadKPIData(); // still updates remaining KPIs (conversion rate)
+                LoadChartData(); // will internally attempt removed charts; safe but we could optimize later
 
                 LoadTotalCounts();
                 RebuildTotalCountsUniform();
@@ -804,12 +797,8 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                // Calculate total revenue from closed deals
+                // Removed metrics: total revenue & avg deal value
                 var closedDeals = _dealViewModel.Deals.Where(d => d.Status.ToLower() == "closed" && d.Value.HasValue).ToList();
-                var totalRevenue = closedDeals.Sum(d => d.Value ?? 0);
-
-                // Calculate average deal value
-                var avgDealValue = closedDeals.Any() ? closedDeals.Average(d => d.Value ?? 0) : 0;
 
                 // Calculate conversion rate (leads to deals)
                 var totalLeads = _leadViewModel.Leads.Count(l => l.IsActive);
@@ -823,10 +812,9 @@ namespace RealEstateCRMWinForms.Views
                     .Average();
 
                 // Update KPI values
-                UpdateKPIValue(totalRevenueCard, $"₱{totalRevenue:N0}");
-                UpdateKPIValue(avgDealValueCard, $"₱{avgDealValue:N0}");
+                // Skip updating removed KPI cards (fields removed)
                 UpdateKPIValue(conversionRateCard, $"{conversionRate:F1}%");
-                UpdateKPIValue(avgDaysToCloseCard, $"{avgDaysToClose:F0} days");
+                // Removed avgDaysToCloseCard update
             }
             catch (Exception ex)
             {
@@ -847,7 +835,8 @@ namespace RealEstateCRMWinForms.Views
         {
             try
             {
-                LoadSalesChart();
+                if (salesChartCard != null && salesChartCard.Visible)
+                    LoadSalesChart();
                 LoadPropertyStatusChart();
                 LoadLeadConversionChart();
                 LoadAverageSalaryChart();
