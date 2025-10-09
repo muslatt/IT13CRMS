@@ -43,9 +43,7 @@
             btnShowRejected = new Button();
             paginationPanel = new Panel();
             propertiesPaginationLayout = new TableLayoutPanel();
-            lblPropertyPageInfo = new Label();
-            btnPrevPropertyPage = new Button();
-            btnNextPropertyPage = new Button();
+            pageNumbersPanel = new FlowLayoutPanel();
             searchPanel.SuspendLayout();
             searchBoxContainer.SuspendLayout();
             rightControlsPanel.SuspendLayout();
@@ -255,16 +253,14 @@
             // propertiesPaginationLayout
             // 
             propertiesPaginationLayout.ColumnCount = 5;
-            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Filter button
+            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Sort combo
+            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F)); // left filler
+            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // page numbers (centered)
+            propertiesPaginationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F)); // right filler
             propertiesPaginationLayout.Controls.Add(btnFilter, 0, 0);
             propertiesPaginationLayout.Controls.Add(sortComboBox, 1, 0);
-            propertiesPaginationLayout.Controls.Add(lblPropertyPageInfo, 2, 0);
-            propertiesPaginationLayout.Controls.Add(btnPrevPropertyPage, 3, 0);
-            propertiesPaginationLayout.Controls.Add(btnNextPropertyPage, 4, 0);
+            propertiesPaginationLayout.Controls.Add(pageNumbersPanel, 3, 0);
             propertiesPaginationLayout.Dock = DockStyle.Fill;
             propertiesPaginationLayout.Location = new Point(20, 10);
             propertiesPaginationLayout.Name = "propertiesPaginationLayout";
@@ -272,62 +268,19 @@
             propertiesPaginationLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             propertiesPaginationLayout.Size = new Size(960, 30);
             propertiesPaginationLayout.TabIndex = 0;
+
             // 
-            // lblPropertyPageInfo
+            // pageNumbersPanel
             // 
-            lblPropertyPageInfo.Anchor = AnchorStyles.None;
-            lblPropertyPageInfo.AutoSize = true;
-            lblPropertyPageInfo.Font = new Font("Segoe UI", 10F);
-            lblPropertyPageInfo.ForeColor = Color.FromArgb(55, 65, 81);
-            lblPropertyPageInfo.Location = new Point(0, 5);
-            lblPropertyPageInfo.Margin = new Padding(20, 0, 20, 0);
-            lblPropertyPageInfo.Name = "lblPropertyPageInfo";
-            lblPropertyPageInfo.Size = new Size(70, 19);
-            lblPropertyPageInfo.TabIndex = 0;
-            lblPropertyPageInfo.Text = "Page 1 of 1";
-            lblPropertyPageInfo.TextAlign = ContentAlignment.MiddleCenter;
+            pageNumbersPanel.Anchor = AnchorStyles.None;
+            pageNumbersPanel.AutoSize = true;
+            pageNumbersPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            pageNumbersPanel.FlowDirection = FlowDirection.LeftToRight;
+            pageNumbersPanel.WrapContents = false;
+            pageNumbersPanel.Margin = new Padding(0);
+            pageNumbersPanel.Padding = new Padding(0);
             // 
-            // btnPrevPropertyPage
-            // 
-            btnPrevPropertyPage.Anchor = AnchorStyles.None;
-            btnPrevPropertyPage.BackColor = Color.White;
-            btnPrevPropertyPage.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            btnPrevPropertyPage.FlatAppearance.BorderSize = 1;
-            btnPrevPropertyPage.FlatAppearance.MouseOverBackColor = Color.FromArgb(243, 244, 246);
-            btnPrevPropertyPage.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 231, 235);
-            btnPrevPropertyPage.FlatStyle = FlatStyle.Flat;
-            btnPrevPropertyPage.Font = new Font("Segoe UI", 9F);
-            btnPrevPropertyPage.ForeColor = Color.FromArgb(55, 65, 81);
-            btnPrevPropertyPage.Location = new Point(790, 0);
-            btnPrevPropertyPage.Margin = new Padding(0, 0, 8, 0);
-            btnPrevPropertyPage.Name = "btnPrevPropertyPage";
-            btnPrevPropertyPage.Size = new Size(80, 30);
-            btnPrevPropertyPage.TabIndex = 1;
-            btnPrevPropertyPage.Text = "Previous";
-            btnPrevPropertyPage.TextAlign = ContentAlignment.MiddleCenter;
-            btnPrevPropertyPage.UseVisualStyleBackColor = false;
-            btnPrevPropertyPage.Click += BtnPrevPropertyPage_Click;
-            // 
-            // btnNextPropertyPage
-            // 
-            btnNextPropertyPage.Anchor = AnchorStyles.None;
-            btnNextPropertyPage.BackColor = Color.White;
-            btnNextPropertyPage.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            btnNextPropertyPage.FlatAppearance.BorderSize = 1;
-            btnNextPropertyPage.FlatAppearance.MouseOverBackColor = Color.FromArgb(243, 244, 246);
-            btnNextPropertyPage.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 231, 235);
-            btnNextPropertyPage.FlatStyle = FlatStyle.Flat;
-            btnNextPropertyPage.Font = new Font("Segoe UI", 9F);
-            btnNextPropertyPage.ForeColor = Color.FromArgb(55, 65, 81);
-            btnNextPropertyPage.Location = new Point(878, 0);
-            btnNextPropertyPage.Margin = new Padding(0);
-            btnNextPropertyPage.Name = "btnNextPropertyPage";
-            btnNextPropertyPage.Size = new Size(80, 30);
-            btnNextPropertyPage.TabIndex = 2;
-            btnNextPropertyPage.Text = "Next";
-            btnNextPropertyPage.TextAlign = ContentAlignment.MiddleCenter;
-            btnNextPropertyPage.UseVisualStyleBackColor = false;
-            btnNextPropertyPage.Click += BtnNextPropertyPage_Click;
+            // (numeric page buttons are created dynamically in code-behind)
             // 
             // PropertiesView
             // 
@@ -345,7 +298,6 @@
             rightControlsPanel.ResumeLayout(false);
             paginationPanel.ResumeLayout(false);
             propertiesPaginationLayout.ResumeLayout(false);
-            propertiesPaginationLayout.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -366,8 +318,6 @@
         private System.Windows.Forms.Label searchIcon;
         private System.Windows.Forms.Panel paginationPanel;
         private System.Windows.Forms.TableLayoutPanel propertiesPaginationLayout;
-        private System.Windows.Forms.Button btnPrevPropertyPage;
-        private System.Windows.Forms.Button btnNextPropertyPage;
-        private System.Windows.Forms.Label lblPropertyPageInfo;
+        private System.Windows.Forms.FlowLayoutPanel pageNumbersPanel;
     }
 }

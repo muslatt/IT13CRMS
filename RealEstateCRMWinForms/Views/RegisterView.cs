@@ -18,6 +18,15 @@ namespace RealEstateCRMWinForms.Views
             InitializeComponent();
             _authService = authService;
             _defaultRole = defaultRole;
+
+            // DPI scaling and center register panel responsively
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            if (pnlMain != null)
+            {
+                pnlMain.Resize -= PnlMain_Resize;
+                pnlMain.Resize += PnlMain_Resize;
+                PnlMain_Resize(pnlMain, EventArgs.Empty);
+            }
         }
 
         private async void btnRegister_Click(object? sender, EventArgs e)
@@ -87,6 +96,14 @@ namespace RealEstateCRMWinForms.Views
         private void lblBackToLogin_Click(object? sender, EventArgs e)
         {
             BackToLoginRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void PnlMain_Resize(object? sender, EventArgs e)
+        {
+            if (pnlMain == null || pnlCenter == null) return;
+            var x = Math.Max(0, (pnlMain.ClientSize.Width - pnlCenter.Width) / 2);
+            var y = Math.Max(0, (pnlMain.ClientSize.Height - pnlCenter.Height) / 2);
+            pnlCenter.Location = new System.Drawing.Point(x, y);
         }
     }
 }

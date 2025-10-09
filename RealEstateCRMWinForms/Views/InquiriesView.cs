@@ -1,3 +1,4 @@
+using RealEstateCRMWinForms.ViewModels;
 using RealEstateCRMWinForms.Models;
 using System;
 using System.Drawing;
@@ -55,14 +56,15 @@ namespace RealEstateCRMWinForms.Views
                 Location = new Point(800, 25),
                 Width = 150
             };
-            cmbFilter.Items.AddRange(new object[] { "All", "Pending", "Read", "Responded", "Closed" });
+            // Removed "Closed" from filter options per request
+            cmbFilter.Items.AddRange(new object[] { "All", "Pending", "Read", "Responded" });
             cmbFilter.SelectedIndex = 1; // Default to "Pending"
             cmbFilter.SelectedIndexChanged += CmbFilter_SelectedIndexChanged;
 
             // Refresh button
             btnRefresh = new Button
             {
-                Text = "🔄 Refresh",
+                Text = "ðŸ”„ Refresh",
                 Font = new Font("Segoe UI", 10F),
                 Location = new Point(960, 22),
                 Size = new Size(100, 35),
@@ -72,9 +74,39 @@ namespace RealEstateCRMWinForms.Views
             };
             btnRefresh.FlatAppearance.BorderSize = 0;
             btnRefresh.Click += BtnRefresh_Click;
+            btnRefresh.Visible = false; // hide refresh button in broker view
 
-            panelHeader.Controls.AddRange(new Control[] { lblTitle, cmbFilter, btnRefresh });
+            panelHeader.Controls.AddRange(new Control[] { lblTitle, cmbFilter });
 
+            // Reconfigure header to be responsive
+            try
+            {
+                panelHeader.Controls.Remove(lblTitle);
+                panelHeader.Controls.Remove(cmbFilter);
+                panelHeader.Controls.Remove(btnRefresh);
+
+                lblTitle.Dock = DockStyle.Left;
+
+                var rightHost = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Right,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    WrapContents = false,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    BackColor = Color.Transparent,
+                    Padding = new Padding(0),
+                    Margin = new Padding(0)
+                };
+                cmbFilter.Margin = new Padding(0, 0, 8, 0);
+                if (btnRefresh.Text?.Contains("Refresh") != true) btnRefresh.Text = "Refresh";
+                rightHost.Controls.Add(cmbFilter);
+                // refresh button removed
+                // rightHost.Controls.Add(btnRefresh);
+                panelHeader.Controls.Add(rightHost);
+                panelHeader.Controls.Add(lblTitle);
+            }
+            catch { }
             // DataGridView
             dataGridViewInquiries = new DataGridView
             {
@@ -197,48 +229,67 @@ namespace RealEstateCRMWinForms.Views
                         if (dataGridViewInquiries.Columns.Contains("PropertyTitle"))
                         {
                             dataGridViewInquiries.Columns["PropertyTitle"].HeaderText = "Property";
-                            dataGridViewInquiries.Columns["PropertyTitle"].Width = 200;
+                            dataGridViewInquiries.Columns["PropertyTitle"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["PropertyTitle"].FillWeight = 140;
+                            dataGridViewInquiries.Columns["PropertyTitle"].MinimumWidth = 160;
                         }
                         if (dataGridViewInquiries.Columns.Contains("PropertyAddress"))
                         {
                             dataGridViewInquiries.Columns["PropertyAddress"].HeaderText = "Location";
-                            dataGridViewInquiries.Columns["PropertyAddress"].Width = 150;
+                            dataGridViewInquiries.Columns["PropertyAddress"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["PropertyAddress"].FillWeight = 120;
+                            dataGridViewInquiries.Columns["PropertyAddress"].MinimumWidth = 140;
                         }
                         if (dataGridViewInquiries.Columns.Contains("ClientName"))
                         {
                             dataGridViewInquiries.Columns["ClientName"].HeaderText = "Client";
-                            dataGridViewInquiries.Columns["ClientName"].Width = 150;
+                            dataGridViewInquiries.Columns["ClientName"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["ClientName"].FillWeight = 110;
+                            dataGridViewInquiries.Columns["ClientName"].MinimumWidth = 120;
                         }
                         if (dataGridViewInquiries.Columns.Contains("ClientEmail"))
                         {
                             dataGridViewInquiries.Columns["ClientEmail"].HeaderText = "Email";
-                            dataGridViewInquiries.Columns["ClientEmail"].Width = 180;
+                            dataGridViewInquiries.Columns["ClientEmail"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["ClientEmail"].FillWeight = 150;
+                            dataGridViewInquiries.Columns["ClientEmail"].MinimumWidth = 160;
                         }
                         if (dataGridViewInquiries.Columns.Contains("Message"))
                         {
                             dataGridViewInquiries.Columns["Message"].HeaderText = "Message";
                             dataGridViewInquiries.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["Message"].FillWeight = 220; // larger share but controlled
+                            dataGridViewInquiries.Columns["Message"].MinimumWidth = 220; // avoid collapsing too small
                         }
                         if (dataGridViewInquiries.Columns.Contains("Status"))
                         {
                             dataGridViewInquiries.Columns["Status"].HeaderText = "Status";
-                            dataGridViewInquiries.Columns["Status"].Width = 100;
+                            dataGridViewInquiries.Columns["Status"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["Status"].FillWeight = 90;
+                            dataGridViewInquiries.Columns["Status"].MinimumWidth = 90;
                         }
                         if (dataGridViewInquiries.Columns.Contains("CreatedDate"))
                         {
                             dataGridViewInquiries.Columns["CreatedDate"].HeaderText = "Date";
-                            dataGridViewInquiries.Columns["CreatedDate"].Width = 150;
+                            dataGridViewInquiries.Columns["CreatedDate"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["CreatedDate"].FillWeight = 140;
+                            dataGridViewInquiries.Columns["CreatedDate"].MinimumWidth = 140;
                         }
                         if (dataGridViewInquiries.Columns.Contains("ContactEmail"))
                         {
                             dataGridViewInquiries.Columns["ContactEmail"].HeaderText = "Alt. Email";
-                            dataGridViewInquiries.Columns["ContactEmail"].Width = 150;
+                            dataGridViewInquiries.Columns["ContactEmail"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["ContactEmail"].FillWeight = 160;
+                            dataGridViewInquiries.Columns["ContactEmail"].MinimumWidth = 160;
                         }
                         if (dataGridViewInquiries.Columns.Contains("ContactPhone"))
                         {
                             dataGridViewInquiries.Columns["ContactPhone"].HeaderText = "Phone";
-                            dataGridViewInquiries.Columns["ContactPhone"].Width = 130;
+                            dataGridViewInquiries.Columns["ContactPhone"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                            dataGridViewInquiries.Columns["ContactPhone"].FillWeight = 120;
+                            dataGridViewInquiries.Columns["ContactPhone"].MinimumWidth = 120;
                         }
+                        // widths and fill already set above; no duplicates here
                     }
                 }
                 catch (Exception colEx)
@@ -363,11 +414,25 @@ namespace RealEstateCRMWinForms.Views
                     }
                 }
 
-                // Step 2: Create deal with assignment marker (pending agent acceptance)
-                string assignmentMarker = $"[ASSIGN:{agentFullName}]";
-                string fullNotes = string.IsNullOrWhiteSpace(dealNotes)
-                    ? assignmentMarker
-                    : $"{assignmentMarker}\n\n{dealNotes}";
+                // Step 2: Create deal entry
+                bool isBroker = agent.Role == UserRole.Broker;
+                string fullNotes;
+                string createdBy = null;
+
+                if (isBroker)
+                {
+                    fullNotes = string.IsNullOrWhiteSpace(dealNotes) ? string.Empty : dealNotes.Trim();
+                    createdBy = agentFullName;
+                }
+                else
+                {
+                    string assignmentMarkerName = $"[ASSIGN:{agentFullName}]";
+                    string assignmentMarkerId = $"[ASSIGNID:{agent.Id}]";
+                    string combinedMarker = $"{assignmentMarkerName} {assignmentMarkerId}";
+                    fullNotes = string.IsNullOrWhiteSpace(dealNotes)
+                        ? combinedMarker
+                        : $"{combinedMarker}\n\n{dealNotes}";
+                }
 
                 var deal = new Deal
                 {
@@ -375,36 +440,51 @@ namespace RealEstateCRMWinForms.Views
                     Description = $"Deal created from inquiry.\n\nClient Message: {trackedInquiry.Message}",
                     PropertyId = trackedInquiry.PropertyId,
                     ContactId = contact?.Id,
-                    Status = "New", // NEW pipeline
+                    Status = BoardViewModel.NewBoardName,
                     Value = trackedInquiry.Property?.Price,
-                    Notes = fullNotes,
+                    Notes = string.IsNullOrWhiteSpace(fullNotes) ? null : fullNotes,
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    CreatedBy = null // Will be set when agent accepts
+                    CreatedBy = createdBy
                 };
 
                 db.Deals.Add(deal);
-
                 // Step 3: Update inquiry status
                 trackedInquiry.Status = InquiryStatus.Responded;
                 trackedInquiry.RespondedAt = DateTime.Now;
+                trackedInquiry.Status = InquiryStatus.Responded;
+                trackedInquiry.RespondedAt = DateTime.Now;
                 trackedInquiry.RespondedByBrokerId = agentId;
-                trackedInquiry.BrokerResponse = $"Assigned to {agentFullName} - pending acceptance.";
+                trackedInquiry.BrokerResponse = isBroker
+                    ? $"Broker {agentFullName} accepted the inquiry and created a deal in the New pipeline."
+                    : $"Assigned to {agentFullName} - pending acceptance.";
 
                 db.SaveChanges();
 
+                var logMessage = isBroker
+                    ? $"Broker {agentFullName} converted inquiry #{trackedInquiry.Id} into a deal in the New pipeline."
+                    : $"Deal '{deal.Title}' created from inquiry #{trackedInquiry.Id} and assigned to {agentFullName} - pending acceptance";
+
                 Services.LoggingService.LogAction(
                     "Deal Assigned from Inquiry",
-                    $"Deal '{deal.Title}' created from inquiry #{trackedInquiry.Id} and assigned to {agentFullName} - pending acceptance");
+                    logMessage);
+
+                var infoMessage = isBroker
+                    ? $"Inquiry has been converted into a deal for broker {agentFullName}.\n\n" +
+                      $"• Contact: {contact?.FullName ?? "N/A"}\n" +
+                      $"• Deal created in pipeline: New\n" +
+                      $"• Inquiry marked as responded"
+                    : $"Assignment Created!\n\n" +
+                      $"• Agent '{agentFullName}' assigned to inquiry\n" +
+                      $"• Contact created: {contact?.FullName ?? "N/A"}\n" +
+                      $"• Deal created and pending agent acceptance\n" +
+                      $"• Inquiry marked as responded";
+
+                var infoTitle = isBroker ? "Inquiry Converted" : "Assignment Pending";
 
                 MessageBox.Show(
-                    $"Assignment Created!\n\n" +
-                    $"✓ Agent '{agentFullName}' assigned to inquiry\n" +
-                    $"✓ Contact created: {contact?.FullName ?? "N/A"}\n" +
-                    $"✓ Deal created and pending agent acceptance\n" +
-                    $"✓ Inquiry marked as responded\n\n" +
-                    $"The agent will be notified and can accept or decline this assignment.",
-                    "Assignment Pending",
+                    infoMessage,
+                    infoTitle,
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
@@ -429,3 +509,4 @@ namespace RealEstateCRMWinForms.Views
         }
     }
 }
+

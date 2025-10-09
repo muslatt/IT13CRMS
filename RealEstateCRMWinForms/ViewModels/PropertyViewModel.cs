@@ -206,8 +206,8 @@ namespace RealEstateCRMWinForms.ViewModels
                 _context.Properties.Add(property);
                 _context.SaveChanges();
 
-                // Log the action
-                LoggingService.LogAction("Created Property", $"Property '{property.Title}' created");
+                // Log the action (property-scoped)
+                LoggingService.LogAction("Created Property", $"Property '{property.Title}' created", propertyId: property.Id);
 
                 // Instead of reloading, add to local list
                 Properties.Add(property);
@@ -234,8 +234,8 @@ namespace RealEstateCRMWinForms.ViewModels
                     _context.Entry(property).CurrentValues.SetValues(propertyToUpdate);
                     _context.SaveChanges();
 
-                    // Log the action
-                    LoggingService.LogAction("Updated Property", $"Property '{propertyToUpdate.Title}' updated");
+                    // Log the action (property-scoped)
+                    LoggingService.LogAction("Updated Property", $"Property '{propertyToUpdate.Title}' updated", propertyId: propertyToUpdate.Id);
 
                     // Instead of reloading, update local list
                     var existing = Properties.FirstOrDefault(p => p.Id == propertyToUpdate.Id);
@@ -270,8 +270,8 @@ namespace RealEstateCRMWinForms.ViewModels
                     property.IsActive = false;
                     _context.SaveChanges();
 
-                    // Log the action
-                    LoggingService.LogAction("Deleted Property", $"Property '{propertyToDelete.Title}' deleted");
+                    // Log the action (property-scoped)
+                    LoggingService.LogAction("Deleted Property", $"Property '{propertyToDelete.Title}' deleted", propertyId: propertyToDelete.Id);
 
                     // Instead of reloading, remove from local list
                     var existing = Properties.FirstOrDefault(p => p.Id == propertyToDelete.Id);
@@ -323,8 +323,8 @@ namespace RealEstateCRMWinForms.ViewModels
                 _context.PropertyProofFiles.Add(proofFile);
                 _context.SaveChanges();
 
-                // Log the action
-                LoggingService.LogAction("Added Proof File", $"Proof file '{proofFile.FileName}' added to property {proofFile.PropertyId}");
+                // Log the action (property-scoped)
+                LoggingService.LogAction("Added Proof File", $"Proof file '{proofFile.FileName}' added", propertyId: proofFile.PropertyId);
 
                 return true;
             }

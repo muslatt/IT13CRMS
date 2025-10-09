@@ -42,8 +42,9 @@ namespace RealEstateCRMWinForms.Views
             this.contentPanel = new System.Windows.Forms.Panel();
             this.paginationPanel = new System.Windows.Forms.Panel();
             this.leadsPaginationLayout = new System.Windows.Forms.TableLayoutPanel();
-            this.btnPrevLeadPage = new System.Windows.Forms.Button();
             this.lblLeadPageInfo = new System.Windows.Forms.Label();
+            this.pageNumbersPanel = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnPrevLeadPage = new System.Windows.Forms.Button();
             this.btnNextLeadPage = new System.Windows.Forms.Button();
             this.dataGridViewLeads = new System.Windows.Forms.DataGridView();
             this.searchPanel.SuspendLayout();
@@ -169,14 +170,16 @@ namespace RealEstateCRMWinForms.Views
             this.paginationPanel.TabIndex = 2;
             //
             // leadsPaginationLayout
-            this.leadsPaginationLayout.ColumnCount = 4;
+            this.leadsPaginationLayout.ColumnCount = 5;
             this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
             this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
             this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.leadsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
             this.leadsPaginationLayout.Controls.Add(this.lblLeadPageInfo, 1, 0);
-            this.leadsPaginationLayout.Controls.Add(this.btnPrevLeadPage, 2, 0);
-            this.leadsPaginationLayout.Controls.Add(this.btnNextLeadPage, 3, 0);
+            this.leadsPaginationLayout.Controls.Add(this.pageNumbersPanel, 2, 0);
+            this.leadsPaginationLayout.Controls.Add(this.btnPrevLeadPage, 3, 0);
+            this.leadsPaginationLayout.Controls.Add(this.btnNextLeadPage, 4, 0);
             this.leadsPaginationLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.leadsPaginationLayout.Location = new System.Drawing.Point(10, 8);
             this.leadsPaginationLayout.Name = "leadsPaginationLayout";
@@ -185,6 +188,19 @@ namespace RealEstateCRMWinForms.Views
             this.leadsPaginationLayout.Size = new System.Drawing.Size(920, 24);
             this.leadsPaginationLayout.TabIndex = 0;
             //
+            // pageNumbersPanel
+            // 
+            this.pageNumbersPanel.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.pageNumbersPanel.AutoSize = true;
+            this.pageNumbersPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.pageNumbersPanel.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
+            this.pageNumbersPanel.WrapContents = false;
+            this.pageNumbersPanel.Location = new System.Drawing.Point(730, 0);
+            this.pageNumbersPanel.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.pageNumbersPanel.Name = "pageNumbersPanel";
+            this.pageNumbersPanel.Size = new System.Drawing.Size(0, 0);
+            this.pageNumbersPanel.TabIndex = 3;
+            // 
             // btnPrevLeadPage
             this.btnPrevLeadPage.AutoSize = true;
             this.btnPrevLeadPage.BackColor = System.Drawing.Color.White;
@@ -286,6 +302,7 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.DataGridView dataGridViewLeads;
         private System.Windows.Forms.Panel searchBoxContainer;
         private System.Windows.Forms.Label searchIcon;
+        private System.Windows.Forms.FlowLayoutPanel pageNumbersPanel;
     }
 }
 

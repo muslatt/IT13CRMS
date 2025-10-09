@@ -6,14 +6,12 @@ namespace RealEstateCRMWinForms.Services
 {
     public class LoggingService
     {
-        public static void LogAction(string action, string? details = null, int? userId = null)
+        public static void LogAction(string action, string? details = null, int? userId = null, int? propertyId = null)
         {
             try
             {
                 using (var dbContext = DbContextHelper.CreateDbContext())
                 {
-                    dbContext.Database.EnsureCreated();
-
                     // If no userId provided, try to get from current session
                     if (userId == null)
                     {
@@ -37,7 +35,8 @@ namespace RealEstateCRMWinForms.Services
                         Action = action,
                         UserId = userId.Value,
                         Timestamp = DateTime.Now,
-                        Details = details
+                        Details = details,
+                        PropertyId = propertyId
                     };
 
                     dbContext.Logs.Add(log);

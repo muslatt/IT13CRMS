@@ -42,6 +42,7 @@ namespace RealEstateCRMWinForms.Views
             this.contentPanel = new System.Windows.Forms.Panel();
             this.paginationPanel = new System.Windows.Forms.Panel();
             this.contactsPaginationLayout = new System.Windows.Forms.TableLayoutPanel();
+            this.pageNumbersPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.btnPrevContactPage = new System.Windows.Forms.Button();
             this.lblContactPageInfo = new System.Windows.Forms.Label();
             this.btnNextContactPage = new System.Windows.Forms.Button();
@@ -50,6 +51,8 @@ namespace RealEstateCRMWinForms.Views
             this.searchBoxContainer.SuspendLayout();
             this.rightControlsPanel.SuspendLayout();
             this.contentPanel.SuspendLayout();
+            this.paginationPanel.SuspendLayout();
+            this.contactsPaginationLayout.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewContacts)).BeginInit();
             this.SuspendLayout();
             // 
@@ -154,15 +157,17 @@ namespace RealEstateCRMWinForms.Views
             this.paginationPanel.TabIndex = 2;
             // 
             // contactsPaginationLayout
-            // 
-            this.contactsPaginationLayout.ColumnCount = 4;
+            //
+            this.contactsPaginationLayout.ColumnCount = 5;
             this.contactsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.contactsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
             this.contactsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
             this.contactsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.contactsPaginationLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
             this.contactsPaginationLayout.Controls.Add(this.lblContactPageInfo, 1, 0);
-            this.contactsPaginationLayout.Controls.Add(this.btnPrevContactPage, 2, 0);
-            this.contactsPaginationLayout.Controls.Add(this.btnNextContactPage, 3, 0);
+            this.contactsPaginationLayout.Controls.Add(this.pageNumbersPanel, 2, 0);
+            this.contactsPaginationLayout.Controls.Add(this.btnPrevContactPage, 3, 0);
+            this.contactsPaginationLayout.Controls.Add(this.btnNextContactPage, 4, 0);
             this.contactsPaginationLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.contactsPaginationLayout.Location = new System.Drawing.Point(10, 8);
             this.contactsPaginationLayout.Name = "contactsPaginationLayout";
@@ -170,6 +175,19 @@ namespace RealEstateCRMWinForms.Views
             this.contactsPaginationLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.contactsPaginationLayout.Size = new System.Drawing.Size(920, 24);
             this.contactsPaginationLayout.TabIndex = 0;
+            // 
+            // pageNumbersPanel
+            // 
+            this.pageNumbersPanel.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.pageNumbersPanel.AutoSize = true;
+            this.pageNumbersPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.pageNumbersPanel.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
+            this.pageNumbersPanel.WrapContents = false;
+            this.pageNumbersPanel.Location = new System.Drawing.Point(730, 0);
+            this.pageNumbersPanel.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.pageNumbersPanel.Name = "pageNumbersPanel";
+            this.pageNumbersPanel.Size = new System.Drawing.Size(0, 0);
+            this.pageNumbersPanel.TabIndex = 3;
             // 
             // btnPrevContactPage
             // 
@@ -191,12 +209,11 @@ namespace RealEstateCRMWinForms.Views
             // 
             // lblContactPageInfo
             // 
-            this.lblContactPageInfo.Anchor = System.Windows.Forms.AnchorStyles.Right;
             this.lblContactPageInfo.AutoSize = true;
-            this.lblContactPageInfo.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.lblContactPageInfo.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.lblContactPageInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
-            this.lblContactPageInfo.Location = new System.Drawing.Point(720, 2);
-            this.lblContactPageInfo.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.lblContactPageInfo.Location = new System.Drawing.Point(733, 2);
+            this.lblContactPageInfo.Margin = new System.Windows.Forms.Padding(3, 0, 10, 0);
             this.lblContactPageInfo.Name = "lblContactPageInfo";
             this.lblContactPageInfo.Size = new System.Drawing.Size(90, 19);
             this.lblContactPageInfo.TabIndex = 1;
@@ -205,6 +222,7 @@ namespace RealEstateCRMWinForms.Views
             // 
             // btnNextContactPage
             // 
+            this.btnNextContactPage.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnNextContactPage.AutoSize = true;
             this.btnNextContactPage.BackColor = System.Drawing.Color.White;
             this.btnNextContactPage.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
@@ -212,7 +230,7 @@ namespace RealEstateCRMWinForms.Views
             this.btnNextContactPage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnNextContactPage.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.btnNextContactPage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
-            this.btnNextContactPage.Location = new System.Drawing.Point(912, 0);
+            this.btnNextContactPage.Location = new System.Drawing.Point(199, 0);
             this.btnNextContactPage.Margin = new System.Windows.Forms.Padding(0);
             this.btnNextContactPage.Name = "btnNextContactPage";
             this.btnNextContactPage.Size = new System.Drawing.Size(90, 28);
@@ -251,6 +269,9 @@ namespace RealEstateCRMWinForms.Views
             this.searchBoxContainer.PerformLayout();
             this.rightControlsPanel.ResumeLayout(false);
             this.contentPanel.ResumeLayout(false);
+            this.paginationPanel.ResumeLayout(false);
+            this.contactsPaginationLayout.ResumeLayout(false);
+            this.contactsPaginationLayout.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewContacts)).EndInit();
             this.ResumeLayout(false);
 
@@ -271,6 +292,7 @@ namespace RealEstateCRMWinForms.Views
         private System.Windows.Forms.DataGridView dataGridViewContacts;
         private System.Windows.Forms.Panel searchBoxContainer;
         private System.Windows.Forms.Label searchIcon;
+        private System.Windows.Forms.FlowLayoutPanel pageNumbersPanel;
 
         private void ContactsView_Load(object sender, System.EventArgs e)
         {
