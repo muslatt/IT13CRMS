@@ -20,20 +20,20 @@ namespace RealEstateCRMWinForms.Controls
 
         // UI Controls
         private PictureBox pbImage = null!;
-        private Label lblTitle = null!;
-        private Label lblAddress = null!;
-        private Label lblPrice = null!;
+        private SmoothLabel lblTitle = null!;
+        private SmoothLabel lblAddress = null!;
+        private SmoothLabel lblPrice = null!;
         private Panel statusPanel = null!;
-        private Label lblStatus = null!;
+        private SmoothLabel lblStatus = null!;
         private Panel? resubmitPanel; // Resubmit badge panel
-        private Label? lblResubmit; // Resubmit badge label
+        private SmoothLabel? lblResubmit; // Resubmit badge label
         private PictureBox pbBedIcon = null!;
-        private Label lblBedValue = null!;
+        private SmoothLabel lblBedValue = null!;
         private PictureBox pbBathIcon = null!;
-        private Label lblBathValue = null!;
+        private SmoothLabel lblBathValue = null!;
         private PictureBox pbSqmIcon = null!;
-        private Label lblSqmValue = null!;
-        private Label lblSubmittedBy = null!;
+        private SmoothLabel lblSqmValue = null!;
+        private SmoothLabel lblSubmittedBy = null!;
         private Button btnApprove = null!;
         private Button btnReject = null!;
 
@@ -61,6 +61,7 @@ namespace RealEstateCRMWinForms.Controls
 
         private void InitializeComponent()
         {
+            this.AutoScaleMode = AutoScaleMode.Dpi; // Scale properly on high-DPI to avoid clipped text
             this.Size = new Size(920, 240); // Increased height to prevent overlapping
             this.BackColor = Color.White;
             this.Padding = new Padding(0);
@@ -77,46 +78,53 @@ namespace RealEstateCRMWinForms.Controls
             };
             this.Controls.Add(pbImage);
 
-            // Title panel (container for title and status badges)
+            // Title panel (container for title and status/resubmit badges)
             var titlePanel = new Panel
             {
-                Size = new Size(650, 35), // Increased width and height for badges
+                Size = new Size(650, 40), // initial, will be widened below
                 Location = new Point(220, 20),
                 BackColor = Color.Transparent
             };
+            // Allow the title panel to stretch with the card width so right-aligned badges are not clipped
+            titlePanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            // Widen to use available width with a small right padding
+            titlePanel.Width = this.Width - titlePanel.Left - 20;
 
             // Title
-            lblTitle = new Label
+            lblTitle = new SmoothLabel
             {
                 Name = "lblTitle",
                 Text = "Property Title",
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 Location = new Point(0, 0),
-                Size = new Size(400, 25), // Reduced width to make room for badges
+                Size = new Size(400, 32), // Taller to avoid clipping
                 ForeColor = Color.FromArgb(33, 37, 41),
                 BackColor = Color.Transparent,
-                AutoEllipsis = true // Add ellipsis for long titles
+                AutoEllipsis = true, // Add ellipsis for long titles
+                TextAlign = ContentAlignment.MiddleLeft,
+                UseCompatibleTextRendering = true
             };
             titlePanel.Controls.Add(lblTitle);
 
             // Status panel (property type badge)
             statusPanel = new Panel
             {
-                Size = new Size(90, 24), // Slightly larger for better visibility
-                Location = new Point(410, 2), // Positioned after title with margin
-                BackColor = Color.FromArgb(40, 167, 69)
+                Size = new Size(100, 26), // Slightly larger for better visibility and to prevent chopping
+                Location = new Point(410, 6), // Center within taller title panel
+                BackColor = Color.FromArgb(40, 167, 69),
+                Visible = false // Hide property type badge in Requests view
             };
 
-            lblStatus = new Label
+            lblStatus = new SmoothLabel
             {
                 Name = "lblStatus",
                 Text = "Type",
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Location = new Point(0, 0),
-                Size = new Size(90, 24),
+                Dock = DockStyle.Fill,
                 ForeColor = Color.White,
                 BackColor = Color.Transparent,
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleCenter,
+                UseCompatibleTextRendering = true
             };
             statusPanel.Controls.Add(lblStatus);
             titlePanel.Controls.Add(statusPanel);
@@ -124,22 +132,24 @@ namespace RealEstateCRMWinForms.Controls
             // Resubmit badge panel (initially hidden, shown only for resubmitted properties)
             resubmitPanel = new Panel
             {
-                Size = new Size(100, 24),
-                Location = new Point(510, 2), // Position next to status badge with spacing
+                Size = new Size(110, 26),
                 BackColor = Color.FromArgb(255, 193, 7), // Orange/Yellow color for resubmit
                 Visible = false
             };
+            // Right-align inside the title panel to prevent clipping when moved right
+            resubmitPanel.Location = new Point(titlePanel.Width - resubmitPanel.Width, 6);
+            resubmitPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
-            lblResubmit = new Label
+            lblResubmit = new SmoothLabel
             {
                 Name = "lblResubmit",
                 Text = "RESUBMIT",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                Location = new Point(0, 0),
-                Size = new Size(100, 24),
+                Dock = DockStyle.Fill,
                 ForeColor = Color.White,
                 BackColor = Color.Transparent,
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleCenter,
+                UseCompatibleTextRendering = true
             };
             resubmitPanel.Controls.Add(lblResubmit);
             titlePanel.Controls.Add(resubmitPanel);
@@ -147,34 +157,38 @@ namespace RealEstateCRMWinForms.Controls
             this.Controls.Add(titlePanel);
 
             // Address
-            lblAddress = new Label
+            lblAddress = new SmoothLabel
             {
                 Name = "lblAddress",
                 Text = "Address",
                 Font = new Font("Segoe UI", 10F),
-                Location = new Point(220, 60), // Increased Y position to avoid overlap
-                Size = new Size(650, 20), // Increased width
+                Location = new Point(220, 62), // Slight tweak
+                Size = new Size(650, 24), // Taller to prevent chopping
                 ForeColor = Color.FromArgb(108, 117, 125),
                 BackColor = Color.Transparent,
-                AutoEllipsis = true
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                UseCompatibleTextRendering = true
             };
             this.Controls.Add(lblAddress);
 
             // Price
-            lblPrice = new Label
+            lblPrice = new SmoothLabel
             {
                 Name = "lblPrice",
                 Text = "$0",
                 Font = new Font("Segoe UI", 18F, FontStyle.Bold),
-                Location = new Point(220, 85), // Adjusted Y position
-                Size = new Size(300, 30),
+                Location = new Point(220, 86), // Adjusted Y position
+                Size = new Size(320, 44), // Taller to fully render currency glyphs
                 ForeColor = Color.FromArgb(40, 167, 69),
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft,
+                UseCompatibleTextRendering = true
             };
             this.Controls.Add(lblPrice);
 
             // Feature icons and values - positioned with proper spacing
-            int featureY = 125; // Increased Y position to avoid overlap with price
+            int featureY = 132; // Adjusted Y position for taller price label
             int iconSize = 24;
             int featureSpacing = 100; // Consistent spacing between features
 
@@ -188,14 +202,16 @@ namespace RealEstateCRMWinForms.Controls
             };
             this.Controls.Add(pbBedIcon);
 
-            lblBedValue = new Label
+            lblBedValue = new SmoothLabel
             {
                 Text = "0",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(250, featureY - 2),
-                Size = new Size(50, 24), // Increased width
+                Size = new Size(60, 28), // Taller to avoid clipping
                 ForeColor = Color.FromArgb(33, 37, 41),
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft,
+                UseCompatibleTextRendering = true
             };
             this.Controls.Add(lblBedValue);
 
@@ -209,14 +225,16 @@ namespace RealEstateCRMWinForms.Controls
             };
             this.Controls.Add(pbBathIcon);
 
-            lblBathValue = new Label
+            lblBathValue = new SmoothLabel
             {
                 Text = "0",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(250 + featureSpacing, featureY - 2),
-                Size = new Size(50, 24), // Increased width
+                Size = new Size(60, 28),
                 ForeColor = Color.FromArgb(33, 37, 41),
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft,
+                UseCompatibleTextRendering = true
             };
             this.Controls.Add(lblBathValue);
 
@@ -230,28 +248,32 @@ namespace RealEstateCRMWinForms.Controls
             };
             this.Controls.Add(pbSqmIcon);
 
-            lblSqmValue = new Label
+            lblSqmValue = new SmoothLabel
             {
                 Text = "0 sqm",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(250 + (featureSpacing * 2), featureY - 2),
-                Size = new Size(90, 24), // Increased width for sqm text
+                Size = new Size(110, 28), // Taller and a bit wider
                 ForeColor = Color.FromArgb(33, 37, 41),
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft,
+                UseCompatibleTextRendering = true
             };
             this.Controls.Add(lblSqmValue);
 
             // Submitted by - positioned with more space
-            lblSubmittedBy = new Label
+            lblSubmittedBy = new SmoothLabel
             {
                 Name = "lblSubmittedBy",
                 Text = "Submitted by: Loading...",
                 Font = new Font("Segoe UI", 9F),
-                Location = new Point(220, 160), // Increased Y position
-                Size = new Size(350, 20), // Increased width
+                Location = new Point(220, 168), // Adjusted for new layout
+                Size = new Size(380, 22), // Taller to avoid clipping
                 ForeColor = Color.FromArgb(52, 58, 64),
                 BackColor = Color.Transparent,
-                AutoEllipsis = true
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                UseCompatibleTextRendering = true
             };
             this.Controls.Add(lblSubmittedBy);
 
@@ -374,13 +396,19 @@ namespace RealEstateCRMWinForms.Controls
             if (lblAddress != null) lblAddress.Text = _property.Address ?? string.Empty;
             if (lblPrice != null) lblPrice.Text = _property.Price.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-PH"));
 
-            // Update property type badge
-            UpdatePropertyTypeBadge();
+            // In Requests view do not show the property type/status badge panel
+            if (statusPanel != null) statusPanel.Visible = false;
 
-            // Show/hide resubmit badge based on property state
+            // Use the right-positioned badge panel to display 'REJECTED' when in Rejected list
             if (resubmitPanel != null)
             {
-                resubmitPanel.Visible = _property.IsResubmitted;
+                bool isRejected = !_property.IsApproved && !string.IsNullOrEmpty(_property.RejectionReason);
+                resubmitPanel.Visible = isRejected;
+                if (isRejected)
+                {
+                    if (lblResubmit != null) lblResubmit.Text = "REJECTED";
+                    resubmitPanel.BackColor = Color.FromArgb(220, 53, 69); // Red badge for rejected
+                }
             }
 
             // Update feature icons

@@ -1,0 +1,29 @@
+*** Begin Patch
+*** Update File: Views/PendingAssignmentsView.cs
+@@
+-            var headerLayout = new TableLayoutPanel
+-            {
+-                Dock = DockStyle.Fill,
+-                ColumnCount = 1,
+-                RowCount = 2
+-            };
++            var headerLayout = new TableLayoutPanel
++            {
++                Dock = DockStyle.Fill,
++                ColumnCount = 1,
++                RowCount = 2,
++                AutoSize = true,
++                AutoSizeMode = AutoSizeMode.GrowAndShrink
++            };
+             headerLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+             headerLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+@@
+                 Font = new Font("Segoe UI", 11f),
+                 ForeColor = Color.FromArgb(108, 117, 125),
+                 AutoSize = true,
+                 Dock = DockStyle.Fill,
+-                Margin = new Padding(0, 8, 0, 0)
++                Margin = new Padding(0, 8, 0, 0),
++                MaximumSize = new Size(900, 0)
+             };
+*** End Patch

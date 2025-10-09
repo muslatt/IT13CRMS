@@ -1,12 +1,14 @@
-using RealEstateCRMWinForms.Controls;
+using System.Collections.Generic;
+using RealEstateCRMWinForms.Data;
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.Services;
 using RealEstateCRMWinForms.ViewModels;
+using Microsoft.EntityFrameworkCore;
 using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
-using System.Threading.Tasks;
 using System.Drawing.Drawing2D;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace RealEstateCRMWinForms.Views
 {
@@ -17,17 +19,27 @@ namespace RealEstateCRMWinForms.Views
         private Label _lblHeader;
         private Panel _headerPanel;
         private Label _lblSubtitle;
+        private readonly List<Panel> _cardWrappers = new();
         public event EventHandler<Deal>? AssignmentAccepted;
         public event EventHandler<Deal>? AssignmentDeclined;
 
         private readonly bool _brokerMode;
         private const string AssignMarkerPrefix = "[ASSIGN:";
+        private const string AssignIdMarkerPrefix = "[ASSIGNID:";
 
         public PendingAssignmentsView(bool brokerMode = false)
         {
             _dealViewModel = new DealViewModel();
             _brokerMode = brokerMode;
             BuildUi();
+
+            // DPI-aware scaling and smooth rendering
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            UpdateStyles();
+
+            SizeChanged += (_, __) => UpdateCardLayout();
             LoadAssignments();
         }
 
@@ -36,38 +48,65 @@ namespace RealEstateCRMWinForms.Views
             BackColor = Color.FromArgb(248, 249, 250);
             Dock = DockStyle.Fill;
 
-            // Modern header panel with proper spacing
+            // Header panel
             _headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 90, // Increased height to prevent overlap
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Color.White,
-                Padding = new Padding(24, 20, 24, 20) // Increased padding
+                Padding = new Padding(24, 24, 24, 24)
             };
-
-            // Add subtle shadow to header
             _headerPanel.Paint += (sender, e) =>
             {
                 var g = e.Graphics;
-                using (var shadowBrush = new SolidBrush(Color.FromArgb(10, 0, 0, 0)))
-                {
-                    g.FillRectangle(shadowBrush, 0, _headerPanel.Height - 2, _headerPanel.Width, 2);
-                }
+                using var shadowBrush = new SolidBrush(Color.FromArgb(10, 0, 0, 0));
+                var panelHeight = _headerPanel.Height;
+                g.FillRectangle(shadowBrush, 0, panelHeight - 2, _headerPanel.Width, 2);
             };
 
-           
+            var headerLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            headerLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            headerLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
+            _lblHeader = new Label
+            {
+                Text = _brokerMode ? "Assignment Monitor" : "Pending Assignments",
+                Font = new Font("Segoe UI", 20f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39),
+                AutoSize = true,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(0, 0, 0, 2)
+            };
             _lblSubtitle = new Label
             {
                 Text = _brokerMode ? "Monitor all agent assignments and their status" : "Review and manage your assigned property deals",
                 Font = new Font("Segoe UI", 11f),
                 ForeColor = Color.FromArgb(108, 117, 125),
                 AutoSize = true,
-                Location = new Point(0, 35) // Adjusted position to prevent overlap
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 8, 0, 0),
+                MaximumSize = new Size(900, 0)
             };
-
-            _headerPanel.Controls.Add(_lblSubtitle);
-            _headerPanel.Controls.Add(_lblHeader);
+            headerLayout.Controls.Add(_lblHeader, 0, 0);
+            headerLayout.Controls.Add(_lblSubtitle, 0, 1);
+            if (!_brokerMode)
+            {
+                _lblHeader.Visible = false;
+                headerLayout.RowStyles[0].SizeType = SizeType.Absolute;
+                headerLayout.RowStyles[0].Height = 0f;
+                _lblSubtitle.Visible = false;
+                headerLayout.RowStyles[1].SizeType = SizeType.Absolute;
+                headerLayout.RowStyles[1].Height = 0f;
+            }
+            _headerPanel.Controls.Add(headerLayout);
 
             _flow = new FlowLayoutPanel
             {
@@ -79,13 +118,21 @@ namespace RealEstateCRMWinForms.Views
                 FlowDirection = FlowDirection.LeftToRight
             };
 
-            // Enable double buffering for smoother scrolling
-            typeof(FlowLayoutPanel).InvokeMember("DoubleBuffered",
-                System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-                null, _flow, new object[] { true });
-
             Controls.Add(_flow);
             Controls.Add(_headerPanel);
+        }
+
+        // Public entry point for parent views to refresh the list
+        public void RefreshAssignments()
+        {
+            LoadAssignments();
+        }
+
+        private bool HasAssignmentMarker(string? notes)
+        {
+            if (string.IsNullOrWhiteSpace(notes)) return false;
+            return notes.IndexOf(AssignMarkerPrefix, StringComparison.OrdinalIgnoreCase) >= 0
+                || notes.IndexOf(AssignIdMarkerPrefix, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void LoadAssignments()
@@ -97,43 +144,74 @@ namespace RealEstateCRMWinForms.Views
             try
             {
                 _flow.Controls.Clear();
-                // Refresh deals
-                _dealViewModel.LoadDeals();
+                _cardWrappers.Clear();
+
+                using var db = DbContextHelper.CreateDbContext();
+                var dealsSnapshot = db.Deals
+                    .AsNoTracking()
+                    .Include(d => d.Property)
+                    .Include(d => d.Contact)
+                    .Where(d => d.IsActive)
+                    .ToList();
 
                 IEnumerable<Deal> pending;
                 if (_brokerMode)
                 {
-                    // For brokers: show all active deals that have an assignment marker remaining
-                    pending = _dealViewModel.Deals
-                        .Where(d => d.IsActive)
-                        .Where(d => !string.IsNullOrWhiteSpace(d.Notes) && d.Notes.Contains(AssignMarkerPrefix))
+                    // Broker view: show any deal that is pending assignment by either
+                    // 1) having the [ASSIGN:Agent] marker, or
+                    // 2) legacy/older items that have no owner yet (CreatedBy empty)
+                    pending = dealsSnapshot
+                        .Where(d => HasAssignmentMarker(d.Notes) || string.IsNullOrWhiteSpace(d.CreatedBy))
                         .OrderByDescending(d => d.CreatedAt)
                         .ToList();
                 }
                 else
                 {
-                    // For agents: only assignments tagged with their name
-                    pending = _dealViewModel.Deals
-                        .Where(d => d.IsActive)
-                        .Where(d => !string.IsNullOrWhiteSpace(d.Notes) && d.Notes.Contains(AssignMarkerPrefix))
-                        .Where(d => d.Notes!.IndexOf($"{AssignMarkerPrefix}{agentName}]", StringComparison.OrdinalIgnoreCase) >= 0)
+                    var agentId = user?.Id;
+                    var idMarker = agentId.HasValue ? $"{AssignIdMarkerPrefix}{agentId.Value}]" : null;
+                    var nameMarker = !string.IsNullOrWhiteSpace(agentName) ? $"{AssignMarkerPrefix}{agentName}]" : null;
+
+                    pending = dealsSnapshot
+                        .Where(d => HasAssignmentMarker(d.Notes))
+                        .Where(d =>
+                        {
+                            var notes = d.Notes ?? string.Empty;
+                            if (!string.IsNullOrEmpty(idMarker) && notes.IndexOf(idMarker, StringComparison.OrdinalIgnoreCase) >= 0)
+                                return true;
+                            if (!string.IsNullOrEmpty(nameMarker) && notes.IndexOf(nameMarker, StringComparison.OrdinalIgnoreCase) >= 0)
+                                return true;
+                            return false;
+                        })
                         .OrderByDescending(d => d.CreatedAt)
                         .ToList();
                 }
 
                 var assignments = pending.ToList();
+                if (_brokerMode && _lblSubtitle != null && _lblSubtitle.Visible)
+                {
+                    var countText = assignments.Count == 1 ? "1 pending assignment" : $"{assignments.Count} pending assignments";
+                    var baseline = _brokerMode
+                        ? "Monitor all agent assignments and their status"
+                        : "Review and manage your assigned property deals";
+                    var availableWidth = Math.Max(0, _headerPanel.Width - _headerPanel.Padding.Horizontal);
+                    _lblSubtitle.MaximumSize = new Size(availableWidth, 0);
+                    _lblSubtitle.Text = $"{baseline} - {countText}";
+                }
                 if (assignments.Count == 0)
                 {
                     var emptyStatePanel = CreateEmptyStatePanel();
                     _flow.Controls.Add(emptyStatePanel);
+                    UpdateCardLayout();
                     return;
                 }
 
                 foreach (var d in assignments)
                 {
                     var cardContainer = BuildAssignmentItem(d);
+                    _cardWrappers.Add(cardContainer);
                     _flow.Controls.Add(cardContainer);
                 }
+                UpdateCardLayout();
             }
             finally
             {
@@ -145,13 +223,13 @@ namespace RealEstateCRMWinForms.Views
         {
             var emptyPanel = new Panel
             {
-                Width = 420, // Increased width
-                Height = 320, // Increased height
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Color.White,
-                Margin = new Padding(20)
+                Margin = new Padding(20),
+                Padding = new Padding(24)
             };
 
-            // Add rounded corners and shadow
             emptyPanel.Paint += (sender, e) =>
             {
                 var g = e.Graphics;
@@ -160,21 +238,16 @@ namespace RealEstateCRMWinForms.Views
                 var rect = new Rectangle(0, 0, emptyPanel.Width - 1, emptyPanel.Height - 1);
                 var path = CreateRoundedRectanglePath(rect, 12);
 
-                // Draw shadow
                 var shadowRect = new Rectangle(3, 3, emptyPanel.Width - 3, emptyPanel.Height - 3);
                 var shadowPath = CreateRoundedRectanglePath(shadowRect, 12);
                 using (var shadowBrush = new SolidBrush(Color.FromArgb(15, 0, 0, 0)))
                 {
                     g.FillPath(shadowBrush, shadowPath);
                 }
-
-                // Draw card background
                 using (var cardBrush = new SolidBrush(Color.White))
                 {
                     g.FillPath(cardBrush, path);
                 }
-
-                // Draw border
                 using (var borderPen = new Pen(Color.FromArgb(230, 230, 230), 1))
                 {
                     g.DrawPath(borderPen, path);
@@ -183,12 +256,15 @@ namespace RealEstateCRMWinForms.Views
 
             var iconLabel = new Label
             {
-                Text = "📋",
-                Font = new Font("Segoe UI Emoji", 48f),
+                Text = "\uE8FA",
+                Font = new Font("Segoe MDL2 Assets", 56f, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = Color.FromArgb(200, 200, 200),
                 AutoSize = true,
-                Location = new Point(185, 90) // Centered properly
+                Dock = DockStyle.Top,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0)
             };
+            iconLabel.Anchor = AnchorStyles.None;
 
             var emptyLabel = new Label
             {
@@ -196,8 +272,11 @@ namespace RealEstateCRMWinForms.Views
                 Font = new Font("Segoe UI", 16f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(108, 117, 125),
                 AutoSize = true,
-                Location = new Point(130, 170) // Adjusted position
+                Dock = DockStyle.Top,
+                Padding = new Padding(0, 8, 0, 0),
+                TextAlign = ContentAlignment.MiddleCenter
             };
+            emptyLabel.Anchor = AnchorStyles.None;
 
             var subtitleLabel = new Label
             {
@@ -205,274 +284,186 @@ namespace RealEstateCRMWinForms.Views
                 Font = new Font("Segoe UI", 12f),
                 ForeColor = Color.FromArgb(150, 150, 150),
                 AutoSize = true,
-                Location = new Point(140, 200) // Adjusted position
+                Dock = DockStyle.Top,
+                Padding = new Padding(0, 4, 0, 0),
+                TextAlign = ContentAlignment.MiddleCenter
             };
+            subtitleLabel.Anchor = AnchorStyles.None;
 
-            emptyPanel.Controls.Add(subtitleLabel);
-            emptyPanel.Controls.Add(emptyLabel);
-            emptyPanel.Controls.Add(iconLabel);
+            var emptyLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                AutoSize = true,
+                Padding = new Padding(0)
+            };
+            emptyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            emptyLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            emptyLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            emptyLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            emptyLayout.Controls.Add(iconLabel, 0, 0);
+            emptyLayout.Controls.Add(emptyLabel, 0, 1);
+            emptyLayout.Controls.Add(subtitleLabel, 0, 2);
+            emptyPanel.Controls.Add(emptyLayout);
 
             return emptyPanel;
         }
 
-        private Control BuildAssignmentItem(Deal deal)
+        private Panel BuildAssignmentItem(Deal deal)
         {
             var wrapper = new Panel
             {
-                Width = 360, // Increased width to prevent content overflow
-                Height = 420, // Increased height to accommodate all content
+                AutoSize = false,
                 BackColor = Color.Transparent,
                 Margin = new Padding(15),
-                Padding = new Padding(0)
+                Padding = new Padding(0),
+                MinimumSize = new Size(320, 0)
             };
 
-            // Create modern card with rounded corners and shadow
             var card = new Panel
             {
-                Dock = DockStyle.Fill,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Color.White,
-                Padding = new Padding(24) // Increased padding
+                Padding = new Padding(24),
+                Margin = new Padding(0),
+                MinimumSize = new Size(320, 220)
             };
-
-            // Add custom paint for rounded corners and shadow
             card.Paint += (sender, e) =>
             {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-
                 var rect = new Rectangle(0, 0, card.Width - 1, card.Height - 1);
                 var path = CreateRoundedRectanglePath(rect, 12);
-
-                // Draw shadow
                 var shadowRect = new Rectangle(3, 3, card.Width - 3, card.Height - 3);
                 var shadowPath = CreateRoundedRectanglePath(shadowRect, 12);
-                using (var shadowBrush = new SolidBrush(Color.FromArgb(15, 0, 0, 0)))
-                {
-                    g.FillPath(shadowBrush, shadowPath);
-                }
-
-                // Draw card background
-                using (var cardBrush = new SolidBrush(Color.White))
-                {
-                    g.FillPath(cardBrush, path);
-                }
-
-                // Draw border
-                using (var borderPen = new Pen(Color.FromArgb(230, 230, 230), 1))
-                {
-                    g.DrawPath(borderPen, path);
-                }
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(15, 0, 0, 0))) g.FillPath(shadowBrush, shadowPath);
+                using (var cardBrush = new SolidBrush(Color.White)) g.FillPath(cardBrush, path);
+                using (var borderPen = new Pen(Color.FromArgb(230, 230, 230), 1)) g.DrawPath(borderPen, path);
             };
 
-            // Property type badge - positioned to avoid overlap
-            var badgePanel = new Panel
+            var titlePanel = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, BackColor = Color.Transparent, Margin = new Padding(0, 0, 0, 6) };
+            var titleLayout = new FlowLayoutPanel
             {
-                Size = new Size(85, 26), // Slightly larger
-                Location = new Point(225, 15), // Adjusted position
-                BackColor = Color.FromArgb(0, 123, 255)
-            };
-
-            badgePanel.Paint += (sender, e) =>
-            {
-                var g = e.Graphics;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                var rect = new Rectangle(0, 0, badgePanel.Width, badgePanel.Height);
-                var path = CreateRoundedRectanglePath(rect, 12);
-                using (var brush = new SolidBrush(Color.FromArgb(0, 123, 255)))
-                {
-                    g.FillPath(brush, path);
-                }
-            };
-
-            var badgeLabel = new Label
-            {
-                Text = "PENDING",
-                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.Transparent,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill
-            };
-            badgePanel.Controls.Add(badgeLabel);
-
-            // Title with icon - proper spacing
-            var titlePanel = new Panel
-            {
-                Height = 40, // Increased height
-                Dock = DockStyle.Top,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0, 0, 0, 8) // Add bottom margin
-            };
-
-            var propertyIcon = new Label
-            {
-                Text = "🏠",
-                Font = new Font("Segoe UI Emoji", 16f),
                 AutoSize = true,
-                Location = new Point(0, 8)
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
             };
-
             var lblTitle = new Label
             {
-                Text = deal.Property?.Title ?? deal.Title,
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold), // Slightly smaller font
+                Text = string.IsNullOrWhiteSpace(deal.Title) ? "Untitled Deal" : deal.Title,
+                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(33, 37, 41),
-                Location = new Point(30, 10),
-                Size = new Size(180, 28), // Adjusted size
+                AutoSize = true,
                 AutoEllipsis = true
             };
-
-            titlePanel.Controls.Add(badgePanel);
-            titlePanel.Controls.Add(lblTitle);
-            titlePanel.Controls.Add(propertyIcon);
-
-            // Address with icon - proper spacing
-            var addressPanel = new Panel
+            var statusBadge = new Label
             {
-                Height = 35, // Increased height
-                Dock = DockStyle.Top,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0, 0, 0, 5) // Add bottom margin
-            };
-
-            var addressIcon = new Label
-            {
-                Text = "📍",
-                Font = new Font("Segoe UI Emoji", 12f),
+                Text = "Pending",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(234, 179, 8),
                 AutoSize = true,
-                Location = new Point(5, 8)
+                Padding = new Padding(10, 4, 10, 4),
+                Margin = new Padding(12, 4, 0, 0),
+                TextAlign = ContentAlignment.MiddleCenter
             };
+            titleLayout.Controls.Add(lblTitle);
+            titleLayout.Controls.Add(statusBadge);
+            titlePanel.Controls.Add(titleLayout);
 
-            var lblAddr = new Label
+            string addressText = deal.Property?.Address;
+            if (string.IsNullOrWhiteSpace(addressText))
             {
-                Text = deal.Property?.Address ?? "No address specified",
-                Font = new Font("Segoe UI", 10f),
-                ForeColor = Color.FromArgb(108, 117, 125),
-                Location = new Point(30, 8),
-                Size = new Size(280, 22), // Adjusted size
-                AutoEllipsis = true
-            };
-
-            addressPanel.Controls.Add(lblAddr);
-            addressPanel.Controls.Add(addressIcon);
-
-            // Client info with icon - proper spacing
-            var clientPanel = new Panel
+                addressText = !string.IsNullOrWhiteSpace(deal.Description) ? deal.Description : "Address not set";
+            }
+            var addressPanel = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, BackColor = Color.Transparent, Margin = new Padding(0, 0, 0, 5) };
+            var lblAddress = new Label
             {
-                Height = 35, // Increased height
-                Dock = DockStyle.Top,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0, 0, 0, 5) // Add bottom margin
-            };
-
-            var clientIcon = new Label
-            {
-                Text = "👤",
-                Font = new Font("Segoe UI Emoji", 12f),
-                AutoSize = true,
-                Location = new Point(5, 8)
-            };
-
-            var lblClient = new Label
-            {
-                Text = deal.Contact != null ? $"Client: {deal.Contact.FullName}" : "Client: Not specified",
+                Text = $"Address: {addressText}",
                 Font = new Font("Segoe UI", 10f),
                 ForeColor = Color.FromArgb(73, 80, 87),
-                Location = new Point(30, 8),
-                Size = new Size(280, 22), // Adjusted size
-                AutoEllipsis = true
-            };
-
-            clientPanel.Controls.Add(lblClient);
-            clientPanel.Controls.Add(clientIcon);
-
-            // Assigned agent with icon - proper spacing
-            var agentPanel = new Panel
-            {
-                Height = 35, // Increased height
-                Dock = DockStyle.Top,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0, 0, 0, 5) // Add bottom margin
-            };
-
-            var agentIcon = new Label
-            {
-                Text = "🎯",
-                Font = new Font("Segoe UI Emoji", 12f),
                 AutoSize = true,
-                Location = new Point(5, 8)
+                MaximumSize = new Size(320, 0)
             };
+            addressPanel.Controls.Add(lblAddress);
 
+            var clientPanel = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, BackColor = Color.Transparent, Margin = new Padding(0, 0, 0, 5) };
+            var clientName = (deal.Contact?.FullName?.Trim())?.Length > 0 ? deal.Contact!.FullName : "Unknown";
+            var lblClient = new Label
+            {
+                Text = $"Client: {clientName}",
+                Font = new Font("Segoe UI", 10f),
+                ForeColor = Color.FromArgb(73, 80, 87),
+                AutoSize = true,
+                MaximumSize = new Size(320, 0)
+            };
+            clientPanel.Controls.Add(lblClient);
+
+            var agentPanel = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, BackColor = Color.Transparent, Margin = new Padding(0, 0, 0, 5) };
             var assigned = ExtractAssignedAgent(deal.Notes);
+            var agentText = !string.IsNullOrWhiteSpace(assigned) ? $"Assigned to: {assigned}" : "Awaiting agent acceptance";
+            var agentColor = !string.IsNullOrWhiteSpace(assigned) ? Color.FromArgb(0, 123, 255) : Color.FromArgb(108, 117, 125);
             var lblAgent = new Label
             {
-                Text = !string.IsNullOrWhiteSpace(assigned) ? $"Assigned to: {assigned}" : "Assigned to: Unknown",
+                Text = agentText,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 123, 255),
-                Location = new Point(30, 8),
-                Size = new Size(280, 22), // Adjusted size
-                AutoEllipsis = true
-            };
-
-            agentPanel.Controls.Add(lblAgent);
-            agentPanel.Controls.Add(agentIcon);
-
-            // Price with icon - proper spacing
-            var pricePanel = new Panel
-            {
-                Height = 45, // Increased height
-                Dock = DockStyle.Top,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0, 0, 0, 10) // Add bottom margin
-            };
-
-            var priceIcon = new Label
-            {
-                Text = "💰",
-                Font = new Font("Segoe UI Emoji", 16f),
+                ForeColor = agentColor,
                 AutoSize = true,
-                Location = new Point(5, 12)
+                MaximumSize = new Size(320, 0)
             };
+            agentPanel.Controls.Add(lblAgent);
 
+            var pricePanel = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, BackColor = Color.Transparent, Margin = new Padding(0, 0, 0, 10) };
+            string valueText;
+            var priceValue = deal.Property?.Price;
+            if (priceValue.HasValue)
+            {
+                valueText = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C0}", priceValue.Value);
+            }
+            else
+            {
+                valueText = "Not set";
+            }
             var lblPrice = new Label
             {
-                Text = deal.Property?.Price != null ? deal.Property.Price.ToString("C0") : "Price not set",
-                Font = new Font("Segoe UI", 15f, FontStyle.Bold), // Slightly smaller font
+                Text = $"Value: {valueText}",
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(40, 167, 69),
-                Location = new Point(35, 12),
-                Size = new Size(280, 28) // Adjusted size
+                AutoSize = true,
+                MaximumSize = new Size(320, 0)
             };
-
             pricePanel.Controls.Add(lblPrice);
-            pricePanel.Controls.Add(priceIcon);
 
-            // Spacer for better separation
-            var spacer = new Panel
-            {
-                Height = 15, // Reduced spacer height
-                Dock = DockStyle.Top,
-                BackColor = Color.Transparent
-            };
+            var spacer = new Panel { Height = 10, Dock = DockStyle.Top, BackColor = Color.Transparent };
 
-            // Action buttons panel - positioned at bottom with proper spacing
-            var actions = new Panel
+            var actions = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 65, // Increased height
+                Height = 65,
                 BackColor = Color.Transparent,
-                Padding = new Padding(0, 12, 0, 0) // Top padding
+                Padding = new Padding(0, 12, 0, 0),
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
 
             if (_brokerMode)
             {
-                // Brokers get a view-only indicator
                 var viewOnlyLabel = new Label
                 {
-                    Text = "👁️ View Only Mode",
+                    Text = "View Only Mode",
                     Font = new Font("Segoe UI", 10f, FontStyle.Italic),
                     ForeColor = Color.FromArgb(108, 117, 125),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Fill
+                    Margin = new Padding(0, 12, 0, 0),
+                    AutoSize = true
                 };
                 actions.Controls.Add(viewOnlyLabel);
             }
@@ -480,37 +471,33 @@ namespace RealEstateCRMWinForms.Views
             {
                 var btnAccept = new Button
                 {
-                    Text = "✅ Accept",
+                    Text = "Accept",
                     BackColor = Color.FromArgb(34, 197, 94),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
-                    Height = 42, // Increased height
-                    Width = 145, // Increased width
+                    Height = 42,
+                    Width = 145,
                     Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                    Location = new Point(0, 12)
+                    Margin = new Padding(0, 12, 10, 12)
                 };
                 btnAccept.FlatAppearance.BorderSize = 0;
                 btnAccept.Click += async (s, e) => await AcceptAssignmentAsync(deal);
-
-                // Add hover effect
                 btnAccept.MouseEnter += (s, e) => btnAccept.BackColor = Color.FromArgb(22, 163, 74);
                 btnAccept.MouseLeave += (s, e) => btnAccept.BackColor = Color.FromArgb(34, 197, 94);
 
                 var btnDecline = new Button
                 {
-                    Text = "❌ Decline",
+                    Text = "Decline",
                     BackColor = Color.FromArgb(239, 68, 68),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
-                    Height = 42, // Increased height
-                    Width = 145, // Increased width
+                    Height = 42,
+                    Width = 145,
                     Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                    Location = new Point(155, 12) // Adjusted position with proper spacing
+                    Margin = new Padding(10, 12, 0, 12)
                 };
                 btnDecline.FlatAppearance.BorderSize = 0;
                 btnDecline.Click += async (s, e) => await DeclineAssignmentAsync(deal);
-
-                // Add hover effect
                 btnDecline.MouseEnter += (s, e) => btnDecline.BackColor = Color.FromArgb(220, 38, 38);
                 btnDecline.MouseLeave += (s, e) => btnDecline.BackColor = Color.FromArgb(239, 68, 68);
 
@@ -518,7 +505,6 @@ namespace RealEstateCRMWinForms.Views
                 actions.Controls.Add(btnAccept);
             }
 
-            // Add all panels to card in reverse order (due to Dock.Top)
             card.Controls.Add(actions);
             card.Controls.Add(spacer);
             card.Controls.Add(pricePanel);
@@ -528,20 +514,25 @@ namespace RealEstateCRMWinForms.Views
             card.Controls.Add(titlePanel);
 
             wrapper.Controls.Add(card);
+            
+            // Remove assignment preview on click (no-op for broker mode)
+            
+            card.PerformLayout();
+            wrapper.Height = card.PreferredSize.Height + wrapper.Padding.Vertical;
             return wrapper;
         }
+
+        // Preview removed per request – no click handling needed
 
         private GraphicsPath CreateRoundedRectanglePath(Rectangle rect, int cornerRadius)
         {
             var path = new GraphicsPath();
             var diameter = cornerRadius * 2;
-
             path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90);
             path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90);
             path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90);
             path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90);
             path.CloseFigure();
-
             return path;
         }
 
@@ -558,7 +549,6 @@ namespace RealEstateCRMWinForms.Views
 
         private async Task AcceptAssignmentAsync(Deal deal)
         {
-            // Confirm before accepting the assignment
             var confirmResult = MessageBox.Show(
                 $"Are you sure you want to accept the assignment for '{deal.Title}'?\n\nThis will move the deal to your pipeline.",
                 "Confirm Accept Assignment",
@@ -573,7 +563,6 @@ namespace RealEstateCRMWinForms.Views
             var agentName = ($"{user?.FirstName} {user?.LastName}".Trim());
             try
             {
-                // Remove assignment marker and set CreatedBy to agent
                 if (!string.IsNullOrWhiteSpace(deal.Notes))
                 {
                     var assigned = ExtractAssignedAgent(deal.Notes);
@@ -581,6 +570,13 @@ namespace RealEstateCRMWinForms.Views
                     {
                         deal.Notes = deal.Notes.Replace($"{AssignMarkerPrefix}{assigned}]", string.Empty);
                     }
+                    var userId = user?.Id;
+                    if (userId.HasValue)
+                    {
+                        deal.Notes = deal.Notes.Replace($"{AssignIdMarkerPrefix}{userId.Value}]", string.Empty);
+                    }
+                    // Normalize whitespace
+                    deal.Notes = deal.Notes.Trim();
                 }
                 deal.CreatedBy = agentName;
 
@@ -620,7 +616,6 @@ namespace RealEstateCRMWinForms.Views
                     MessageBoxDefaultButton.Button2);
                 if (confirm != DialogResult.Yes) return;
 
-                // Soft delete the pending deal
                 if (_dealViewModel.DeleteDeal(deal))
                 {
                     LoadAssignments();
@@ -639,5 +634,42 @@ namespace RealEstateCRMWinForms.Views
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void UpdateCardLayout()
+        {
+            if (_flow == null) return;
+            var innerWidth = _flow.ClientSize.Width - _flow.Padding.Horizontal;
+            if (innerWidth <= 0) return;
+
+            int columns;
+            if (innerWidth < 500) columns = 1;
+            else if (innerWidth < 900) columns = 2;
+            else columns = 3;
+
+            var totalMargins = columns * 30;
+            var cardWidth = Math.Max(300, (innerWidth - totalMargins) / columns);
+
+            foreach (var panel in _cardWrappers)
+            {
+                panel.Width = cardWidth;
+                if (panel.Controls.Count > 0 && panel.Controls[0] is Panel cardPanel)
+                {
+                    cardPanel.MaximumSize = new Size(cardWidth, 0);
+                    cardPanel.Width = cardWidth;
+                }
+            }
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+

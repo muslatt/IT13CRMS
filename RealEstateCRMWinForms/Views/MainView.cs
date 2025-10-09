@@ -30,6 +30,7 @@ namespace RealEstateCRMWinForms.Views
         private float _sidebarFontPt = 18f;    // larger font in points
         private int _sidebarIconSize = 28;     // larger icon size in px
         private int _sidebarButtonHeight = 48; // taller nav buttons
+        private int _sidebarButtonHeightTall = 64; // for two-line labels like "Browse\nProperties"
 
         // Color palette (brand + complementary accents)
         private readonly Color _brandBlue = Color.FromArgb(0, 102, 204);
@@ -61,6 +62,7 @@ namespace RealEstateCRMWinForms.Views
             _sidebarFontPt = 18f;      // "much larger" — adjust as desired (16-22)
             _sidebarIconSize = 28;     // increase glyph/icon size
             _sidebarButtonHeight = 48; // taller buttons for better visual weight
+            _sidebarButtonHeightTall = 64; // ensure space for two-line entries
 
             // Setup uniform icons for sidebar buttons (uses _sidebarIconSize)
             SetupSidebarIcons();
@@ -159,6 +161,7 @@ namespace RealEstateCRMWinForms.Views
             EnsurePropertyRequestsButton();
             EnsureInquiriesButton();
             EnsureClientButtons();
+            EnsurePendingAssignmentsButton();
             List<Button?> navButtons = new List<Button?>();
             if (_isClient)
             {
@@ -181,7 +184,8 @@ namespace RealEstateCRMWinForms.Views
                 if (panelSidebar.Controls.Contains(b)) panelSidebar.Controls.Remove(b);
 
                 b.Width = flSidebarNav.Width - 4;
-                b.Height = _sidebarButtonHeight;
+                // Use taller height for any multi-line label
+                b.Height = IsMultiLineButton(b) ? GetTwoLineButtonHeight(b.Font) : _sidebarButtonHeight;
                 b.Margin = new Padding(0, 8, 0, 0);
                 b.FlatStyle = FlatStyle.Flat;
                 b.FlatAppearance.BorderSize = 0;
@@ -308,6 +312,22 @@ namespace RealEstateCRMWinForms.Views
             UpdateSidebarLayout();
         }
 
+        private void EnsurePendingAssignmentsButton()
+        {
+            if (btnPendingAssignments == null || btnPendingAssignments.IsDisposed)
+                return;
+
+            btnPendingAssignments.AccessibleName = "Pending Assignments";
+
+            string twoLine = "Pending" + Environment.NewLine + "Assignments";
+            if (!string.Equals(btnPendingAssignments.Text, twoLine, StringComparison.Ordinal))
+            {
+                btnPendingAssignments.Text = twoLine;
+            }
+
+            btnPendingAssignments.Tag = twoLine;
+        }
+
         private void EnsureClientButtons()
         {
             // Recreate client buttons if they were disposed earlier (e.g., when flSidebarNav was disposed)
@@ -336,7 +356,8 @@ namespace RealEstateCRMWinForms.Views
                 btnClientBrowseProperty = new Button
                 {
                     Name = "btnClientBrowseProperty",
-                    Text = "Browse Properties", // Fixed: Full label instead of "Browse Property"
+                    // Show text on two lines for better readability in client sidebar
+                    Text = "Browse" + Environment.NewLine + "Properties",
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
                     TextAlign = ContentAlignment.MiddleLeft
@@ -397,7 +418,8 @@ namespace RealEstateCRMWinForms.Views
                     if (c is Button b && !_sidebarCollapsed)
                     {
                         b.Width = flSidebarNav.Width - 4;
-                        b.Height = _sidebarButtonHeight;
+                        // Apply tall height to any multi-line label
+                        b.Height = IsMultiLineButton(b) ? GetTwoLineButtonHeight(b.Font) : _sidebarButtonHeight;
                     }
                 }
             }
@@ -441,6 +463,34 @@ namespace RealEstateCRMWinForms.Views
                     }
                 }
             }
+        }
+
+        // Calculate a safe height for two-line sidebar buttons based on current DPI and font
+        private int GetTwoLineButtonHeight(Font font)
+        {
+            try
+            {
+                using (var g = CreateGraphics())
+                {
+                    float line = font.GetHeight(g);
+                    // two lines + small vertical padding
+                    int h = (int)Math.Ceiling(line * 2) + 12;
+                    return Math.Max(_sidebarButtonHeight, h);
+                }
+            }
+            catch
+            {
+                // Fallback if graphics context isn't ready yet
+                int approx = (int)Math.Ceiling(font.SizeInPoints * 2) + 24;
+                return Math.Max(_sidebarButtonHeight, approx);
+            }
+        }
+
+        // Determine if a button uses a multi-line label
+        private bool IsMultiLineButton(Button b)
+        {
+            var text = b?.Text;
+            return !string.IsNullOrEmpty(text) && text.Contains(Environment.NewLine);
         }
 
         private void BtnCollapseSidebar_Click(object? sender, EventArgs e)
@@ -493,7 +543,8 @@ namespace RealEstateCRMWinForms.Views
                         b.ImageAlign = ContentAlignment.MiddleLeft;
                         b.Padding = new Padding(12, b.Padding.Top, b.Padding.Right, b.Padding.Bottom);
                         b.Width = flSidebarNav.Width - 4;
-                        b.Height = _sidebarButtonHeight;
+                        // Ensure taller height for multi-line labels in expanded mode
+                        b.Height = IsMultiLineButton(b) ? GetTwoLineButtonHeight(b.Font) : _sidebarButtonHeight;
                     }
                 }
 
@@ -544,8 +595,9 @@ namespace RealEstateCRMWinForms.Views
         {
             if (sender is Button b)
             {
-                // hover uses subtle warm accent to complement brand blue icons
-                b.BackColor = _hoverAccent;
+                // keep background transparent on hover (no fill per request)
+                b.BackColor = Color.Transparent;
+                // optional: could show subtle dotted outline on hover; skipping to keep clean
             }
         }
 
@@ -553,10 +605,8 @@ namespace RealEstateCRMWinForms.Views
         {
             if (sender is Button b)
             {
-                // keep active button highlighted
-                var isActive = lblSectionTitle.Text == (b.Tag as string ?? b.Text);
-                if (!isActive)
-                    b.BackColor = Color.Transparent;
+                // always transparent background on leave; active button uses outline only
+                b.BackColor = Color.Transparent;
             }
         }
 
@@ -766,7 +816,8 @@ namespace RealEstateCRMWinForms.Views
             btnManageAgents = new Button
             {
                 Name = "btnManageAgents",
-                Text = "Manage Agents",
+                // Two-line label for better readability in Broker sidebar
+                Text = "Manage" + Environment.NewLine + "Agents",
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
                 TextAlign = ContentAlignment.MiddleLeft
@@ -882,18 +933,35 @@ namespace RealEstateCRMWinForms.Views
             foreach (var b in allNavButtons())
             {
                 if (b == btnSettings || b == btnHelp) continue;
+                // Base style for all nav buttons: no fill, no outline, default text
                 b.BackColor = Color.Transparent;
                 b.ForeColor = Color.FromArgb(33, 37, 41);
                 // preserve font size/unit — reset to regular
                 b.Font = new Font(b.Font.FontFamily, b.Font.Size, FontStyle.Regular, b.Font.Unit);
+                b.FlatAppearance.BorderSize = 0;
+                b.FlatAppearance.BorderColor = Color.Black;
+
+                // If this is a multi-line label and we're expanded, adjust height for current font
+                if (!_sidebarCollapsed)
+                {
+                    b.Height = IsMultiLineButton(b) ? GetTwoLineButtonHeight(b.Font) : _sidebarButtonHeight;
+                }
             }
 
             if (active != null)
             {
-                // active uses light warm background and brand blue foreground to complement icons
-                active.BackColor = _lightAccent;
-                active.ForeColor = _brandBlue;
+                // Active state: no background highlight, use black outline
+                active.BackColor = Color.Transparent;
+                active.ForeColor = _brandBlue; // keep brand color for emphasis (no fill)
                 active.Font = new Font(active.Font.FontFamily, active.Font.Size, FontStyle.Bold, active.Font.Unit);
+                active.FlatAppearance.BorderSize = 2;
+                active.FlatAppearance.BorderColor = Color.Black;
+
+                // Re-apply height for active in case font style change (Bold) affects line height
+                if (!_sidebarCollapsed)
+                {
+                    active.Height = IsMultiLineButton(active) ? GetTwoLineButtonHeight(active.Font) : _sidebarButtonHeight;
+                }
             }
         }
 
@@ -964,7 +1032,9 @@ namespace RealEstateCRMWinForms.Views
                     break;
                 case "Pending Assignments":
                     SetActiveNavButton(btnPendingAssignments);
-                    SwitchContentView(new PendingAssignmentsView(false));
+                    // Use broker mode for brokers to show all pending assignments
+                    var isBroker = Services.UserSession.Instance.CurrentUser?.Role == Models.UserRole.Broker;
+                    SwitchContentView(new PendingAssignmentsView(isBroker));
                     break;
                 case "Logs":
                     SetActiveNavButton(btnLogs!);
@@ -1087,8 +1157,17 @@ namespace RealEstateCRMWinForms.Views
 
                 // Add new view
                 _currentContentView = newView;
-                _currentContentView.Location = new Point(1, 108); // After header and title
-                _currentContentView.Size = new Size(panelContent.Width - 2, panelContent.Height - 130);
+                // Place content view dynamically below the header and section title to prevent overlap
+                int topMargin = 10;
+                int labelSpacing = 10;
+                int topY = (headerPanel?.Bottom ?? 0) + topMargin;
+                if (lblSectionTitle != null && !string.IsNullOrEmpty(lblSectionTitle.Text))
+                {
+                    // Ensure we start below the bottom of the section title plus spacing
+                    topY = Math.Max(topY, lblSectionTitle.Bottom + labelSpacing);
+                }
+                _currentContentView.Location = new Point(1, topY);
+                _currentContentView.Size = new Size(panelContent.Width - 2, panelContent.Height - topY - topMargin);
                 _currentContentView.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
                 panelContent.Controls.Add(_currentContentView);
             }

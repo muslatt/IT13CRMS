@@ -44,6 +44,9 @@ namespace RealEstateCRMWinForms.Views
             // Enable smoother scrolling/painting in the panel hosting cards
             Utils.ControlExtensions.EnableDoubleBuffering(flowLayoutPanel);
 
+            // Make the header area resolution-adaptive
+            SetupSearchHeaderLayout();
+
             // Wire up search/sort/filter events
             if (searchBox != null)
             {
@@ -148,10 +151,130 @@ namespace RealEstateCRMWinForms.Views
             if (isMyListingsMode)
             {
                 UpdateButtonStyles();
+                ApplyMyListingsLayout();
             }
 
             // Load properties with filtering
             LoadProperties();
+        }
+
+        private void ApplyMyListingsLayout()
+        {
+            try
+            {
+                // Reduce paddings to help fit 4x2 cards without vertical scroll bars on common screens
+                if (flowLayoutPanel != null)
+                {
+                    AdjustBottomPaddingForFooter();
+                }
+                if (searchPanel != null)
+                {
+                    searchPanel.Padding = new Padding(20, 10, 20, 10);
+                }
+                if (paginationPanel != null)
+                {
+                    paginationPanel.Padding = new Padding(20, 8, 20, 8);
+                    // Recalculate padding whenever footer size changes
+                    paginationPanel.SizeChanged -= PaginationPanel_SizeChanged;
+                    paginationPanel.SizeChanged += PaginationPanel_SizeChanged;
+                }
+            }
+            catch { /* layout-only safety */ }
+        }
+
+        private void PaginationPanel_SizeChanged(object? sender, EventArgs e)
+        {
+            AdjustBottomPaddingForFooter();
+        }
+
+        private void AdjustBottomPaddingForFooter()
+        {
+            if (flowLayoutPanel == null) return;
+            int footer = paginationPanel?.Height ?? 0;
+            int bottomPad = Math.Max(footer + 24, 72);
+            flowLayoutPanel.Padding = new Padding(16, 16, 16, bottomPad);
+            flowLayoutPanel.AutoScrollMargin = new Size(0, bottomPad);
+            flowLayoutPanel.PerformLayout();
+            flowLayoutPanel.Invalidate();
+            flowLayoutPanel.Update();
+        }
+
+        private void SetupSearchHeaderLayout()
+        {
+            try
+            {
+                // DPI-aware autoscale for this control
+                AutoScaleMode = AutoScaleMode.Dpi;
+
+                // Stretch the search box with available width; keep controls panel on the right
+                if (searchBoxContainer != null)
+                {
+                    searchBoxContainer.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                }
+                if (rightControlsPanel != null)
+                {
+                    rightControlsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                    rightControlsPanel.AutoSize = true;
+                    rightControlsPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                    SetupRightControlsFlow(rightControlsPanel);
+                }
+
+                // Recompute sizes on resize to prevent overlap and adapt to width changes
+                if (searchPanel != null)
+                {
+                    searchPanel.Resize -= SearchPanel_Resize;
+                    searchPanel.Resize += SearchPanel_Resize;
+                    SearchPanel_Resize(searchPanel, EventArgs.Empty);
+                }
+            }
+            catch { /* layout-only safety */ }
+        }
+
+        private static void SetupRightControlsFlow(Panel host)
+        {
+            try
+            {
+                if (host.Controls.OfType<FlowLayoutPanel>().Any()) return; // already converted
+                var children = host.Controls.Cast<Control>().OrderBy(c => c.Left).ToList();
+                host.Controls.Clear();
+                var flow = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    WrapContents = false,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    BackColor = Color.Transparent,
+                    Padding = new Padding(0),
+                    Margin = new Padding(0)
+                };
+                foreach (var c in children)
+                {
+                    c.Margin = new Padding(c.Margin.Left, 0, 8, 0);
+                    flow.Controls.Add(c);
+                }
+                host.Controls.Add(flow);
+            }
+            catch { }
+        }
+
+        private void SearchPanel_Resize(object? sender, EventArgs e)
+        {
+            if (searchPanel == null || searchBoxContainer == null || rightControlsPanel == null)
+                return;
+
+            var pad = searchPanel.Padding;
+            var available = searchPanel.ClientSize.Width - pad.Horizontal;
+            var rightWidth = rightControlsPanel.Width;
+            var spacing = 12; // gap between left search and right controls
+            var targetWidth = Math.Max(220, available - rightWidth - spacing);
+
+            // Position left search box
+            searchBoxContainer.Location = new Point(pad.Left, searchBoxContainer.Location.Y);
+            searchBoxContainer.Size = new Size(targetWidth, searchBoxContainer.Height);
+
+            // Ensure right controls stay within the panel bounds (anchored to right)
+            rightControlsPanel.Location = new Point(searchPanel.ClientSize.Width - pad.Right - rightWidth, rightControlsPanel.Location.Y);
         }
 
         private void BtnAddProperty_Click(object? sender, EventArgs e)
@@ -325,6 +448,16 @@ namespace RealEstateCRMWinForms.Views
                     card.Dispose();
                 }
 
+                // Remove any existing bottom spacer to avoid duplicates
+                var oldSpacer = flowLayoutPanel.Controls
+                    .Cast<Control>()
+                    .FirstOrDefault(c => string.Equals(c.Name, "bottomSpacer", StringComparison.Ordinal));
+                if (oldSpacer != null)
+                {
+                    flowLayoutPanel.Controls.Remove(oldSpacer);
+                    oldSpacer.Dispose();
+                }
+
                 // Reset scroll position to the top for each page change
                 try
                 {
@@ -339,12 +472,13 @@ namespace RealEstateCRMWinForms.Views
                     return;
                 }
 
-                _totalPages = (int)Math.Ceiling(_currentProperties.Count / (double)PageSize);
+                var pageSize = _isMyListingsMode ? 8 : PageSize;
+                _totalPages = (int)Math.Ceiling(_currentProperties.Count / (double)pageSize);
                 if (_currentPage > _totalPages) _currentPage = 1;
 
                 var pageItems = _currentProperties
-                    .Skip((_currentPage - 1) * PageSize)
-                    .Take(PageSize)
+                    .Skip((_currentPage - 1) * pageSize)
+                    .Take(pageSize)
                     .ToList();
 
                 // Create cards one by one and ensure they're properly initialized
@@ -353,7 +487,7 @@ namespace RealEstateCRMWinForms.Views
                     // Create a completely fresh card
                     var card = new PropertyCard(_isReadOnly, _isBrowseMode)
                     {
-                        Margin = new Padding(10)
+                        Margin = _isMyListingsMode ? new Padding(8) : new Padding(10)
                     };
 
                     // CRITICAL: Set property IMMEDIATELY after creation, before any other operations
@@ -384,25 +518,164 @@ namespace RealEstateCRMWinForms.Views
                 flowLayoutPanel.ResumeLayout(true);
             }
 
+            // Add an invisible spacer at the bottom in My Listings to prevent the last row from being clipped
+            if (_isMyListingsMode && flowLayoutPanel != null)
+            {
+                int footer = paginationPanel?.Height ?? 0;
+                int spacerHeight = Math.Max(footer + 24, 72);
+                var spacer = new Panel
+                {
+                    Name = "bottomSpacer",
+                    Width = Math.Max(1, flowLayoutPanel.ClientSize.Width),
+                    Height = spacerHeight, // breathing room below last row
+                    Margin = new Padding(0),
+                    BackColor = Color.Transparent
+                };
+                flowLayoutPanel.Controls.Add(spacer);
+                try { flowLayoutPanel.SetFlowBreak(spacer, true); } catch { }
+                flowLayoutPanel.PerformLayout();
+                flowLayoutPanel.Invalidate();
+                flowLayoutPanel.Update();
+            }
+
+            // Re-apply bottom padding based on footer size after adding content
+            if (_isMyListingsMode)
+            {
+                AdjustBottomPaddingForFooter();
+            }
+
             UpdatePaginationControls();
         }
 
         private void UpdatePaginationControls()
         {
-            var totalItems = _currentProperties.Count;
-            if (totalItems == 0)
-            {
-                lblPropertyPageInfo.Text = "No properties to display";
-            }
-            else
-            {
-                var start = ((_currentPage - 1) * PageSize) + 1;
-                var end = Math.Min(start + PageSize - 1, totalItems);
-                lblPropertyPageInfo.Text = $"Showing {start}–{end} of {totalItems}";
-            }
+            BuildNumericPagination();
+        }
 
-            btnPrevPropertyPage.Enabled = _currentPage > 1;
-            btnNextPropertyPage.Enabled = _currentPage < _totalPages;
+        private void BuildNumericPagination()
+        {
+            // Find the page numbers container added in the designer
+            var pnl = pageNumbersPanel; // direct field from designer
+            if (pnl == null) return;
+
+            pnl.SuspendLayout();
+            try
+            {
+                // Clear existing buttons
+                foreach (Control c in pnl.Controls)
+                {
+                    c.Click -= PageNumber_Click; // best-effort detach
+                    c.Dispose();
+                }
+                pnl.Controls.Clear();
+
+                int total = Math.Max(1, _totalPages);
+                int current = Math.Max(1, Math.Min(_currentPage, total));
+
+                void AddEllipsis()
+                {
+                    var lbl = new Label
+                    {
+                        Text = "…",
+                        AutoSize = false,
+                        Width = 20,
+                        Height = 28,
+                        Margin = new Padding(4, 0, 4, 0),
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        ForeColor = Color.FromArgb(107, 114, 128),
+                        BackColor = Color.Transparent,
+                        Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+                    };
+                    pnl.Controls.Add(lbl);
+                }
+
+                void AddPageButton(int i)
+                {
+                    var btn = new Button
+                    {
+                        Text = i.ToString(),
+                        Tag = i,
+                        AutoSize = false,
+                        Width = 36,
+                        Height = 28,
+                        Margin = new Padding(4, 0, 4, 0),
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Color.White,
+                        ForeColor = Color.FromArgb(55, 65, 81),
+                        Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+                    };
+                    btn.FlatAppearance.BorderSize = 1;
+                    btn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                    btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(243, 244, 246);
+                    btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 231, 235);
+
+                    bool isCurrent = (i == current);
+                    if (isCurrent)
+                    {
+                        btn.BackColor = Color.FromArgb(37, 99, 235);
+                        btn.ForeColor = Color.White;
+                        btn.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    }
+
+                    btn.Click += PageNumber_Click;
+                    pnl.Controls.Add(btn);
+                }
+
+                if (total <= 7)
+                {
+                    for (int i = 1; i <= total; i++)
+                        AddPageButton(i);
+                }
+                else
+                {
+                    // Always show first page
+                    AddPageButton(1);
+
+                    if (current > 4)
+                        AddEllipsis();
+
+                    if (current <= 4)
+                    {
+                        // Show first block
+                        for (int i = 2; i <= Math.Min(5, total - 1); i++)
+                            AddPageButton(i);
+                    }
+                    else if (current >= total - 3)
+                    {
+                        // Show last block
+                        for (int i = Math.Max(2, total - 4); i <= total - 1; i++)
+                            AddPageButton(i);
+                    }
+                    else
+                    {
+                        // Middle window around current
+                        for (int i = current - 1; i <= current + 1; i++)
+                            AddPageButton(i);
+                    }
+
+                    if (current < total - 3)
+                        AddEllipsis();
+
+                    // Always show last page
+                    AddPageButton(total);
+                }
+            }
+            finally
+            {
+                pnl.ResumeLayout(true);
+            }
+        }
+
+        private void PageNumber_Click(object? sender, EventArgs e)
+        {
+            if (sender is Button b && b.Tag is int page)
+            {
+                if (page != _currentPage)
+                {
+                    _currentPage = page;
+                    ApplyPagination();
+                }
+            }
         }
 
         private void SearchBox_KeyDown(object? sender, KeyEventArgs e)
@@ -605,22 +878,6 @@ namespace RealEstateCRMWinForms.Views
             };
         }
 
-        private void BtnPrevPropertyPage_Click(object? sender, EventArgs e)
-        {
-            if (_currentPage <= 1) return;
-            _currentPage--;
-
-            // Reload data to ensure we're showing the latest set
-            ApplyFilterAndSort(resetPage: false);
-        }
-
-        private void BtnNextPropertyPage_Click(object? sender, EventArgs e)
-        {
-            if (_currentPage >= _totalPages) return;
-            _currentPage++;
-
-            // Reload data to ensure we're showing the latest set
-            ApplyFilterAndSort(resetPage: false);
-        }
+        // Prev/Next handlers removed in favor of numeric page buttons
     }
 }
