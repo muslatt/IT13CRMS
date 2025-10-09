@@ -1,8 +1,11 @@
 using RealEstateCRMWinForms.Models;
 using RealEstateCRMWinForms.ViewModels;
+using RealEstateCRMWinForms.Data;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using System.ComponentModel;
 
@@ -20,6 +23,7 @@ namespace RealEstateCRMWinForms.Controls
         private PictureBox imgProperty; // Property image placeholder
         private ContextMenuStrip _contextMenu;
         private ToolStripMenuItem _revertContactMenuItem;
+        private static readonly Dictionary<string, string> AgentLabelCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public DealCard()
         {
@@ -203,7 +207,8 @@ namespace RealEstateCRMWinForms.Controls
         }
         private void InitializeComponent()
         {
-            this.Size = new Size(280, 260); // Slightly taller to fit extra lines
+            this.Size = new Size(280, 320); // Taller so labels and price are not clipped
+            this.MinimumSize = new Size(280, 320);
             this.BackColor = Color.White;
             this.BorderStyle = BorderStyle.FixedSingle;
             this.Margin = new Padding(0, 0, 0, 10); // Bottom margin for spacing between cards
@@ -222,7 +227,7 @@ namespace RealEstateCRMWinForms.Controls
             imgProperty = new PictureBox
             {
                 Location = new Point(8, 16), // Matching PropertyCard padding
-                Size = new Size(264, 120), // Adjusted height to fit within card but maintain aspect ratio
+                Size = new Size(264, 140), // Slightly taller image to balance extended card height
                 BackColor = Color.FromArgb(240, 242, 245),
                 BorderStyle = BorderStyle.FixedSingle,
                 SizeMode = PictureBoxSizeMode.StretchImage
@@ -231,8 +236,8 @@ namespace RealEstateCRMWinForms.Controls
             // Title label
             lblTitle = new Label
             {
-                Location = new Point(8, 145),
-                Size = new Size(264, 25),
+                Location = new Point(8, 166),
+                Size = new Size(264, 32),
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(33, 37, 41),
                 AutoEllipsis = true
@@ -241,38 +246,38 @@ namespace RealEstateCRMWinForms.Controls
             // Description label
             lblDescription = new Label
             {
-                Location = new Point(8, 170),
-                Size = new Size(264, 20),
+                Location = new Point(8, 194),
+                Size = new Size(264, 36),
                 Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(108, 117, 125),
-                AutoEllipsis = true
+                AutoEllipsis = false
             };
 
             // Client label
             lblClient = new Label
             {
-                Location = new Point(8, 190),
-                Size = new Size(264, 18),
+                Location = new Point(8, 234),
+                Size = new Size(264, 36),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 ForeColor = Color.FromArgb(75, 85, 99),
-                AutoEllipsis = true
+                AutoEllipsis = false
             };
 
-            // Assigned Agent label
+            // Agent label
             lblAssignedAgent = new Label
             {
-                Location = new Point(8, 208),
-                Size = new Size(264, 18),
+                Location = new Point(8, 254),
+                Size = new Size(264, 36),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 ForeColor = Color.FromArgb(75, 85, 99),
-                AutoEllipsis = true
+                AutoEllipsis = false
             };
 
             // Value label (positioned at bottom, styled like PropertyCard price)
             lblValue = new Label
             {
-                Location = new Point(8, 228),
-                Size = new Size(264, 25),
+                Location = new Point(8, 277),
+                Size = new Size(264, 32),
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold), // Matching PropertyCard price font
                 ForeColor = Color.FromArgb(33, 37, 41),
                 TextAlign = ContentAlignment.MiddleLeft
@@ -297,7 +302,7 @@ namespace RealEstateCRMWinForms.Controls
             imgProperty.Image?.Dispose();
 
             // Create a default placeholder image with PropertyCard proportions
-            var defaultBitmap = new Bitmap(264, 120);
+            var defaultBitmap = new Bitmap(264, 140);
             using (var g = Graphics.FromImage(defaultBitmap))
             {
                 g.Clear(Color.FromArgb(240, 242, 245));
@@ -309,7 +314,7 @@ namespace RealEstateCRMWinForms.Controls
                     int houseWidth = 60;
                     int houseHeight = 30;
                     int houseX = (264 - houseWidth) / 2;
-                    int houseY = (120 - houseHeight) / 2 - 10;
+                    int houseY = (140 - houseHeight) / 2 - 10;
 
                     g.FillRectangle(brush, houseX, houseY + 15, houseWidth, houseHeight - 15);
                     g.FillPolygon(brush, new Point[] {
@@ -327,7 +332,7 @@ namespace RealEstateCRMWinForms.Controls
                     var textSize = g.MeasureString(text, font);
                     g.DrawString(text, font, textBrush,
                         (264 - textSize.Width) / 2,
-                        (120 - textSize.Height) / 2 + 20);
+                        (140 - textSize.Height) / 2 + 20);
                 }
             }
             imgProperty.Image = defaultBitmap;
@@ -391,24 +396,133 @@ namespace RealEstateCRMWinForms.Controls
             }
         }
 
+        private static string BuildAssignedAgentLabel(string? assignedAgent)
+        {
+            if (string.IsNullOrWhiteSpace(assignedAgent))
+                return "Agent: -";
+
+            var normalized = assignedAgent.Trim();
+            if (AgentLabelCache.TryGetValue(normalized, out var cached))
+                return cached;
+
+            string label = $"Agent: {normalized}";
+            try
+            {
+                using var db = DbContextHelper.CreateDbContext();
+                var user = db.Users
+                    .AsEnumerable()
+                    .FirstOrDefault(u =>
+                    {
+                        var fullName = $"{(u.FirstName ?? string.Empty).Trim()} {(u.LastName ?? string.Empty).Trim()}".Trim();
+                        return !string.IsNullOrWhiteSpace(fullName) && fullName.Equals(normalized, StringComparison.OrdinalIgnoreCase);
+                    });
+
+                if (user != null)
+                {
+                    if (user.Role == UserRole.Broker)
+                    {
+                        label = $"Agent: Broker ({normalized})";
+                    }
+                    else if (user.Role != UserRole.Agent)
+                    {
+                        label = $"Agent: {user.Role} ({normalized})";
+                    }
+                }
+            }
+            catch { }
+
+            AgentLabelCache[normalized] = label;
+            return label;
+        }
+
+        private static void ResizeLabelToFit(Label label, int minHeight)
+        {
+            if (label == null)
+            {
+                return;
+            }
+
+            var proposed = new Size(label.Width, int.MaxValue);
+            var measured = TextRenderer.MeasureText(label.Text ?? string.Empty, label.Font, proposed,
+                TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl | TextFormatFlags.NoPadding);
+
+            label.Height = Math.Max(minHeight, measured.Height);
+        }
+
         private void UpdateCardUI()
         {
             if (_deal == null) return;
 
-            lblTitle.Text = _deal.Title;
-            lblDescription.Text = _deal.Description;
-            lblValue.Text = _deal.Value.HasValue ? $"₱ {_deal.Value:N0}" : "₱ 0";
+            lblTitle.Text = _deal.Title ?? string.Empty;
+            lblDescription.Text = _deal.Description ?? string.Empty;
+            lblValue.Text = _deal.Value.HasValue ? "\u20B1 " + _deal.Value.Value.ToString("N0") : "\u20B1 0";
 
-            // Client and Assigned Agent context
+            // Client and Agent context
             try
             {
-                var clientName = _deal?.Contact != null ? (_deal.Contact.FullName ?? _deal.Contact.Email ?? string.Empty) : string.Empty;
-                if (lblClient != null) lblClient.Text = string.IsNullOrWhiteSpace(clientName) ? "Client: -" : $"Client: {clientName}";
+                var clientName = _deal?.Contact != null
+                    ? (_deal.Contact.FullName ?? _deal.Contact.Email ?? string.Empty)
+                    : string.Empty;
+                if (lblClient != null)
+                {
+                    lblClient.Text = string.IsNullOrWhiteSpace(clientName)
+                        ? "Client: -"
+                        : $"Client: {clientName}";
+                }
 
                 var assignedAgent = _deal?.CreatedBy;
-                if (lblAssignedAgent != null) lblAssignedAgent.Text = string.IsNullOrWhiteSpace(assignedAgent) ? "Assigned Agent: -" : $"Assigned Agent: {assignedAgent}";
+                if (lblAssignedAgent != null)
+                {
+                    lblAssignedAgent.Text = BuildAssignedAgentLabel(assignedAgent);
+                }
             }
-            catch { }
+            catch
+            {
+            }
+
+            ResizeLabelToFit(lblTitle, 25);
+            ResizeLabelToFit(lblDescription, 36);
+            ResizeLabelToFit(lblClient, 36);
+            ResizeLabelToFit(lblAssignedAgent, 36);
+
+            // Reflow vertical layout for any expanded labels
+            int yOffset = imgProperty.Bottom + 10;
+
+            if (lblTitle != null)
+            {
+                lblTitle.Location = new Point(lblTitle.Left, yOffset);
+                yOffset = lblTitle.Bottom + 4;
+            }
+
+            if (lblDescription != null)
+            {
+                lblDescription.Location = new Point(lblDescription.Left, yOffset);
+                yOffset = lblDescription.Bottom + 6;
+            }
+
+            if (lblClient != null)
+            {
+                lblClient.Location = new Point(lblClient.Left, yOffset);
+                yOffset = lblClient.Bottom + 4;
+            }
+
+            if (lblAssignedAgent != null)
+            {
+                lblAssignedAgent.Location = new Point(lblAssignedAgent.Left, yOffset);
+                yOffset = lblAssignedAgent.Bottom + 8;
+            }
+
+            if (lblValue != null)
+            {
+                lblValue.Location = new Point(lblValue.Left, yOffset);
+                lblValue.Size = new Size(imgProperty.Width, lblValue.Height);
+            }
+
+            var requiredHeight = (lblValue?.Bottom ?? yOffset) + 12;
+            if (this.Height < requiredHeight)
+            {
+                this.Height = requiredHeight;
+            }
 
             // Set drag bar color to match board header colors (from DealsView)
             var boardColor = _deal.Status switch

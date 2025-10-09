@@ -22,6 +22,7 @@ namespace RealEstateCRMWinForms.Views
         // Keep filtered lists to map ComboBox selection back to entities
         private List<Property> _filteredProperties = new();
         private List<Contact> _filteredContacts = new();
+        private List<User> _agentUsers = new();
 
         public Deal? CreatedDeal { get; private set; }
 
@@ -200,12 +201,26 @@ namespace RealEstateCRMWinForms.Views
                 }
                 cmbContact.SelectedIndex = 0;
 
-                // Load agents
+                // Load agents with IDs for robust assignment markers
                 cmbAgent.Items.Clear();
                 cmbAgent.Items.Add("(No Agent)");
-                foreach (var name in Services.AgentDirectory.GetAgentDisplayNames())
+                _agentUsers = Services.AgentDirectory.GetActiveAgents();
+                var currentUser = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
+
+                if (currentUser != null && currentUser.Role == Models.UserRole.Broker && !_agentUsers.Any(u => u.Id == currentUser.Id))
                 {
-                    cmbAgent.Items.Add(name);
+                    _agentUsers.Insert(0, currentUser);
+                }
+
+                foreach (var u in _agentUsers)
+                {
+                    var display = $"{(u.FirstName ?? string.Empty).Trim()} {(u.LastName ?? string.Empty).Trim()}".Trim();
+                    if (string.IsNullOrWhiteSpace(display)) display = u.Email ?? "Agent";
+                    if (currentUser != null && currentUser.Role == Models.UserRole.Broker && currentUser.Id == u.Id)
+                    {
+                        display = $"{display} (You)";
+                    }
+                    cmbAgent.Items.Add(display);
                 }
                 cmbAgent.SelectedIndex = 0;
             }
@@ -282,21 +297,39 @@ namespace RealEstateCRMWinForms.Views
                 };
 
                 // If an agent is selected, mark this deal as a pending assignment to that agent
+                var currentUser = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
                 if (cmbAgent.SelectedIndex > 0)
                 {
-                    var agentName = cmbAgent.SelectedItem?.ToString() ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(agentName))
+                    var idx = cmbAgent.SelectedIndex - 1;
+                    if (_agentUsers.Count > idx && idx >= 0)
                     {
-                        var marker = $"[ASSIGN:{agentName}]";
-                        CreatedDeal.Notes = string.IsNullOrWhiteSpace(CreatedDeal.Notes) ? marker : ($"{CreatedDeal.Notes} {marker}");
+                        var agentUser = _agentUsers[idx];
+                        var agentName = $"{(agentUser.FirstName ?? string.Empty).Trim()} {(agentUser.LastName ?? string.Empty).Trim()}".Trim();
+                        bool brokerSelfAssignment = currentUser != null && currentUser.Role == Models.UserRole.Broker && currentUser.Id == agentUser.Id;
+
+                        if (brokerSelfAssignment)
+                        {
+                            CreatedDeal.CreatedBy = agentName;
+                            CreatedDeal.Notes = string.Empty;
+                        }
+                        else
+                        {
+                            var markerName = $"[ASSIGN:{agentName}]";
+                            var markerId = $"[ASSIGNID:{agentUser.Id}]";
+                            var combined = $"{markerName} {markerId}";
+                            CreatedDeal.Notes = string.IsNullOrWhiteSpace(CreatedDeal.Notes) ? combined : ($"{CreatedDeal.Notes} {combined}");
+                            // Pending assignment: no owner until agent accepts
+                            CreatedDeal.CreatedBy = null;
+                        }
                     }
                 }
-
-                // Set CreatedBy to current user (Broker) if available
-                var user = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
-                if (user != null)
+                else
                 {
-                    CreatedDeal.CreatedBy = ($"{user.FirstName} {user.LastName}").Trim();
+                    // No agent selected: stamp CreatedBy as current user (e.g., Broker), goes straight to pipeline
+                    if (currentUser != null)
+                    {
+                        CreatedDeal.CreatedBy = ($"{currentUser.FirstName} {currentUser.LastName}").Trim();
+                    }
                 }
 
                 MessageBox.Show(

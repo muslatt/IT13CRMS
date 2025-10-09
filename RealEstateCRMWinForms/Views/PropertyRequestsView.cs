@@ -25,23 +25,23 @@ namespace RealEstateCRMWinForms.Views
         private FlowLayoutPanel? flowLayoutPanel;
         private Panel? headerPanel;
         private Panel? footerPanel;
-        private Button? btnRefresh;
         private TextBox? searchBox;
         private Label? searchIcon;
         private ComboBox? sortComboBox;
         private Button? btnFilter;
         private Button? btnShowPending;
         private Button? btnShowRejected;
-        private Label? lblPageInfo;
-        private Button? btnPrevPage;
-        private Button? btnNextPage;
+        private FlowLayoutPanel? pageNumbersPanel;
 
         public PropertyRequestsView()
         {
             _viewModel = new PropertyRequestsViewModel();
             InitializeComponent();
             // Enable smoother scrolling/painting in the panel hosting cards
-            Utils.ControlExtensions.EnableDoubleBuffering(flowLayoutPanel);
+            if (flowLayoutPanel != null)
+            {
+                Utils.ControlExtensions.EnableDoubleBuffering(flowLayoutPanel);
+            }
 
             // Wire up search/sort/filter events
             if (searchBox != null)
@@ -63,10 +63,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 btnFilter.Click += BtnFilter_Click;
             }
-            if (btnRefresh != null)
-            {
-                btnRefresh.Click += (_, __) => LoadProperties();
-            }
+            // Refresh button removed
             if (btnShowPending != null)
             {
                 btnShowPending.Click += BtnShowPending_Click;
@@ -75,14 +72,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 btnShowRejected.Click += BtnShowRejected_Click;
             }
-            if (btnPrevPage != null)
-            {
-                btnPrevPage.Click += (_, __) => ChangePage(-1);
-            }
-            if (btnNextPage != null)
-            {
-                btnNextPage.Click += (_, __) => ChangePage(1);
-            }
+            // Numeric page buttons are created dynamically; no Prev/Next handlers needed
 
             LoadProperties();
         }
@@ -101,31 +91,19 @@ namespace RealEstateCRMWinForms.Views
                 Padding = new Padding(16)
             };
 
-            // Refresh button
-            btnRefresh = new Button
-            {
-                Text = "Refresh",
-                AutoSize = true,
-                Location = new Point(0, 15),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(0, 102, 204),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
-            };
-
-            // Search box
+            // Search box (aligned with cards on X; Y unchanged)
             searchBox = new TextBox
             {
-                Location = new Point(100, 15),
+                Location = new Point(28, 15),
                 Size = new Size(250, 30),
                 Font = new Font("Segoe UI", 10F),
                 PlaceholderText = "Search properties..."
             };
 
-            // Search icon
+            // Search icon (keep same Y, shift X with search)
             searchIcon = new Label
             {
-                Location = new Point(355, 19),
+                Location = new Point(286, 19),
                 Size = new Size(20, 20),
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -154,7 +132,7 @@ namespace RealEstateCRMWinForms.Views
                 Font = new Font("Segoe UI", 10F)
             };
 
-            headerPanel.Controls.AddRange(new Control[] { btnRefresh, searchBox, searchIcon, btnShowPending, btnShowRejected });
+            headerPanel.Controls.AddRange(new Control[] { searchBox, searchIcon, btnShowPending, btnShowRejected });
 
             // Footer panel - contains pagination and filter controls
             footerPanel = new Panel
@@ -204,57 +182,29 @@ namespace RealEstateCRMWinForms.Views
                 Font = new Font("Segoe UI", 10F)
             };
 
-            // Pagination controls - positioned on the right side of footer
-            lblPageInfo = new Label
+            // Numeric page numbers panel (centered)
+            pageNumbersPanel = new FlowLayoutPanel
             {
-                Text = "Page 1 of 1",
                 AutoSize = true,
-                Location = new Point(0, 0), // Will be repositioned dynamically
-                Font = new Font("Segoe UI", 10F),
-                TextAlign = ContentAlignment.MiddleCenter
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                WrapContents = false,
+                FlowDirection = FlowDirection.LeftToRight,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
             };
 
-            btnPrevPage = new Button
-            {
-                Text = "Previous",
-                Size = new Size(80, 30),
-                Location = new Point(0, 0), // Will be repositioned dynamically
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(108, 117, 125),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10F)
-            };
-
-            btnNextPage = new Button
-            {
-                Text = "Next",
-                Size = new Size(80, 30),
-                Location = new Point(0, 0), // Will be repositioned dynamically
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(0, 102, 204),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10F)
-            };
-
-            // Position pagination controls on the right
+            // Reposition numeric pagination to be centered within the footer
             footerPanel.Resize += (sender, e) =>
             {
-                if (footerPanel != null && lblPageInfo != null && btnPrevPage != null && btnNextPage != null)
+                if (footerPanel != null && pageNumbersPanel != null)
                 {
-                    int rightMargin = 16;
-                    int controlSpacing = 10;
                     int yPosition = 20;
-
-                    // Position from right to left
-                    btnNextPage.Location = new Point(footerPanel.Width - rightMargin - btnNextPage.Width, yPosition);
-                    btnPrevPage.Location = new Point(btnNextPage.Left - controlSpacing - btnPrevPage.Width, yPosition);
-
-                    // Center the page info label vertically with buttons
-                    lblPageInfo.Location = new Point(btnPrevPage.Left - controlSpacing - lblPageInfo.Width, yPosition + 5);
+                    int xCentered = Math.Max(16, (footerPanel.Width - pageNumbersPanel.Width) / 2);
+                    pageNumbersPanel.Location = new Point(xCentered, yPosition);
                 }
             };
 
-            footerPanel.Controls.AddRange(new Control[] { sortComboBox, btnFilter, lblPageInfo, btnPrevPage, btnNextPage });
+            footerPanel.Controls.AddRange(new Control[] { sortComboBox, btnFilter, pageNumbersPanel });
 
             // Flow layout panel for property cards - now fills the space between header and footer
             flowLayoutPanel = new FlowLayoutPanel
@@ -326,10 +276,8 @@ namespace RealEstateCRMWinForms.Views
 
             var pagedProperties = sortedList.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
 
-            // Update UI
-            lblPageInfo!.Text = $"Page {_currentPage} of {_totalPages}";
-            btnPrevPage!.Enabled = _currentPage > 1;
-            btnNextPage!.Enabled = _currentPage < _totalPages;
+            // Update numeric pagination buttons
+            BuildNumericPagination();
 
             // Clear existing cards
             flowLayoutPanel!.Controls.Clear();
@@ -358,6 +306,14 @@ namespace RealEstateCRMWinForms.Views
             {
                 // Approve the property
                 _viewModel.ApproveProperty(e.Property.Id);
+                try
+                {
+                    Services.LoggingService.LogAction(
+                        "Broker Approved Property",
+                        $"Property '{e.Property.Title}' (property {e.Property.Id}) approved",
+                        propertyId: e.Property.Id);
+                }
+                catch { }
                 LoadProperties();
 
                 MessageBox.Show(
@@ -382,6 +338,14 @@ namespace RealEstateCRMWinForms.Views
             {
                 // Reject the property with reason (mark as rejected instead of deleting)
                 _viewModel.RejectProperty(e.Property.Id, e.RejectionReason);
+                try
+                {
+                    Services.LoggingService.LogAction(
+                        "Broker Rejected Property",
+                        $"Property '{e.Property.Title}' (property {e.Property.Id}) - Reason: {e.RejectionReason}",
+                        propertyId: e.Property.Id);
+                }
+                catch { }
                 LoadProperties();
 
                 MessageBox.Show(
@@ -431,7 +395,7 @@ namespace RealEstateCRMWinForms.Views
                 if (_showRejectedProperties)
                 {
                     // Rejected is active
-                    btnShowRejected.BackColor = Color.FromArgb(220, 53, 69);
+                    btnShowRejected.BackColor = Color.FromArgb(0, 123, 255);
                     btnShowRejected.ForeColor = Color.White;
                     btnShowRejected.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
                 }
@@ -469,12 +433,78 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
-        private void ChangePage(int delta)
+        private void BuildNumericPagination()
         {
-            _currentPage += delta;
-            if (_currentPage < 1) _currentPage = 1;
-            if (_currentPage > _totalPages) _currentPage = _totalPages;
-            ApplyFilterAndSort(resetPage: false);
+            var pnl = pageNumbersPanel;
+            if (pnl == null) return;
+
+            pnl.SuspendLayout();
+            try
+            {
+                foreach (Control c in pnl.Controls)
+                {
+                    c.Click -= PageNumber_Click;
+                    c.Dispose();
+                }
+                pnl.Controls.Clear();
+
+                int total = Math.Max(1, _totalPages);
+                for (int i = 1; i <= total; i++)
+                {
+                    var btn = new Button
+                    {
+                        Text = i.ToString(),
+                        Tag = i,
+                        AutoSize = false,
+                        Width = 36,
+                        Height = 28,
+                        Margin = new Padding(4, 0, 4, 0),
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Color.White,
+                        ForeColor = Color.FromArgb(55, 65, 81),
+                        Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+                    };
+                    btn.FlatAppearance.BorderSize = 1;
+                    btn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                    btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(243, 244, 246);
+                    btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 231, 235);
+
+                    bool isCurrent = (i == _currentPage);
+                    if (isCurrent)
+                    {
+                        btn.BackColor = Color.FromArgb(37, 99, 235);
+                        btn.ForeColor = Color.White;
+                        btn.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    }
+
+                    btn.Click += PageNumber_Click;
+                    pnl.Controls.Add(btn);
+                }
+
+                // Center the panel after rebuild (width may have changed)
+                if (footerPanel != null && pageNumbersPanel != null)
+                {
+                    int yPosition = 20;
+                    int xCentered = Math.Max(16, (footerPanel.Width - pageNumbersPanel.Width) / 2);
+                    pageNumbersPanel.Location = new Point(xCentered, yPosition);
+                }
+            }
+            finally
+            {
+                pnl.ResumeLayout(true);
+            }
+        }
+
+        private void PageNumber_Click(object? sender, EventArgs e)
+        {
+            if (sender is Button b && b.Tag is int page)
+            {
+                if (page != _currentPage)
+                {
+                    _currentPage = page;
+                    ApplyFilterAndSort(resetPage: false);
+                }
+            }
         }
     }
 }

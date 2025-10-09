@@ -39,8 +39,18 @@ namespace RealEstateCRMWinForms.Views
             var mainContainer = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(24),
+                // Use balanced padding on left and right so controls fit within 500px width
+                // 500 - 24 (left) - 24 (right) = 452 available width, matching control sizes
+                // Reduce bottom padding to tighten space below buttons
+                Padding = new Padding(24, 24, 24, 5),
                 BackColor = Color.FromArgb(248, 249, 250)
+            };
+
+            // Inner content panel ensures padding is respected for absolute-positioned controls
+            var contentPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.Transparent
             };
 
             // Title
@@ -162,11 +172,12 @@ namespace RealEstateCRMWinForms.Views
 
             buttonPanel.Controls.AddRange(new Control[] { btnSend, btnCancel });
 
-            mainContainer.Controls.AddRange(new Control[] {
+            contentPanel.Controls.AddRange(new Control[] {
                 lblTitle, lblPropertyInfo, lblEmail, txtEmail,
                 lblPhone, txtPhone, lblMessage, txtMessage, buttonPanel
             });
 
+            mainContainer.Controls.Add(contentPanel);
             Controls.Add(mainContainer);
 
             AcceptButton = btnSend;

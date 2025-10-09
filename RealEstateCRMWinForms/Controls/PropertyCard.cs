@@ -11,11 +11,12 @@ namespace RealEstateCRMWinForms.Controls
 {
     public partial class PropertyCard : UserControl
     {
-        private Property _property;
-        private ContextMenuStrip _contextMenu;
+        private Property? _property;
+        private ContextMenuStrip? _contextMenu;
         private bool _isReadOnly;
         private bool _isBrowseMode;
         private Label? lblRejectionReason;
+        private readonly ToolTip _toolTip = new ToolTip();
 
         public PropertyCard()
         {
@@ -67,7 +68,7 @@ namespace RealEstateCRMWinForms.Controls
             this.Paint += PropertyCard_Paint;
         }
 
-        private void PropertyCard_Paint(object sender, PaintEventArgs e)
+        private void PropertyCard_Paint(object? sender, PaintEventArgs e)
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -134,6 +135,7 @@ namespace RealEstateCRMWinForms.Controls
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 ForeColor = Color.FromArgb(220, 53, 69), // Red color for rejection
                 TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true,
                 Visible = false // Initially hidden
             };
 
@@ -150,6 +152,8 @@ namespace RealEstateCRMWinForms.Controls
 
         private void ShowPropertyDetails()
         {
+            if (_property == null)
+                return;
             bool isClientBrowseContext = _isBrowseMode;
 
             if (!isClientBrowseContext && _isReadOnly)
@@ -190,14 +194,14 @@ namespace RealEstateCRMWinForms.Controls
             CreateContextMenu();
         }
 
-        public Property GetProperty()
+        public Property? GetProperty()
         {
             return _property;
         }
 
         // Event for when property is updated or deleted
-        public event EventHandler<PropertyEventArgs> PropertyUpdated;
-        public event EventHandler<PropertyEventArgs> PropertyDeleted;
+        public event EventHandler<PropertyEventArgs>? PropertyUpdated;
+        public event EventHandler<PropertyEventArgs>? PropertyDeleted;
 
         private void CreateContextMenu()
         {
@@ -339,6 +343,16 @@ namespace RealEstateCRMWinForms.Controls
 
                         db.SaveChanges();
 
+                        // Log client resubmission scoped to this property
+                        try
+                        {
+                            Services.LoggingService.LogAction(
+                                "Client Resubmitted Property",
+                                $"Resubmitted by {RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser?.FullName ?? "Client"}",
+                                propertyId: propertyToUpdate.Id);
+                        }
+                        catch { /* logging safety */ }
+
                         MessageBox.Show(
                             "Property has been successfully resubmitted for broker approval!",
                             "Resubmitted Successfully",
@@ -439,6 +453,7 @@ namespace RealEstateCRMWinForms.Controls
                 lblTitle.ForeColor = Color.FromArgb(33, 37, 41);
                 lblTitle.Invalidate();
                 lblTitle.Update();
+                _toolTip.SetToolTip(lblTitle, lblTitle.Text);
 
                 // Address with subtle styling
                 lblAddress.Text = _property.Address ?? string.Empty;
@@ -446,6 +461,7 @@ namespace RealEstateCRMWinForms.Controls
                 lblAddress.ForeColor = Color.FromArgb(108, 117, 125);
                 lblAddress.Invalidate();
                 lblAddress.Update();
+                _toolTip.SetToolTip(lblAddress, lblAddress.Text);
 
                 // Price with emphasis and modern currency formatting
                 lblPrice.Text = _property.Price.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-PH"));
@@ -454,20 +470,23 @@ namespace RealEstateCRMWinForms.Controls
                 lblPrice.Invalidate();
                 lblPrice.Update();
 
-                // Modern property type badge
+                // Modern property type/status badge
                 UpdatePropertyTypeBadge();
 
-                // Show rejection reason if property is rejected
+                // Show rejection reason only for actually rejected items (not pending)
                 if (lblRejectionReason != null)
                 {
-                    if (!string.IsNullOrEmpty(_property.RejectionReason))
+                    bool isRejected = !_property.IsApproved && !string.IsNullOrEmpty(_property.RejectionReason);
+                    if (isRejected)
                     {
                         lblRejectionReason.Text = $"Reason: {_property.RejectionReason}";
                         lblRejectionReason.Visible = true;
+                        _toolTip.SetToolTip(lblRejectionReason, lblRejectionReason.Text);
                     }
                     else
                     {
                         lblRejectionReason.Visible = false;
+                        _toolTip.SetToolTip(lblRejectionReason, string.Empty);
                     }
                 }
 
@@ -483,7 +502,8 @@ namespace RealEstateCRMWinForms.Controls
                 // Load property image with modern styling
                 LoadPropertyImage();
 
-                // Force the entire card to refresh
+                // Reflow to avoid clipped labels and adjust control positions
+                RelayoutCard();
                 this.Invalidate(true);
                 this.Update();
             }
@@ -503,31 +523,124 @@ namespace RealEstateCRMWinForms.Controls
                     label.BackColor = Color.Transparent;
                 }
             }
+
+            // Clamp title/address to a single line with ellipsis for uniform card height
+            if (lblTitle != null)
+            {
+                lblTitle.AutoSize = false;
+                lblTitle.AutoEllipsis = true;
+            }
+            if (lblAddress != null)
+            {
+                lblAddress.AutoSize = false;
+                lblAddress.AutoEllipsis = true;
+            }
+        }
+
+        /// <summary>
+        /// Dynamically lays out the card so multi-line labels are not clipped.
+        /// </summary>
+        private void RelayoutCard()
+        {
+            if (pictureBox == null || titlePanel == null || lblTitle == null || statusPanel == null || lblAddress == null || detailsPanel == null || lblPrice == null)
+                return;
+
+            int margin = 8;
+            int innerWidth = this.Width - (margin * 2);
+            int maxCardHeight = 360; // hard cap to keep rows uniform
+
+            // Top image
+            pictureBox.Location = new Point(margin, margin);
+            // keep pictureBox size from designer
+
+            // Title panel
+            titlePanel.Location = new Point(margin, pictureBox.Bottom + margin);
+            titlePanel.Width = innerWidth;
+
+            // Place status badge on the right; width already based on text
+            int rightMargin = 10;
+            statusPanel.Location = new Point(titlePanel.Width - statusPanel.Width - rightMargin, 0);
+
+            // Title wraps within available space to the left of the badge
+            int spacing = 8;
+            int availableTitleWidth = Math.Max(40, titlePanel.Width - statusPanel.Width - spacing);
+            lblTitle.Location = new Point(0, 0);
+            // Single line height for title
+            int titleLineHeight = TextRenderer.MeasureText("A", lblTitle.Font).Height;
+            lblTitle.Size = new Size(availableTitleWidth, titleLineHeight);
+
+            // Vertically center the badge against the title height
+            int titlePanelHeight = Math.Max(lblTitle.Height, statusPanel.Height);
+            statusPanel.Location = new Point(statusPanel.Left, (titlePanelHeight - statusPanel.Height) / 2);
+            titlePanel.Height = titlePanelHeight;
+
+            // Address under title; wrap within inner width
+            lblAddress.Location = new Point(margin, titlePanel.Bottom + 4);
+            // Single line height for address
+            int addrLineHeight = TextRenderer.MeasureText("A", lblAddress.Font).Height;
+            lblAddress.Size = new Size(innerWidth, addrLineHeight);
+
+            // Details panel under address
+            detailsPanel.Location = new Point(margin, lblAddress.Bottom + 6);
+            detailsPanel.Width = innerWidth;
+
+            // Optional rejection reason
+            // Reserve space for the rejection reason even if it's hidden so all cards have uniform height
+            int belowDetailsY = detailsPanel.Bottom + 4;
+            if (lblRejectionReason != null)
+            {
+                lblRejectionReason.Location = new Point(margin, belowDetailsY);
+                lblRejectionReason.MaximumSize = new Size(innerWidth, 0);
+
+                // Reserve a fixed height so every card (rejected or not) has uniform height
+                const int reservedRejectionHeight = 22; // ~one text line at 9pt
+                lblRejectionReason.Size = new Size(innerWidth, reservedRejectionHeight);
+
+                // Always advance layout by the reserved height to keep cards uniform
+                belowDetailsY = belowDetailsY + reservedRejectionHeight;
+            }
+
+            // Price at bottom
+            lblPrice.Location = new Point(margin, belowDetailsY + 8);
+            lblPrice.MaximumSize = new Size(innerWidth, 0);
+            var pricePreferred = lblPrice.GetPreferredSize(new Size(innerWidth, 0));
+            lblPrice.Size = new Size(innerWidth, pricePreferred.Height);
+            // Expand card height to fit content
+            int bottomPadding = 12;
+            this.Height = Math.Min(maxCardHeight, lblPrice.Bottom + bottomPadding);
+        }
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            RelayoutCard();
         }
 
         private void UpdatePropertyTypeBadge()
         {
+            if (_property == null) return;
             var currentUser = RealEstateCRMWinForms.Services.UserSession.Instance.CurrentUser;
             string statusText;
             Color badgeColor;
 
             if (currentUser != null && currentUser.Role == Models.UserRole.Client)
             {
-                if (!string.IsNullOrEmpty(_property.RejectionReason))
+                bool isPending = !_property.IsApproved && string.IsNullOrEmpty(_property.RejectionReason);
+                bool isRejected = !_property.IsApproved && !string.IsNullOrEmpty(_property.RejectionReason);
+
+                if (isPending)
                 {
-                    // For clients viewing their rejected properties
-                    statusText = "Rejected";
-                    badgeColor = Color.FromArgb(220, 53, 69); // Red for rejected
-                }
-                else if (!_property.IsApproved)
-                {
-                    // For clients viewing their pending properties
                     statusText = "Pending";
                     badgeColor = Color.FromArgb(255, 193, 7); // Yellow/Orange for pending
                 }
+                else if (isRejected)
+                {
+                    statusText = "Rejected";
+                    badgeColor = Color.FromArgb(220, 53, 69); // Red for rejected
+                }
                 else
                 {
-                    // For clients viewing their approved properties
+                    // Approved: show property type
                     statusText = _property.PropertyType ?? string.Empty;
                     badgeColor = statusText switch
                     {
@@ -553,47 +666,63 @@ namespace RealEstateCRMWinForms.Controls
 
             lblStatus.Text = statusText;
 
-            // Apply color
-            statusPanel.BackColor = badgeColor;
+            // Determine if the status is a property type (Residential/Commercial/Raw Land)
+            bool isPropertyType = string.Equals(statusText, "Residential", StringComparison.OrdinalIgnoreCase)
+                                   || string.Equals(statusText, "Commercial", StringComparison.OrdinalIgnoreCase)
+                                   || string.Equals(statusText, "Raw Land", StringComparison.OrdinalIgnoreCase);
 
-            // Ensure lblStatus has the intended font/color
-            lblStatus.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            lblStatus.ForeColor = Color.White;
-
-            // Measure label preferred size (taking padding into account) and resize statusPanel accordingly
-            using (var g = CreateGraphics())
+            if (isPropertyType)
             {
-                var proposedSize = new Size(int.MaxValue, int.MaxValue);
-                var preferred = lblStatus.GetPreferredSize(proposedSize);
+                // Show as plain text (not a badge/button)
+                statusPanel.BackColor = Color.Transparent;
+                lblStatus.Padding = new Padding(0);
+                lblStatus.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+                lblStatus.ForeColor = Color.FromArgb(73, 80, 87); // neutral text color
 
-                // Add a small horizontal margin so the rounded badge has breathing room
+                // Size panel exactly to text without enforcing a minimum badge width/height
+                var preferred = lblStatus.GetPreferredSize(new Size(int.MaxValue, int.MaxValue));
+                statusPanel.Size = new Size(preferred.Width, preferred.Height);
+
+                // Detach badge paint (rounded background) if attached
+                if (_paintHandlerAttached)
+                {
+                    statusPanel.Paint -= StatusPanel_Paint;
+                    _paintHandlerAttached = false;
+                }
+            }
+            else
+            {
+                // Keep badge styling for non-type statuses (e.g., Pending/Rejected)
+                statusPanel.BackColor = badgeColor;
+                lblStatus.Padding = new Padding(8, 3, 8, 3);
+                lblStatus.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                lblStatus.ForeColor = Color.White;
+
+                // Measure label preferred size (taking padding into account) and resize statusPanel accordingly
+                var preferred = lblStatus.GetPreferredSize(new Size(int.MaxValue, int.MaxValue));
                 int panelWidth = Math.Max(preferred.Width, 40);
                 int panelHeight = Math.Max(preferred.Height, 20);
-
                 statusPanel.Size = new Size(panelWidth, panelHeight);
 
-                // Position the statusPanel anchored to the right side of titlePanel with a fixed margin
-                int rightMargin = 10;
-                statusPanel.Location = new Point(titlePanel.Width - statusPanel.Width - rightMargin, (titlePanel.Height - statusPanel.Height) / 2);
-
-                // Reduce lblTitle width so it doesn't get overlapped by the badge.
-                // Keep a small spacing between title and badge.
-                int spacing = 8;
-                int availableWidth = Math.Max(40, titlePanel.Width - statusPanel.Width - spacing);
-                lblTitle.Width = Math.Min(lblTitle.Width, availableWidth);
+                // Ensure we only attach a single paint handler to draw the rounded background
+                if (!_paintHandlerAttached)
+                {
+                    statusPanel.Paint += StatusPanel_Paint;
+                    _paintHandlerAttached = true;
+                }
             }
 
-            // Ensure we only attach a single paint handler to draw the rounded background
-            if (!_paintHandlerAttached)
-            {
-                statusPanel.Paint += StatusPanel_Paint;
-                _paintHandlerAttached = true;
-            }
+            // Position the statusPanel anchored to the right side of titlePanel with a fixed margin
+            int rightMargin2 = 10;
+            statusPanel.Location = new Point(titlePanel.Width - statusPanel.Width - rightMargin2, (titlePanel.Height - statusPanel.Height) / 2);
+
+            // Reduce lblTitle width so it doesn't get overlapped by the status text/badge.
+            int spacing2 = 8;
+            int availableWidth2 = Math.Max(40, titlePanel.Width - statusPanel.Width - spacing2);
+            lblTitle.Width = Math.Min(lblTitle.Width, availableWidth2);
 
             statusPanel.Invalidate();
-            statusPanel.Update();
             lblStatus.Invalidate();
-            lblStatus.Update();
         }
 
         private bool _paintHandlerAttached = false;
@@ -631,6 +760,7 @@ namespace RealEstateCRMWinForms.Controls
 
         private void UpdateFeatureValues()
         {
+            if (_property == null) return;
             // Modern typography for feature values
             var featureFont = new Font("Segoe UI", 12F, FontStyle.Bold);
             var featureColor = Color.FromArgb(33, 37, 41);
@@ -840,7 +970,7 @@ namespace RealEstateCRMWinForms.Controls
             try
             {
                 if (string.IsNullOrEmpty(sourceImagePath) || !File.Exists(sourceImagePath))
-                    return null;
+                    return string.Empty;
 
                 // Create images directory if it doesn't exist
                 string imagesDir = Path.Combine(Application.StartupPath, "PropertyImages");
@@ -863,7 +993,7 @@ namespace RealEstateCRMWinForms.Controls
             catch (Exception ex)
             {
                 Console.WriteLine($"Error saving property image: {ex.Message}");
-                return null;
+                return string.Empty;
             }
         }
     }

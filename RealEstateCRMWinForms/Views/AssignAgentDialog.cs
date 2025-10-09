@@ -41,10 +41,11 @@ namespace RealEstateCRMWinForms.Views
             // Title
             lblTitle = new Label
             {
-                Text = "Assign Agent & Create Deal",
+                Text = "Assign Create Deal",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 Location = new Point(30, 20),
-                Size = new Size(540, 30),
+                AutoSize = true,
+                MaximumSize = new Size(540, 0),
                 ForeColor = Color.FromArgb(33, 37, 41)
             };
 
@@ -54,7 +55,8 @@ namespace RealEstateCRMWinForms.Views
                 Text = $"Property: {_inquiry.Property?.Title ?? "N/A"}\nLocation: {_inquiry.Property?.Address ?? "N/A"}\nPrice: {_inquiry.Property?.Price.ToString("C0") ?? "N/A"}",
                 Font = new Font("Segoe UI", 10F),
                 Location = new Point(30, 70),
-                Size = new Size(540, 60),
+                AutoSize = true,
+                MaximumSize = new Size(540, 0),
                 ForeColor = Color.FromArgb(73, 80, 87)
             };
 
@@ -64,7 +66,8 @@ namespace RealEstateCRMWinForms.Views
                 Text = $"Client: {_inquiry.Client?.FullName ?? "N/A"}\nEmail: {_inquiry.Client?.Email ?? "N/A"}\nPhone: {_inquiry.ContactPhone ?? "N/A"}",
                 Font = new Font("Segoe UI", 10F),
                 Location = new Point(30, 140),
-                Size = new Size(540, 60),
+                AutoSize = true,
+                MaximumSize = new Size(540, 0),
                 ForeColor = Color.FromArgb(73, 80, 87)
             };
 
@@ -84,7 +87,7 @@ namespace RealEstateCRMWinForms.Views
                 Text = _inquiry.Message,
                 Font = new Font("Segoe UI", 9F),
                 Location = new Point(30, 235),
-                Size = new Size(540, 50),
+                Size = new Size(540, 70),
                 ForeColor = Color.FromArgb(73, 80, 87),
                 BorderStyle = BorderStyle.FixedSingle,
                 Padding = new Padding(5),
@@ -134,7 +137,7 @@ namespace RealEstateCRMWinForms.Views
             // Assign button
             btnAssign = new Button
             {
-                Text = "✓ Assign & Create Deal",
+                Text = "Assign Create Deal",
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 Location = new Point(350, 460),
                 Size = new Size(220, 40),
@@ -160,6 +163,52 @@ namespace RealEstateCRMWinForms.Views
             };
             btnCancel.FlatAppearance.BorderSize = 0;
             btnCancel.Click += BtnCancel_Click;
+            // Dynamic layout to avoid chopped labels and add bottom padding
+            int left = 20; // move labels closer to the left edge
+            int right = 30;
+            int width = this.ClientSize.Width - left - right;
+            // Size and place title
+            var titlePreferred = lblTitle.GetPreferredSize(new Size(width, 0));
+            lblTitle.Size = titlePreferred;
+            lblTitle.Location = new Point(left, 20);
+
+            // Property info under title
+            var propPreferred = lblPropertyInfo.GetPreferredSize(new Size(width, 0));
+            lblPropertyInfo.Size = propPreferred;
+            lblPropertyInfo.Location = new Point(left, lblTitle.Bottom + 20);
+
+            // Client info under property info
+            var clientPreferred = lblClientInfo.GetPreferredSize(new Size(width, 0));
+            lblClientInfo.Size = clientPreferred;
+            lblClientInfo.Location = new Point(left, lblPropertyInfo.Bottom + 10);
+
+            // Message header and box
+            lblMessageHeader.Location = new Point(left, lblClientInfo.Bottom + 15);
+            lblInquiryMessage.Location = new Point(left, lblMessageHeader.Bottom + 5);
+            lblInquiryMessage.Size = new Size(width, 70);
+
+            // Agent picker
+            var lblAgentCtrl = lblAgent;
+            lblAgentCtrl.Location = new Point(left, lblInquiryMessage.Bottom + 15);
+            cmbAgent.Location = new Point(left + 130, lblAgentCtrl.Top - 3);
+            cmbAgent.Width = width - 130;
+
+            // Notes
+            var lblNotesCtrl = lblNotes;
+            lblNotesCtrl.Location = new Point(left, cmbAgent.Bottom + 15);
+            txtNotes.Location = new Point(left, lblNotesCtrl.Bottom + 5);
+            txtNotes.Size = new Size(width, 80);
+
+            // Buttons with bottom padding
+            int spacing = 10; int buttonsY = txtNotes.Bottom + 20; int bottomPadding = 20;
+            btnAssign.Location = new Point(this.ClientSize.Width - right - btnAssign.Width, buttonsY);
+            btnCancel.Location = new Point(btnAssign.Left - spacing - btnCancel.Width, buttonsY);
+
+            int desiredHeight = buttonsY + btnAssign.Height + bottomPadding;
+            if (this.ClientSize.Height < desiredHeight)
+            {
+                this.ClientSize = new Size(this.ClientSize.Width, desiredHeight);
+            }
 
             Controls.AddRange(new Control[] {
                 lblTitle, lblPropertyInfo, lblClientInfo,
@@ -254,3 +303,9 @@ namespace RealEstateCRMWinForms.Views
         }
     }
 }
+
+
+
+
+
+

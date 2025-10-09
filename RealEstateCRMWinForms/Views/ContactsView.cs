@@ -18,7 +18,7 @@ namespace RealEstateCRMWinForms.Views
     {
         private readonly ContactViewModel _viewModel;
         private BindingSource _bindingSource;
-        private ContextMenuStrip _contextMenu;
+        private ContextMenuStrip _contextMenu = new();
 
         private const int PageSize = 10;
         private int _currentPage = 1;
@@ -38,6 +38,10 @@ namespace RealEstateCRMWinForms.Views
 
             EnableFlickerReduction();   // <- call on this control
 
+            // DPI + responsive header
+            AutoScaleMode = AutoScaleMode.Dpi;
+            SetupSearchHeaderLayout();
+
             ConfigureGridAppearance();
             InitializeData();
             CreateContextMenu();
@@ -52,6 +56,70 @@ namespace RealEstateCRMWinForms.Views
                 cp.ExStyle |= WS_EX_COMPOSITED;
                 return cp;
             }
+        }
+
+        private void SetupSearchHeaderLayout()
+        {
+            try
+            {
+                if (searchBoxContainer != null)
+                    searchBoxContainer.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                if (rightControlsPanel != null)
+                {
+                    rightControlsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                    rightControlsPanel.AutoSize = true;
+                    rightControlsPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                    SetupRightControlsFlow(rightControlsPanel);
+                }
+                if (searchPanel != null)
+                {
+                    searchPanel.Resize -= SearchPanel_Resize;
+                    searchPanel.Resize += SearchPanel_Resize;
+                    SearchPanel_Resize(searchPanel, EventArgs.Empty);
+                }
+            }
+            catch { }
+        }
+
+        private void SearchPanel_Resize(object? sender, EventArgs e)
+        {
+            if (searchPanel == null || searchBoxContainer == null || rightControlsPanel == null) return;
+            var pad = searchPanel.Padding;
+            var available = searchPanel.ClientSize.Width - pad.Horizontal;
+            var rightWidth = rightControlsPanel.Width;
+            var spacing = 12;
+            var targetWidth = Math.Max(220, available - rightWidth - spacing);
+            searchBoxContainer.Location = new Point(pad.Left, searchBoxContainer.Location.Y);
+            searchBoxContainer.Size = new Size(targetWidth, searchBoxContainer.Height);
+            rightControlsPanel.Location = new Point(searchPanel.ClientSize.Width - pad.Right - rightWidth, rightControlsPanel.Location.Y);
+        }
+
+        private static void SetupRightControlsFlow(Panel host)
+        {
+            try
+            {
+                if (host.Controls.OfType<FlowLayoutPanel>().Any()) return; // already converted
+                var children = host.Controls.Cast<Control>().OrderBy(c => c.Left).ToList();
+                host.Controls.Clear();
+                var flow = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    WrapContents = false,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    BackColor = Color.Transparent,
+                    Padding = new Padding(0),
+                    Margin = new Padding(0)
+                };
+                foreach (var c in children)
+                {
+                    c.Margin = new Padding(c.Margin.Left, 0, 8, 0);
+                    flow.Controls.Add(c);
+                }
+                host.Controls.Add(flow);
+            }
+            catch { }
         }
 
         private void EnableFlickerReduction()
@@ -755,6 +823,9 @@ namespace RealEstateCRMWinForms.Views
 
             btnPrevContactPage.Enabled = _currentPage > 1;
             btnNextContactPage.Enabled = _currentPage < _totalPages;
+
+            // Build numeric pagination buttons
+            BuildNumericPagination();
         }
 
         private void BtnPrevContactPage_Click(object? sender, EventArgs e)
@@ -769,6 +840,125 @@ namespace RealEstateCRMWinForms.Views
             if (_currentPage >= _totalPages) return;
             _currentPage++;
             ApplyPagination();
+        }
+
+        // Numeric pagination (mirrors LeadsView pattern)
+        private void BuildNumericPagination()
+        {
+            var pnl = pageNumbersPanel;
+            if (pnl == null) return;
+
+            pnl.SuspendLayout();
+            try
+            {
+                foreach (Control c in pnl.Controls)
+                {
+                    c.Click -= PageNumber_Click;
+                    c.Dispose();
+                }
+                pnl.Controls.Clear();
+
+                int total = Math.Max(1, _totalPages);
+                int current = Math.Max(1, Math.Min(_currentPage, total));
+
+                void AddEllipsis()
+                {
+                    var lbl = new Label
+                    {
+                        Text = "…",
+                        AutoSize = false,
+                        Width = 20,
+                        Height = 28,
+                        Margin = new Padding(4, 0, 4, 0),
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        ForeColor = Color.FromArgb(107, 114, 128),
+                        BackColor = Color.Transparent,
+                        Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+                    };
+                    pnl.Controls.Add(lbl);
+                }
+
+                void AddPageButton(int i)
+                {
+                    var btn = new Button
+                    {
+                        Text = i.ToString(),
+                        Tag = i,
+                        AutoSize = false,
+                        Width = 36,
+                        Height = 28,
+                        Margin = new Padding(4, 0, 4, 0),
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Color.White,
+                        ForeColor = Color.FromArgb(55, 65, 81),
+                        Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+                    };
+                    btn.FlatAppearance.BorderSize = 1;
+                    btn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                    btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(243, 244, 246);
+                    btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 231, 235);
+
+                    bool isCurrent = (i == current);
+                    if (isCurrent)
+                    {
+                        btn.BackColor = Color.FromArgb(37, 99, 235);
+                        btn.ForeColor = Color.White;
+                        btn.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    }
+
+                    btn.Click += PageNumber_Click;
+                    pnl.Controls.Add(btn);
+                }
+
+                if (total <= 7)
+                {
+                    for (int i = 1; i <= total; i++)
+                        AddPageButton(i);
+                }
+                else
+                {
+                    AddPageButton(1);
+
+                    if (current > 4)
+                        AddEllipsis();
+
+                    if (current <= 4)
+                    {
+                        for (int i = 2; i <= Math.Min(5, total - 1); i++)
+                            AddPageButton(i);
+                    }
+                    else if (current >= total - 3)
+                    {
+                        for (int i = Math.Max(2, total - 4); i <= total - 1; i++)
+                            AddPageButton(i);
+                    }
+                    else
+                    {
+                        for (int i = current - 1; i <= current + 1; i++)
+                            AddPageButton(i);
+                    }
+
+                    if (current < total - 3)
+                        AddEllipsis();
+
+                    AddPageButton(total);
+                }
+            }
+            finally
+            {
+                pnl.ResumeLayout(true);
+            }
+        }
+
+        private void PageNumber_Click(object? sender, EventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is int page)
+            {
+                if (page < 1 || page > _totalPages) return;
+                if (page == _currentPage) return;
+                _currentPage = page;
+                ApplyPagination();
+            }
         }
     }
 }

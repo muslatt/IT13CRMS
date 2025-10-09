@@ -37,17 +37,17 @@ namespace RealEstateCRMWinForms.Views
 
             var lblTitle = new Label
             {
-                Text = "",
+                Text = string.Empty,
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
-                Location = new Point(20, 15),
-                AutoSize = true
+                AutoSize = true,
+                Dock = DockStyle.Left
             };
 
             btnRefresh = new Button
             {
                 Text = "🔄 Refresh",
                 Font = new Font("Segoe UI", 10F),
-                Location = new Point(200, 12),
+
                 Size = new Size(100, 35),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(0, 102, 204),
@@ -57,8 +57,7 @@ namespace RealEstateCRMWinForms.Views
             btnRefresh.FlatAppearance.BorderSize = 0;
             btnRefresh.Click += BtnRefresh_Click;
 
-            headerPanel.Controls.Add(lblTitle);
-            headerPanel.Controls.Add(btnRefresh);
+            var rightHost = new FlowLayoutPanel { Dock = DockStyle.Right, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Color.Transparent, Padding = new Padding(0), Margin = new Padding(0) }; rightHost.Controls.Add(btnRefresh); headerPanel.Controls.Add(rightHost); headerPanel.Controls.Add(lblTitle);
 
             // Flow layout panel for deal cards with improved settings
             flowLayoutPanel = new FlowLayoutPanel
@@ -604,19 +603,17 @@ namespace RealEstateCRMWinForms.Views
                 deal.Status = dbRequest.RequestedStatus;
                 deal.UpdatedAt = DateTime.UtcNow;
 
-                // If the requested status is "Closed/Done" (or contains "Closed"), mark property as inactive
+                // When a client approves a Closed/Done move, keep the deal/property active so brokers can clear them manually
                 if (dbRequest.RequestedStatus.Contains("Closed", StringComparison.OrdinalIgnoreCase))
                 {
-                    deal.IsActive = false;
+                    deal.IsActive = true; // keep visible in pipeline
                     deal.ClosedAt = DateTime.UtcNow;
 
                     if (deal.Property != null)
                     {
-                        deal.Property.IsActive = false;
-                        Console.WriteLine($"Property ID {deal.Property.Id} marked as inactive after client approval of deal {deal.Id} closure");
+                        deal.Property.IsActive = true;
                     }
                 }
-
                 // Mark the request as approved
                 dbRequest.IsApproved = true;
                 dbRequest.RespondedAt = DateTime.UtcNow;
@@ -728,3 +725,4 @@ namespace RealEstateCRMWinForms.Views
         }
     }
 }
+

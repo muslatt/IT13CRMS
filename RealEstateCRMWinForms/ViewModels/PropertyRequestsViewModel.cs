@@ -53,6 +53,16 @@ namespace RealEstateCRMWinForms.ViewModels
             {
                 property.IsApproved = true;
                 _context.SaveChanges();
+
+                // Log broker approval scoped to this property
+                try
+                {
+                    Services.LoggingService.LogAction(
+                        "Broker Approved Property",
+                        $"Approved '{property.Title}'",
+                        propertyId: property.Id);
+                }
+                catch { /* logging safety */ }
             }
         }
 
@@ -64,6 +74,16 @@ namespace RealEstateCRMWinForms.ViewModels
                 property.IsApproved = false; // Keep as not approved
                 property.RejectionReason = rejectionReason;
                 _context.SaveChanges();
+
+                // Log broker rejection with reason scoped to this property
+                try
+                {
+                    Services.LoggingService.LogAction(
+                        "Broker Rejected Property",
+                        $"Reason: {rejectionReason}",
+                        propertyId: property.Id);
+                }
+                catch { /* logging safety */ }
             }
         }
 

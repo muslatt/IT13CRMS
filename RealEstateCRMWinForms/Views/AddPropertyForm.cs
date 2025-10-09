@@ -791,6 +791,12 @@ namespace RealEstateCRMWinForms.Views
                 // Show appropriate success message based on user role
                 if (currentUser != null && currentUser.Role == UserRole.Client)
                 {
+                    // Log client submission scoped to this property
+                    Services.LoggingService.LogAction(
+                        "Client Submitted Property Request",
+                        $"Submitted by {currentUser.FullName}",
+                        propertyId: newProperty.Id);
+
                     MessageBox.Show(
                         "Your property has been successfully submitted for approval!\n\n" +
                         "Our team will review your submission and you will be notified once it's approved.",

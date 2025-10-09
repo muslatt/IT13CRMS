@@ -29,8 +29,8 @@ namespace RealEstateCRMWinForms.Views
         private Panel _pendingHostBroker;
         private Button btnTogglePending;
         private List<Board> _boards;
-        private const int BOARD_WIDTH = 300;
-        private const int BOARD_MARGIN = 10;
+        private const int BOARD_WIDTH = 320;
+        private const int BOARD_MARGIN = 12;
         private bool _isInitialized = false;
 
         public DealsView()
@@ -86,6 +86,9 @@ namespace RealEstateCRMWinForms.Views
 
         private void InitializeDealBoard()
         {
+            var currentUser = UserSession.Instance.CurrentUser;
+            bool isAgentUser = currentUser != null && currentUser.Role == UserRole.Agent;
+
             // Main container
             var mainContainer = new Panel
             {
@@ -93,13 +96,45 @@ namespace RealEstateCRMWinForms.Views
                 BackColor = Color.FromArgb(248, 249, 250)
             };
 
-            // Header panel with buttons
+            // Header panel with responsive layout
             var headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 60,
+                Height = 88,
                 BackColor = Color.White,
-                Padding = new Padding(20, 15, 20, 15)
+                Padding = new Padding(20, 12, 20, 8), // reduce bottom padding
+            };
+
+            // Toggle Pending Assignments (Broker)
+            btnTogglePending = new Button
+            {
+                Text = "Pending Assignments",
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(0, 123, 255),
+                FlatStyle = FlatStyle.Flat,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(18, 10, 18, 10),
+                MinimumSize = new Size(0, 44),
+                Margin = new Padding(0, 0, 0, 3),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            btnTogglePending.FlatAppearance.BorderSize = 0;
+            btnTogglePending.FlatAppearance.MouseOverBackColor = Color.FromArgb(230, 242, 255);
+            btnTogglePending.FlatAppearance.MouseDownBackColor = Color.FromArgb(204, 229, 255);
+            btnTogglePending.Click += (s, e) => ToggleBrokerPendingView();
+
+            // Right: action buttons container (flows horizontally, stays right)
+            var rightHost = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
             };
 
             // Add Board button
@@ -110,9 +145,11 @@ namespace RealEstateCRMWinForms.Views
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(120, 35),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Location = new Point(headerPanel.Width - 270, 12)
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(12, 6, 12, 6),
+                MinimumSize = new Size(150, 36),
+                Margin = new Padding(0, 0, 8, 0)
             };
             btnAddBoard.FlatAppearance.BorderSize = 0;
             btnAddBoard.Click += BtnAddBoard_Click;
@@ -125,38 +162,88 @@ namespace RealEstateCRMWinForms.Views
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(120, 35),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Location = new Point(headerPanel.Width - 140, 12)
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(12, 6, 12, 6),
+                MinimumSize = new Size(140, 36),
+                Margin = new Padding(0)
             };
             btnAddDeal.FlatAppearance.BorderSize = 0;
             btnAddDeal.Click += BtnAddDeal_Click;
 
-            headerPanel.Controls.AddRange(new Control[] { btnAddBoard, btnAddDeal });
+            rightHost.Controls.Add(btnAddBoard);
+            rightHost.Controls.Add(btnAddDeal);
 
-            // Toggle Pending Assignments (Broker)
-            btnTogglePending = new Button
+            Panel pendingButtonHost;
+            if (!isAgentUser)
             {
-                Text = "Pending Assignments",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(0, 123, 255),
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(180, 35),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left,
-                Location = new Point(20, 12)
+                var hostPadding = new Padding(8, 8, 8, 12);
+                pendingButtonHost = new Panel
+                {
+                    AutoSize = false,
+                    Padding = hostPadding,
+                    BackColor = Color.White,
+                    Margin = new Padding(0)
+                };
+                // Draw a subtle 1px border UNDER the child button so the
+                // button's outline/hover appears above it visually
+                pendingButtonHost.Paint += (s, e) =>
+                {
+                    try
+                    {
+                        var rect = pendingButtonHost.ClientRectangle;
+                        rect.Width -= 1; rect.Height -= 1; // inset for 1px stroke
+                        ControlPaint.DrawBorder(e.Graphics, rect,
+                            Color.FromArgb(209, 213, 219),
+                            ButtonBorderStyle.Solid);
+                    }
+                    catch { }
+                };
+                btnTogglePending.Dock = DockStyle.Fill;
+                // Fix: compute explicit host size so 1px border is never clipped by autosize/rounding
+                var pref = btnTogglePending.GetPreferredSize(Size.Empty);
+                pendingButtonHost.Size = new Size(
+                    pref.Width + hostPadding.Horizontal + 2,
+                    Math.Max(48, pref.Height + hostPadding.Vertical + 2));
+                pendingButtonHost.MinimumSize = pendingButtonHost.Size;
+                pendingButtonHost.Controls.Add(btnTogglePending);
+            }
+            else
+            {
+                pendingButtonHost = new Panel
+                {
+                    AutoSize = false,
+                    Margin = new Padding(0),
+                    Padding = new Padding(0),
+                    Size = Size.Empty
+                };
+                pendingButtonHost.Visible = false;
+            }
+            var headerLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 1,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
             };
-            btnTogglePending.FlatAppearance.BorderSize = 1;
-            btnTogglePending.FlatAppearance.BorderColor = Color.FromArgb(0, 123, 255);
-            btnTogglePending.Click += (s, e) => ToggleBrokerPendingView();
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            headerLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
+            headerLayout.Controls.Add(pendingButtonHost, 0, 0);
+            headerLayout.Controls.Add(new Panel { Dock = DockStyle.Fill, Margin = new Padding(0) }, 1, 0);
+            headerLayout.Controls.Add(rightHost, 2, 0);
+
+            headerPanel.Controls.Add(headerLayout);
             // Scrollable container for horizontal scrolling
             _scrollableContainer = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(248, 249, 250),
                 AutoScroll = true,
-                Padding = new Padding(15, 15, 15, 15)
+                Padding = new Padding(15, 80, 15, 15)  // Top padding to avoid covering the button
             };
             // Reduce flicker in scrollable host
             Utils.ControlExtensions.EnableDoubleBuffering(_scrollableContainer);
@@ -170,7 +257,7 @@ namespace RealEstateCRMWinForms.Views
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Color.FromArgb(248, 249, 250),
                 Padding = new Padding(0),
-                Margin = new Padding(0),
+                Margin = new Padding(0, 0, 0, 2),
                 Location = new Point(0, 0)
             };
             Utils.ControlExtensions.EnableDoubleBuffering(_boardPanel);
@@ -183,8 +270,7 @@ namespace RealEstateCRMWinForms.Views
             _scrollableContainer.Controls.Add(_boardPanel);
 
             // If current user is an Agent, show Pending Assignments area and limit actions
-            var user = UserSession.Instance.CurrentUser;
-            if (user != null && user.Role == UserRole.Agent)
+            if (isAgentUser)
             {
                 // Hide manual add actions for agents
                 btnAddDeal.Visible = false;
@@ -201,8 +287,6 @@ namespace RealEstateCRMWinForms.Views
                 // Default ordering without pending view
                 mainContainer.Controls.Add(_scrollableContainer);
                 mainContainer.Controls.Add(headerPanel);
-                // Add broker toggle into header
-                headerPanel.Controls.Add(btnTogglePending);
                 // Prepare broker pending host (hidden by default)
                 _pendingHostBroker = new Panel
                 {
@@ -249,7 +333,7 @@ namespace RealEstateCRMWinForms.Views
             if (!showingPending)
             {
                 // refresh pending list
-                _pendingViewBroker?.GetType().GetMethod("LoadAssignments", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(_pendingViewBroker, null);
+                _pendingViewBroker?.RefreshAssignments();
             }
         }
 
@@ -277,6 +361,30 @@ namespace RealEstateCRMWinForms.Views
             }
         }
 
+        private void UpdateColumnScrollRanges()
+        {
+            if (_statusPanels == null)
+            {
+                return;
+            }
+
+            foreach (var panel in _statusPanels.Values)
+            {
+                if (panel == null)
+                {
+                    continue;
+                }
+
+                int contentHeight = panel.Padding.Vertical;
+                foreach (Control control in panel.Controls)
+                {
+                    contentHeight += control.Height + control.Margin.Vertical;
+                }
+
+                panel.AutoScrollMinSize = new Size(0, contentHeight);
+            }
+        }
+
         private void RefreshBoardLayout()
         {
             _boardPanel.Controls.Clear();
@@ -293,6 +401,10 @@ namespace RealEstateCRMWinForms.Views
                     : Color.FromArgb(173, 216, 230);
 
                 var columnContainer = CreateStatusColumn(board, color);
+                if (i == 0)
+                {
+                    columnContainer.Margin = new Padding(0, 16, 0, 0);
+                }
                 _boardPanel.Controls.Add(columnContainer);
             }
 
@@ -314,7 +426,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 Width = BOARD_WIDTH,
                 Height = 600, // Will be updated by UpdateBoardHeights
-                Margin = new Padding(BOARD_MARGIN, 0, 0, 0),
+                Margin = new Padding(BOARD_MARGIN, 16, 0, 0),
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -323,9 +435,9 @@ namespace RealEstateCRMWinForms.Views
             var headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 60,
+                Height = 64,
                 BackColor = headerColor,
-                Padding = new Padding(15, 10, 15, 10)
+                Padding = new Padding(15, 8, 15, 8)
             };
 
             var lblTitle = new Label
@@ -333,7 +445,8 @@ namespace RealEstateCRMWinForms.Views
                 Text = board.Name,
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 ForeColor = Color.Black,
-                AutoSize = true,
+                AutoSize = false,
+                AutoEllipsis = true,
                 Location = new Point(0, 5)
             };
 
@@ -424,7 +537,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "/ 0",
                 Font = new Font("Segoe UI", 10F),
-                ForeColor = Color.FromArgb(64, 64, 64),
+                ForeColor = Color.FromArgb(40, 40, 40),
                 AutoSize = true,
                 Location = new Point(0, 25)
             };
@@ -433,6 +546,12 @@ namespace RealEstateCRMWinForms.Views
 
             Button? btnDeleteBoard = null;
             Button? btnDeleteClosed = null;
+            Button? btnRenameBoard = null;
+
+            var currentUser = UserSession.Instance.CurrentUser;
+            bool isBroker = currentUser != null && currentUser.Role == UserRole.Broker;
+            bool isClosedBoard = string.Equals(board.Name, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase);
+
             if (!_boardViewModel.IsSystemBoard(board))
             {
                 btnDeleteBoard = new Button
@@ -459,89 +578,132 @@ namespace RealEstateCRMWinForms.Views
             }
 
             // Add a bulk delete button for the Closed/Done system board
-            if (string.Equals(board.Name, BoardViewModel.ClosedBoardName, StringComparison.OrdinalIgnoreCase))
+            if (isClosedBoard)
             {
-                btnDeleteClosed = new Button
+                if (isBroker)
                 {
-                    Text = "\uE74D", // MDL2 delete glyph
+                    btnDeleteClosed = new Button
+                    {
+                        Text = "Clear Properties",
+                        Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                        BackColor = Color.FromArgb(220, 53, 69),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        AutoSize = true,
+                        AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                        Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                        Tag = board.Name,
+                        Name = "btnClearClosed"
+                    };
+                    btnDeleteClosed.FlatAppearance.BorderSize = 0;
+                    btnDeleteClosed.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 40, 55);
+                    btnDeleteClosed.FlatAppearance.MouseDownBackColor = Color.FromArgb(180, 35, 50);
+                    btnDeleteClosed.Click += BtnDeleteClosed_Click;
+                    if (_toolTip != null)
+                    {
+                        _toolTip.SetToolTip(btnDeleteClosed, "Clear all closed deals and properties");
+                    }
+                    headerPanel.Controls.Add(btnDeleteClosed);
+                }
+                else
+                {
+                    btnDeleteClosed = new Button
+                    {
+                        Text = "\uE74D", // MDL2 delete glyph
+                        Font = new Font("Segoe MDL2 Assets", 12F, FontStyle.Regular),
+                        BackColor = Color.FromArgb(220, 53, 69),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        Size = new Size(28, 28),
+                        Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                        Tag = board.Name,
+                        Name = "btnDeleteClosedBulk"
+                    };
+                    btnDeleteClosed.FlatAppearance.BorderSize = 0;
+                    btnDeleteClosed.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 40, 55);
+                    btnDeleteClosed.FlatAppearance.MouseDownBackColor = Color.FromArgb(180, 35, 50);
+                    btnDeleteClosed.Click += BtnDeleteClosed_Click;
+                    if (_toolTip != null)
+                    {
+                        _toolTip.SetToolTip(btnDeleteClosed, "Delete all closed deals and properties");
+                    }
+                    headerPanel.Controls.Add(btnDeleteClosed);
+                }
+            }
+
+            if (!(isClosedBoard && isBroker))
+            {
+                btnRenameBoard = new Button
+                {
+                    // MDL2 Edit (pencil) glyph
+                    Text = "\uE70F",
                     Font = new Font("Segoe MDL2 Assets", 12F, FontStyle.Regular),
-                    BackColor = Color.FromArgb(220, 53, 69),
+                    BackColor = Color.FromArgb(107, 114, 128),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Size = new Size(28, 28),
                     Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                    Tag = board.Name,
-                    Name = "btnDeleteClosedBulk"
+                    Tag = board.Id
                 };
-                btnDeleteClosed.FlatAppearance.BorderSize = 0;
-                btnDeleteClosed.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 40, 55);
-                btnDeleteClosed.FlatAppearance.MouseDownBackColor = Color.FromArgb(180, 35, 50);
-                btnDeleteClosed.Click += BtnDeleteClosed_Click;
+                btnRenameBoard.FlatAppearance.BorderSize = 0;
+                btnRenameBoard.FlatAppearance.MouseOverBackColor = Color.FromArgb(90, 97, 112);
+                btnRenameBoard.FlatAppearance.MouseDownBackColor = Color.FromArgb(70, 77, 92);
+                btnRenameBoard.Click += BtnRenameBoard_Click;
                 if (_toolTip != null)
                 {
-                    _toolTip.SetToolTip(btnDeleteClosed, "Delete all closed deals and properties");
+                    _toolTip.SetToolTip(btnRenameBoard, "Rename board");
                 }
-                headerPanel.Controls.Add(btnDeleteClosed);
+                headerPanel.Controls.Add(btnRenameBoard);
             }
-
-            var btnRenameBoard = new Button
-            {
-                // MDL2 Edit (pencil) glyph
-                Text = "\uE70F",
-                Font = new Font("Segoe MDL2 Assets", 12F, FontStyle.Regular),
-                BackColor = Color.FromArgb(107, 114, 128),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(28, 28),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Tag = board.Id
-            };
-            btnRenameBoard.FlatAppearance.BorderSize = 0;
-            btnRenameBoard.FlatAppearance.MouseOverBackColor = Color.FromArgb(90, 97, 112);
-            btnRenameBoard.FlatAppearance.MouseDownBackColor = Color.FromArgb(70, 77, 92);
-            btnRenameBoard.Click += BtnRenameBoard_Click;
-            if (_toolTip != null)
-            {
-                _toolTip.SetToolTip(btnRenameBoard, "Rename board");
-            }
-            headerPanel.Controls.Add(btnRenameBoard);
 
             void PositionHeaderButtons()
             {
                 const int rightPadding = 10;
-                int topPadding = headerPanel.Padding.Top; // align with header content
+                const int spacing = 6;
+                int topPadding = headerPanel.Padding.Top;
 
-                int clientRight = headerPanel.ClientSize.Width - headerPanel.Padding.Right;
+                int nextLeft = headerPanel.ClientSize.Width - headerPanel.Padding.Right - rightPadding;
 
                 if (btnDeleteClosed != null)
                 {
-                    int deleteClosedX = clientRight - btnDeleteClosed.Width - rightPadding;
-                    btnDeleteClosed.Location = new Point(deleteClosedX, topPadding);
+                    int width = btnDeleteClosed.Width;
+                    btnDeleteClosed.Location = new Point(nextLeft - width, topPadding);
+                    nextLeft = btnDeleteClosed.Left - spacing;
                 }
-
-                int nextLeft = (btnDeleteClosed != null) ? btnDeleteClosed.Left : clientRight;
 
                 if (btnDeleteBoard != null)
                 {
-                    int deleteX = nextLeft - btnDeleteBoard.Width - (btnDeleteClosed != null ? 6 : rightPadding);
-                    btnDeleteBoard.Location = new Point(deleteX, topPadding);
+                    int width = btnDeleteBoard.Width;
+                    btnDeleteBoard.Location = new Point(nextLeft - width, topPadding);
+                    nextLeft = btnDeleteBoard.Left - spacing;
                 }
 
-                int spacing = 6;
-                if (btnDeleteBoard != null)
+                if (btnRenameBoard != null)
                 {
-                    int editX = btnDeleteBoard.Left - spacing - btnRenameBoard.Width;
-                    btnRenameBoard.Location = new Point(editX, topPadding);
-                }
-                else
-                {
-                    int editX = nextLeft - btnRenameBoard.Width - rightPadding;
-                    btnRenameBoard.Location = new Point(editX, topPadding);
+                    int width = btnRenameBoard.Width;
+                    btnRenameBoard.Location = new Point(nextLeft - width, topPadding);
+                    nextLeft = btnRenameBoard.Left - spacing;
                 }
 
-                btnRenameBoard.BringToFront();
+                btnRenameBoard?.BringToFront();
                 btnDeleteBoard?.BringToFront();
                 btnDeleteClosed?.BringToFront();
+
+                int rightmostButtonLeft = headerPanel.ClientSize.Width - headerPanel.Padding.Right;
+                if (btnDeleteClosed != null) rightmostButtonLeft = Math.Min(rightmostButtonLeft, btnDeleteClosed.Left);
+                if (btnDeleteBoard != null) rightmostButtonLeft = Math.Min(rightmostButtonLeft, btnDeleteBoard.Left);
+                if (btnRenameBoard != null) rightmostButtonLeft = Math.Min(rightmostButtonLeft, btnRenameBoard.Left);
+
+                if (btnDeleteClosed == null && btnDeleteBoard == null && btnRenameBoard == null)
+                {
+                    rightmostButtonLeft -= rightPadding;
+                }
+
+                int titleLeft = headerPanel.Padding.Left;
+                int titleRightLimit = rightmostButtonLeft - 8;
+                int titleWidth = Math.Max(60, titleRightLimit - titleLeft);
+                lblTitle.Size = new Size(titleWidth, 26);
+                lblCount.Location = new Point(titleLeft, lblTitle.Bottom + 2);
             }
 
             headerPanel.Resize += (s, e) => PositionHeaderButtons();
@@ -559,10 +721,11 @@ namespace RealEstateCRMWinForms.Views
                 WrapContents = false,
                 AutoScroll = true,
                 BackColor = Color.FromArgb(250, 250, 250),
-                Padding = new Padding(15, 15, 15, 15),
+                Padding = new Padding(15, 15, 15, 30),
                 AllowDrop = true,
                 Tag = board.Name
             };
+            columnPanel.AutoScrollMargin = new Size(0, 24);
             Utils.ControlExtensions.EnableDoubleBuffering(columnPanel);
 
             _statusPanels[board.Name] = columnPanel;
@@ -750,6 +913,8 @@ namespace RealEstateCRMWinForms.Views
                     panel.ResumeDrawing();
                 }
                 _boardPanel.ResumeLayout();
+
+                UpdateColumnScrollRanges();
             }
             catch (Exception ex)
             {
@@ -870,7 +1035,7 @@ namespace RealEstateCRMWinForms.Views
 
         private void StatusPanel_DragEnter(object? sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(typeof(DealCard)))
+            if (e.Data?.GetDataPresent(typeof(DealCard)) == true)
             {
                 e.Effect = DragDropEffects.Move;
             }
@@ -882,7 +1047,7 @@ namespace RealEstateCRMWinForms.Views
 
         private void StatusPanel_DragOver(object? sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(typeof(DealCard)))
+            if (e.Data?.GetDataPresent(typeof(DealCard)) == true)
             {
                 e.Effect = DragDropEffects.Move;
             }
@@ -891,7 +1056,8 @@ namespace RealEstateCRMWinForms.Views
         private async void StatusPanel_DragDrop(object? sender, DragEventArgs e)
         {
             var targetPanel = sender as FlowLayoutPanel;
-            var card = e.Data.GetData(typeof(DealCard)) as DealCard;
+            var dataObject = e.Data;
+            var card = dataObject != null ? dataObject.GetData(typeof(DealCard)) as DealCard : null;
 
             if (targetPanel != null && card != null)
             {
@@ -902,7 +1068,11 @@ namespace RealEstateCRMWinForms.Views
 
                 string newStatus = targetPanel.Tag?.ToString() ?? BoardViewModel.NewBoardName;
                 var dealToUpdate = card.GetDeal();
-                string oldStatus = dealToUpdate.Status;
+                if (dealToUpdate == null)
+                {
+                    return;
+                }
+                string oldStatus = dealToUpdate!.Status;
 
                 Console.WriteLine($"Moving deal '{dealToUpdate.Title}' from '{oldStatus}' to '{newStatus}'");
 
@@ -915,6 +1085,21 @@ namespace RealEstateCRMWinForms.Views
                 try
                 {
                     var currentUser = UserSession.Instance.CurrentUser;
+
+                    if (currentUser != null && currentUser.Role == UserRole.Broker)
+                    {
+                        var assignedAgent = (dealToUpdate.CreatedBy ?? string.Empty).Trim();
+                        var currentName = ($"{currentUser.FirstName} {currentUser.LastName}").Trim();
+                        if (!string.IsNullOrWhiteSpace(assignedAgent) && !string.IsNullOrWhiteSpace(currentName) && !string.Equals(assignedAgent, currentName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            MessageBox.Show(
+                                "This deal belongs to another agent. Reassign it to yourself before moving it in the pipeline.",
+                                "Move Not Allowed",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information);
+                            return;
+                        }
+                    }
 
                     // If current user is an Agent and the deal has a Contact, create a status change request instead of directly updating
                     if (currentUser != null && currentUser.Role == UserRole.Agent && dealToUpdate.Contact != null)
@@ -969,10 +1154,9 @@ namespace RealEstateCRMWinForms.Views
                         decimal percent = (user != null && user.Role == UserRole.Broker) ? 0.10m : 0.05m; // Broker 10%, Agent 5%
                         decimal price = dealToUpdate?.Property?.Price ?? 0m;
                         decimal commission = Math.Round(price * percent, 2);
-
                         var confirm = MessageBox.Show(
-                            $"Close this deal? This will record a {percent * 100:0}% commission of ₱{commission:N2}.",
-                            "Confirm Close",
+                            $"Close this deal? This will record a {percent * 100:0}% commission of {commission:C2}. Continue?",
+                            "Confirm Deal Closure",
                             MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question);
                         if (confirm != DialogResult.Yes)
@@ -980,13 +1164,13 @@ namespace RealEstateCRMWinForms.Views
                             return;
                         }
 
-                        dealToUpdate.Value = commission; // store commission in Value
-                        dealToUpdate.ClosedAt = DateTime.UtcNow;
+                        dealToUpdate!.Value = commission; // store commission in Value
+                        dealToUpdate!.ClosedAt = DateTime.UtcNow;
 
                         try
                         {
                             var who = user?.FullName ?? string.Empty;
-                            var note = $"Closed by {who}, commission {percent * 100:0}% = ₱{commission:N2} on {DateTime.Now:g}";
+                            var note = $"Closed by {who}, commission {percent * 100:0}% = {commission:C2} on {DateTime.Now:g}";
                             dealToUpdate.Notes = string.IsNullOrWhiteSpace(dealToUpdate.Notes) ? note : dealToUpdate.Notes + Environment.NewLine + note;
                         }
                         catch { }
@@ -996,7 +1180,7 @@ namespace RealEstateCRMWinForms.Views
                     {
                         targetPanel.Controls.Add(card);
                         UpdateColumnCounts();
-                        card.SetDeal(dealToUpdate);
+                        card.SetDeal(dealToUpdate!);
                         Console.WriteLine($"Successfully moved deal to '{newStatus}' board and sent notification");
 
                         // Log the deal status change (for Brokers or Agents without client approval)
@@ -1033,11 +1217,11 @@ namespace RealEstateCRMWinForms.Views
             try
             {
                 var confirm = MessageBox.Show(
-                    "Delete ALL deals in Closed/Done and their properties?\n\nThis will remove closed deals and mark their linked properties as deleted.",
-                    "Delete Closed Deals",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning,
-                    MessageBoxDefaultButton.Button2);
+            "Delete ALL deals in Closed/Done and their properties?\n\nThis will remove closed deals and mark their linked properties as deleted.",
+            "Delete Closed Deals",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
                 if (confirm != DialogResult.Yes) return;
 
                 // Ensure latest data
@@ -1101,7 +1285,7 @@ namespace RealEstateCRMWinForms.Views
 
     public class AddBoardDialog : Form
     {
-        private TextBox txtBoardName;
+        private TextBox txtBoardName = null!;
         public string BoardName { get; private set; } = string.Empty;
 
         public AddBoardDialog()

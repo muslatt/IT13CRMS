@@ -248,14 +248,15 @@ namespace RealEstateCRMWinForms.ViewModels
                         existingDeal.IsActive = deal.IsActive;
 
                         // Note: Property deactivation now happens only when client approves the closure request
-                        // Automatically mark deal as inactive when status is "Closed/Done" (or contains "closed")
+                        // Keep closed deals active so they remain visible until manually cleared
                         if (deal.Status.Contains("Closed", StringComparison.OrdinalIgnoreCase) ||
                             deal.Status.Equals("Lost", StringComparison.OrdinalIgnoreCase) ||
                             deal.Status.Contains("Done", StringComparison.OrdinalIgnoreCase))
                         {
-                            existingDeal.IsActive = false;
+                            existingDeal.IsActive = true;
+                            deal.IsActive = true;
                             existingDeal.ClosedAt = DateTime.UtcNow;
-                            Console.WriteLine($"Deal ID {deal.Id} marked as inactive due to {deal.Status} status");
+                            Console.WriteLine($"Deal ID {deal.Id} moved to {deal.Status} status (kept active for board display)");
 
                             // Property is NOT deactivated here anymore - it's handled in ClientDealsView approval
 
@@ -497,3 +498,5 @@ namespace RealEstateCRMWinForms.ViewModels
         }
     }
 }
+
+
