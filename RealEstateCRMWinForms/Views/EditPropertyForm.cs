@@ -236,7 +236,7 @@ namespace RealEstateCRMWinForms.Views
 
             var lblFloor = new Label
             {
-                Text = "Floor (Sqft):",
+                Text = "Floor (Sqm):",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(73, 80, 87),
@@ -351,15 +351,16 @@ namespace RealEstateCRMWinForms.Views
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 6,
+                RowCount = 7,
                 BackColor = Color.Transparent
             };
             imageLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));    // Image label
-            imageLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));      // Image preview
+            imageLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));     // Image preview
             imageLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45F));    // Change image button
             imageLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));    // Proof label
             imageLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 15F));    // Proof subtext
-            imageLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));      // Proof files panel
+            imageLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));     // Proof files panel
+            imageLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45F));    // Attach button (moved to bottom)
 
             var lblImage = new Label
             {
@@ -417,62 +418,71 @@ namespace RealEstateCRMWinForms.Views
                 Margin = new Padding(0, 0, 0, 0)
             };
 
-            // Container panel for proof files and buttons
+            // Container panel for proof files (top bar now only holds Clear)
             var proofContainer = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.Transparent
             };
 
+            var proofTopBar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 32,
+                BackColor = Color.Transparent
+            };
+
+            btnCancelProofFile = new Button
+            {
+                Text = "Clear",
+                Dock = DockStyle.Right,
+                Width = 70,
+                Height = 28,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                BackColor = Color.FromArgb(220, 53, 69),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Visible = false,
+                Margin = new Padding(0, 2, 0, 0)
+            };
+            btnCancelProofFile.FlatAppearance.BorderSize = 0;
+            btnCancelProofFile.Click += (s, e) => ClearAllProofFiles();
+            proofTopBar.Controls.Add(btnCancelProofFile);
+
             proofFilesPanel = new FlowLayoutPanel
             {
-                Location = new Point(0, 0),
-                Size = new Size(240, 180),
-                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
+                Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(248, 249, 250),
                 BorderStyle = BorderStyle.FixedSingle,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true,
                 AutoScroll = true,
-                Margin = new Padding(0, 5, 0, 5)
+                Margin = new Padding(0, 0, 0, 5)
             };
 
-            btnSelectProofFiles = new Button
-            {
-                Text = "Add Proof Files",
-                Location = new Point(0, 190),
-                Size = new Size(155, 35),
-                Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                BackColor = Color.FromArgb(40, 167, 69),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            btnSelectProofFiles.FlatAppearance.BorderSize = 0;
-            btnSelectProofFiles.Click += BtnSelectProofFiles_Click;
-
-            btnCancelProofFile = new Button
-            {
-                Text = "✕",
-                Location = new Point(160, 190),
-                Size = new Size(35, 35),
-                Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                BackColor = Color.FromArgb(220, 53, 69),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand,
-                Visible = false
-            };
-            btnCancelProofFile.FlatAppearance.BorderSize = 0;
-            btnCancelProofFile.Click += (s, e) => ClearAllProofFiles();
-
-            proofContainer.Controls.AddRange(new Control[] { proofFilesPanel, btnSelectProofFiles, btnCancelProofFile });
+            proofContainer.Controls.Add(proofFilesPanel);
+            proofContainer.Controls.Add(proofTopBar);
 
             imageLayout.Controls.Add(lblProof, 0, 3);
             imageLayout.Controls.Add(lblProofSubtext, 0, 4);
             imageLayout.Controls.Add(proofContainer, 0, 5);
+
+            // Bottom full-width Attach button (moved from top bar)
+            btnSelectProofFiles = new Button
+            {
+                Text = "Attach",
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(40, 167, 69),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 5, 0, 0)
+            };
+            btnSelectProofFiles.FlatAppearance.BorderSize = 0;
+            btnSelectProofFiles.Click += BtnSelectProofFiles_Click;
+            imageLayout.Controls.Add(btnSelectProofFiles, 0, 6);
 
             rightPanel.Controls.Add(imageLayout);
 
@@ -554,7 +564,7 @@ namespace RealEstateCRMWinForms.Views
             }
             if (numFloorArea != null)
             {
-                try { numFloorArea.Value = (decimal)Math.Min(Math.Max((double)_property.FloorAreaSqft, (double)numFloorArea.Minimum), (double)numFloorArea.Maximum); }
+                try { numFloorArea.Value = (decimal)Math.Min(Math.Max((double)_property.FloorAreaSqm, (double)numFloorArea.Minimum), (double)numFloorArea.Maximum); }
                 catch { numFloorArea.Value = 0; }
             }
 
@@ -1002,7 +1012,7 @@ namespace RealEstateCRMWinForms.Views
             if (numBedrooms != null) _property.Bedrooms = (int)numBedrooms.Value;
             if (numBathrooms != null) _property.Bathrooms = (int)numBathrooms.Value;
             if (numLotArea != null) _property.LotAreaSqm = numLotArea.Value;
-            if (numFloorArea != null) _property.FloorAreaSqft = numFloorArea.Value;
+            if (numFloorArea != null) _property.FloorAreaSqm = numFloorArea.Value;
             if (cmbPropertyType != null) _property.PropertyType = cmbPropertyType.SelectedItem?.ToString() ?? string.Empty;
             if (cmbTransaction != null) _property.TransactionType = cmbTransaction.SelectedItem?.ToString() ?? string.Empty;
             if (dtpListed != null) _property.CreatedAt = dtpListed.Value;

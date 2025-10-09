@@ -17,6 +17,10 @@ namespace RealEstateCRMWinForms.Models
         [Column("Role")]
         public int RoleInt { get; set; } = 0;
 
+        // Security: account lockout tracking
+        public int FailedLoginAttempts { get; set; } = 0;
+        public DateTime? LockoutEnd { get; set; } = null; // If set and in future, user is locked out
+
         // Temporarily stores broker-set password (encrypted) until agent verifies email
         public string? PendingPasswordEncrypted { get; set; }
         /// <summary>

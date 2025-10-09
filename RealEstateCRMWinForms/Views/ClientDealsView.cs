@@ -37,7 +37,7 @@ namespace RealEstateCRMWinForms.Views
 
             var lblTitle = new Label
             {
-                Text = "My Deals",
+                Text = "",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 Location = new Point(20, 15),
                 AutoSize = true

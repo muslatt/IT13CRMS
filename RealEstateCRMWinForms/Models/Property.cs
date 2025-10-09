@@ -15,7 +15,7 @@ namespace RealEstateCRMWinForms.Models
         public int Bedrooms { get; set; }
         public int Bathrooms { get; set; }
         public decimal LotAreaSqm { get; set; } // Lot area in square meters
-        public decimal FloorAreaSqft { get; set; } // Floor area in square feet
+        public decimal FloorAreaSqm { get; set; } // Floor area in square meters
         public string? ImagePath { get; set; } // Path to property image
         // public string? ProofFilePath { get; set; } // Path to proof of ownership file - REMOVED for multiple files support
         public DateTime CreatedAt { get; set; } = DateTime.Now;

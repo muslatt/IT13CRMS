@@ -788,7 +788,7 @@ namespace RealEstateCRMWinForms.Views
             btnPropertyRequests = new Button
             {
                 Name = "btnPropertyRequests",
-                Text = "Property Requests",
+                Text = "Requests",
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", _sidebarFontPt, FontStyle.Regular, GraphicsUnit.Point),
                 TextAlign = ContentAlignment.MiddleLeft

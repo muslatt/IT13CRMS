@@ -24,6 +24,7 @@ namespace RealEstateCRMWinForms.Views
         // UI Controls
         private FlowLayoutPanel? flowLayoutPanel;
         private Panel? headerPanel;
+        private Panel? footerPanel;
         private Button? btnRefresh;
         private TextBox? searchBox;
         private Label? searchIcon;
@@ -91,11 +92,11 @@ namespace RealEstateCRMWinForms.Views
             Dock = DockStyle.Fill;
             BackColor = Color.White;
 
-            // Header panel
+            // Header panel - now only contains search and basic controls
             headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 80,
+                Height = 60,
                 BackColor = Color.FromArgb(248, 249, 250),
                 Padding = new Padding(16)
             };
@@ -105,7 +106,7 @@ namespace RealEstateCRMWinForms.Views
             {
                 Text = "Refresh",
                 AutoSize = true,
-                Location = new Point(0, 8),
+                Location = new Point(0, 15),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(0, 102, 204),
                 ForeColor = Color.White,
@@ -115,7 +116,7 @@ namespace RealEstateCRMWinForms.Views
             // Search box
             searchBox = new TextBox
             {
-                Location = new Point(100, 8),
+                Location = new Point(100, 15),
                 Size = new Size(250, 30),
                 Font = new Font("Segoe UI", 10F),
                 PlaceholderText = "Search properties..."
@@ -124,15 +125,60 @@ namespace RealEstateCRMWinForms.Views
             // Search icon
             searchIcon = new Label
             {
-                Location = new Point(355, 12),
+                Location = new Point(355, 19),
                 Size = new Size(20, 20),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
+            // Show Pending Requests button
+            btnShowPending = new Button
+            {
+                Text = "Pending Requests",
+                Location = new Point(400, 15),
+                Size = new Size(140, 30),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 123, 255), // Blue when active
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+            };
+
+            // Show Rejected Properties button
+            btnShowRejected = new Button
+            {
+                Text = "Rejected Properties",
+                Location = new Point(550, 15),
+                Size = new Size(160, 30),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(233, 236, 239), // Gray when inactive
+                ForeColor = Color.FromArgb(73, 80, 87),
+                Font = new Font("Segoe UI", 10F)
+            };
+
+            headerPanel.Controls.AddRange(new Control[] { btnRefresh, searchBox, searchIcon, btnShowPending, btnShowRejected });
+
+            // Footer panel - contains pagination and filter controls
+            footerPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 70,
+                BackColor = Color.FromArgb(248, 249, 250),
+                Padding = new Padding(16),
+                BorderStyle = BorderStyle.None
+            };
+
+            // Add a subtle top border to the footer
+            var footerBorder = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 1,
+                BackColor = Color.FromArgb(222, 226, 230)
+            };
+            footerPanel.Controls.Add(footerBorder);
+
             // Sort combo
             sortComboBox = new ComboBox
             {
-                Location = new Point(380, 8),
+                Location = new Point(16, 20),
                 Size = new Size(150, 30),
                 Font = new Font("Segoe UI", 10F),
                 DropDownStyle = ComboBoxStyle.DropDownList
@@ -150,7 +196,7 @@ namespace RealEstateCRMWinForms.Views
             btnFilter = new Button
             {
                 Text = "Filter",
-                Location = new Point(540, 8),
+                Location = new Point(180, 20),
                 Size = new Size(80, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(108, 117, 125),
@@ -158,44 +204,21 @@ namespace RealEstateCRMWinForms.Views
                 Font = new Font("Segoe UI", 10F)
             };
 
-            // Show Pending Requests button
-            btnShowPending = new Button
-            {
-                Text = "Pending Requests",
-                Location = new Point(630, 8),
-                Size = new Size(140, 30),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(0, 123, 255), // Blue when active
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
-            };
-
-            // Show Rejected Properties button
-            btnShowRejected = new Button
-            {
-                Text = "Rejected Properties",
-                Location = new Point(780, 8),
-                Size = new Size(160, 30),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(233, 236, 239), // Gray when inactive
-                ForeColor = Color.FromArgb(73, 80, 87),
-                Font = new Font("Segoe UI", 10F)
-            };
-
-            // Page controls
+            // Pagination controls - positioned on the right side of footer
             lblPageInfo = new Label
             {
                 Text = "Page 1 of 1",
                 AutoSize = true,
-                Location = new Point(950, 12),
-                Font = new Font("Segoe UI", 10F)
+                Location = new Point(0, 0), // Will be repositioned dynamically
+                Font = new Font("Segoe UI", 10F),
+                TextAlign = ContentAlignment.MiddleCenter
             };
 
             btnPrevPage = new Button
             {
                 Text = "Previous",
-                Location = new Point(1030, 8),
                 Size = new Size(80, 30),
+                Location = new Point(0, 0), // Will be repositioned dynamically
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
@@ -205,17 +228,35 @@ namespace RealEstateCRMWinForms.Views
             btnNextPage = new Button
             {
                 Text = "Next",
-                Location = new Point(1120, 8),
                 Size = new Size(80, 30),
+                Location = new Point(0, 0), // Will be repositioned dynamically
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(0, 102, 204),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 10F)
             };
 
-            headerPanel.Controls.AddRange(new Control[] { btnRefresh, searchBox, searchIcon, sortComboBox, btnFilter, btnShowPending, btnShowRejected, lblPageInfo, btnPrevPage, btnNextPage });
+            // Position pagination controls on the right
+            footerPanel.Resize += (sender, e) =>
+            {
+                if (footerPanel != null && lblPageInfo != null && btnPrevPage != null && btnNextPage != null)
+                {
+                    int rightMargin = 16;
+                    int controlSpacing = 10;
+                    int yPosition = 20;
 
-            // Flow layout panel for property cards
+                    // Position from right to left
+                    btnNextPage.Location = new Point(footerPanel.Width - rightMargin - btnNextPage.Width, yPosition);
+                    btnPrevPage.Location = new Point(btnNextPage.Left - controlSpacing - btnPrevPage.Width, yPosition);
+
+                    // Center the page info label vertically with buttons
+                    lblPageInfo.Location = new Point(btnPrevPage.Left - controlSpacing - lblPageInfo.Width, yPosition + 5);
+                }
+            };
+
+            footerPanel.Controls.AddRange(new Control[] { sortComboBox, btnFilter, lblPageInfo, btnPrevPage, btnNextPage });
+
+            // Flow layout panel for property cards - now fills the space between header and footer
             flowLayoutPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -226,7 +267,9 @@ namespace RealEstateCRMWinForms.Views
                 Padding = new Padding(16)
             };
 
+            // Add controls in the correct order for proper docking
             Controls.Add(flowLayoutPanel);
+            Controls.Add(footerPanel);
             Controls.Add(headerPanel);
         }
 

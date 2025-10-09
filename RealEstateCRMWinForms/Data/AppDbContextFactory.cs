@@ -14,7 +14,7 @@ namespace RealEstateCRMWinForms.Data
                 .Build();
 
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            var connectionString = configuration.GetConnectionString("AzureDb");
 
             optionsBuilder.UseSqlServer(connectionString);
 
